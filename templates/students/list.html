@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+
+{% block title %}Öğrenci Listesi - Kurs Yönetim Sistemi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .student-card {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    
+    .student-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+    }
+    
+    .avatar-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+    
+    .info-item {
+        font-size: 0.9rem;
+    }
+    
+    .toggle-info {
+        font-size: 0.75rem;
+        color: #6c757d;
+    }
+    
+    .toggle-info:hover {
+        color: #495057;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-users"></i> Öğrenci Listesi</h2>
+    <div>
+        <a href="{% url 'students:export' %}?format=excel" class="btn btn-success">
+            <i class="fas fa-file-excel"></i> Excel
+        </a>
+        <a href="{% url 'students:export' %}?format=pdf" class="btn btn-danger">
+            <i class="fas fa-file-pdf"></i> PDF
+        </a>
+        <a href="{% url 'students:create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Yeni Öğrenci
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <input type="text" name="search" class="form-control" placeholder="Ad, soyad, TC, email ara..." value="{{ request.GET.search }}">
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-control">
+                    <option value="">Tüm Durumlar</option>
+                    <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Aktif</option>
+                    <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Pasif</option>
+                    <option value="graduated" {% if request.GET.status == 'graduated' %}selected{% endif %}>Mezun</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary">
+                    <i class="fas fa-search"></i> Ara
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Student List -->
+<div class="row">
+    {% for student in students %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100 shadow-sm border-0 student-card">
+            <div class="card-body d-flex flex-column">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="avatar-circle me-3">
+                        <i class="fas fa-user-graduate fa-2x text-primary"></i>
+                    </div>
+                    <div>
+                        <h5 class="card-title mb-1">{{ student.full_name }}</h5>
+                        <small class="text-muted">{{ student.school_number }}</small>
+                    </div>
+                </div>
+                
+                <div class="student-info mb-3" style="flex-grow: 1;">
+                    <div class="info-item mb-2">
+                        <i class="fas fa-envelope text-muted me-2"></i>
+                        <span class="info-short">{{ student.email|truncatechars:25 }}</span>
+                        <span class="info-full d-none">{{ student.email }}</span>
+                        {% if student.email|length > 25 %}
+                        <button class="btn btn-link btn-sm p-0 ms-1 toggle-info" type="button">
+                            <i class="fas fa-chevron-down"></i>
+                        </button>
+                        {% endif %}
+                    </div>
+                    
+                    {% if student.phone %}
+                    <div class="info-item mb-2">
+                        <i class="fas fa-phone text-muted me-2"></i>
+                        <span>{{ student.phone }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="info-item mb-2">
+                        <i class="fas fa-calendar text-muted me-2"></i>
+                        <span>{{ student.registration_date|date:"d.m.Y" }}</span>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="badge bg-{% if student.status == 'active' %}success{% elif student.status == 'graduated' %}info{% else %}secondary{% endif %} rounded-pill">
+                        {{ student.get_status_display }}
+                    </span>
+                    
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'students:detail' student.pk %}" class="btn btn-primary btn-sm rounded-pill">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                        <a href="{% url 'students:update' student.pk %}" class="btn btn-outline-warning btn-sm rounded-pill">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{% url 'students:delete' student.pk %}" class="btn btn-outline-danger btn-sm rounded-pill">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-info text-center border-0 shadow-sm">
+            <i class="fas fa-info-circle fa-2x text-info mb-3"></i>
+            <h4>Öğrenci Bulunamadı</h4>
+            <p class="mb-0">Arama kriterlerinize uygun öğrenci bulunamadı.</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<nav aria-label="Page navigation" class="mt-4">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link rounded-pill me-2" href="?page={{ page_obj.previous_page_number }}">
+                    <i class="fas fa-chevron-left"></i> Önceki
+                </a>
+            </li>
+        {% endif %}
+        
+        <li class="page-item active">
+            <span class="page-link rounded-pill mx-2">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link rounded-pill ms-2" href="?page={{ page_obj.next_page_number }}">
+                    Sonraki <i class="fas fa-chevron-right"></i>
+                </a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle info functionality
+    const toggleButtons = document.querySelectorAll('.toggle-info');
+    
+    toggleButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const infoItem = this.closest('.info-item');
+            const shortInfo = infoItem.querySelector('.info-short');
+            const fullInfo = infoItem.querySelector('.info-full');
+            const icon = this.querySelector('i');
+            
+            if (shortInfo.classList.contains('d-none')) {
+                // Currently showing full, switch to short
+                shortInfo.classList.remove('d-none');
+                fullInfo.classList.add('d-none');
+                icon.className = 'fas fa-chevron-down';
+            } else {
+                // Currently showing short, switch to full
+                shortInfo.classList.add('d-none');
+                fullInfo.classList.remove('d-none');
+                icon.className = 'fas fa-chevron-up';
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

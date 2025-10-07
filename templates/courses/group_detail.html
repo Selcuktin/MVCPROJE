@@ -1,0 +1,464 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ group.course.name }} - Ders Grubu Detayı{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-users me-2"></i>{{ group.course.code }} - {{ group.course.name }}</h4>
+                    <small class="text-muted">{{ group.teacher.full_name }} - {{ group.semester }}</small>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Ders Bilgileri</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Ders Kodu:</strong></td>
+                                    <td>{{ group.course.code }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Ders Adı:</strong></td>
+                                    <td>{{ group.course.name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Kredi:</strong></td>
+                                    <td>{{ group.course.credits }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Bölüm:</strong></td>
+                                    <td>{{ group.course.department }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Dönem:</strong></td>
+                                    <td>{{ group.course.get_semester_display }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Grup Bilgileri</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Öğretmen:</strong></td>
+                                    <td>{{ group.teacher.full_name }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Dönem:</strong></td>
+                                    <td>{{ group.semester }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Sınıf:</strong></td>
+                                    <td>{{ group.classroom }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Program:</strong></td>
+                                    <td>{{ group.schedule }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Durum:</strong></td>
+                                    <td>
+                                        <span class="badge {% if group.status == 'active' %}bg-success{% elif group.status == 'completed' %}bg-primary{% else %}bg-warning{% endif %}">
+                                            {{ group.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <h6>Ders Açıklaması</h6>
+                        <p class="text-muted">{{ group.course.description }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-chart-bar me-2"></i>İstatistikler</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted">Kayıtlı Öğrenci</small>
+                        <h4 class="text-primary">{{ enrollments.count }}</h4>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">Toplam Ödev</small>
+                        <h4 class="text-success">{{ assignments.count }}</h4>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">Toplam Duyuru</small>
+                        <h4 class="text-info">{{ announcements.count }}</h4>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">Kapasite</small>
+                        <h4 class="text-warning">{{ group.course.capacity }}</h4>
+                    </div>
+                </div>
+            </div>
+            
+            {% if user.userprofile.user_type == 'teacher' and group.teacher.user == user %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6><i class="fas fa-cogs me-2"></i>Öğretmen İşlemleri</h6>
+                </div>
+                <div class="card-body">
+                    <a href="{% url 'courses:assignment_create' %}" class="btn btn-primary btn-sm mb-2 w-100">
+                        <i class="fas fa-plus me-1"></i>Yeni Ödev
+                    </a>
+                    <a href="{% url 'courses:announcement_create' %}" class="btn btn-info btn-sm mb-2 w-100">
+                        <i class="fas fa-bullhorn me-1"></i>Yeni Duyuru
+                    </a>
+                    <a href="{% url 'courses:group_update' group.pk %}" class="btn btn-warning btn-sm w-100">
+                        <i class="fas fa-edit me-1"></i>Grubu Düzenle
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Kayıtlı Öğrenciler -->
+    {% if enrollments %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5><i class="fas fa-user-graduate me-2"></i>Kayıtlı Öğrenciler ({{ enrollments.count }})</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for enrollment in enrollments %}
+                        <div class="col-lg-6 mb-4">
+                            <div class="card h-100 border-0 shadow-sm">
+                                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">
+                                        <i class="fas fa-user-graduate me-2"></i>{{ enrollment.student.full_name }}
+                                    </h6>
+                                    <span class="badge bg-light text-dark">{{ enrollment.student.school_number }}</span>
+                                </div>
+                                <div class="card-body">
+                                    <div class="mb-3">
+                                        <h6 class="text-primary">
+                                            <i class="fas fa-book me-1"></i>{{ group.course.code }} - {{ group.course.name }}
+                                        </h6>
+                                        <small class="text-muted">
+                                            <i class="fas fa-envelope me-1"></i>{{ enrollment.student.email }}<br>
+                                            <i class="fas fa-calendar me-1"></i>Kayıt: {{ enrollment.enrollment_date|date:"d.m.Y" }}
+                                        </small>
+                                    </div>
+                                    
+                                    <div class="row text-center">
+                                        <!-- Vize Notu -->
+                                        <div class="col-4">
+                                            <div class="border rounded p-2 mb-2">
+                                                <small class="text-muted d-block">Vize</small>
+                                                {% if enrollment.midterm_grade %}
+                                                    <span class="badge bg-{% if enrollment.midterm_grade >= 70 %}success{% elif enrollment.midterm_grade >= 50 %}warning{% else %}danger{% endif %} fs-6">
+                                                        {% if enrollment.midterm_grade >= 90 %}AA{% elif enrollment.midterm_grade >= 85 %}BA{% elif enrollment.midterm_grade >= 80 %}BB{% elif enrollment.midterm_grade >= 75 %}CB{% elif enrollment.midterm_grade >= 70 %}CC{% elif enrollment.midterm_grade >= 65 %}DC{% elif enrollment.midterm_grade >= 60 %}DD{% elif enrollment.midterm_grade >= 50 %}FD{% else %}FF{% endif %}
+                                                    </span>
+                                                    <div><small>{{ enrollment.midterm_grade|floatformat:0 }}/100</small></div>
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                    <div>
+                                                        {% if user.userprofile.user_type == 'teacher' and group.teacher.user == user %}
+                                                        <a href="{% url 'notes:create' %}?course={{ group.course.pk }}&student={{ enrollment.student.user.id }}&exam_type=vize" class="btn btn-outline-primary btn-sm">
+                                                            <i class="fas fa-plus"></i> Ekle
+                                                        </a>
+                                                        {% endif %}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Final Notu -->
+                                        <div class="col-4">
+                                            <div class="border rounded p-2 mb-2">
+                                                <small class="text-muted d-block">Final</small>
+                                                {% if enrollment.final_grade %}
+                                                    <span class="badge bg-{% if enrollment.final_grade >= 70 %}success{% elif enrollment.final_grade >= 50 %}warning{% else %}danger{% endif %} fs-6">
+                                                        {% if enrollment.final_grade >= 90 %}AA{% elif enrollment.final_grade >= 85 %}BA{% elif enrollment.final_grade >= 80 %}BB{% elif enrollment.final_grade >= 75 %}CB{% elif enrollment.final_grade >= 70 %}CC{% elif enrollment.final_grade >= 65 %}DC{% elif enrollment.final_grade >= 60 %}DD{% elif enrollment.final_grade >= 50 %}FD{% else %}FF{% endif %}
+                                                    </span>
+                                                    <div><small>{{ enrollment.final_grade|floatformat:0 }}/100</small></div>
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                    <div>
+                                                        {% if user.userprofile.user_type == 'teacher' and group.teacher.user == user %}
+                                                        <a href="{% url 'notes:create' %}?course={{ group.course.pk }}&student={{ enrollment.student.user.id }}&exam_type=final" class="btn btn-outline-primary btn-sm">
+                                                            <i class="fas fa-plus"></i> Ekle
+                                                        </a>
+                                                        {% endif %}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Bütünleme Notu -->
+                                        <div class="col-4">
+                                            <div class="border rounded p-2 mb-2">
+                                                <small class="text-muted d-block">Bütünleme</small>
+                                                {% if enrollment.makeup_grade %}
+                                                    <span class="badge bg-{% if enrollment.makeup_grade >= 70 %}success{% elif enrollment.makeup_grade >= 50 %}warning{% else %}danger{% endif %} fs-6">
+                                                        {% if enrollment.makeup_grade >= 90 %}AA{% elif enrollment.makeup_grade >= 85 %}BA{% elif enrollment.makeup_grade >= 80 %}BB{% elif enrollment.makeup_grade >= 75 %}CB{% elif enrollment.makeup_grade >= 70 %}CC{% elif enrollment.makeup_grade >= 65 %}DC{% elif enrollment.makeup_grade >= 60 %}DD{% elif enrollment.makeup_grade >= 50 %}FD{% else %}FF{% endif %}
+                                                    </span>
+                                                    <div><small>{{ enrollment.makeup_grade|floatformat:0 }}/100</small></div>
+                                                {% else %}
+                                                    <span class="text-muted">-</span>
+                                                    <div>
+                                                        {% if user.userprofile.user_type == 'teacher' and group.teacher.user == user %}
+                                                        <a href="{% url 'notes:create' %}?course={{ group.course.pk }}&student={{ enrollment.student.user.id }}&exam_type=but" class="btn btn-outline-primary btn-sm">
+                                                            <i class="fas fa-plus"></i> Ekle
+                                                        </a>
+                                                        {% endif %}
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card-footer bg-light d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="badge bg-{% if enrollment.grade == 'AA' or enrollment.grade == 'BA' %}success{% elif enrollment.grade == 'FF' %}danger{% elif enrollment.grade == 'NA' %}secondary{% else %}warning{% endif %} fs-6">
+                                            Genel: {{ enrollment.grade }}
+                                        </span>
+                                        <span class="badge bg-{% if enrollment.status == 'completed' %}success{% elif enrollment.status == 'failed' %}danger{% elif enrollment.status == 'dropped' %}warning{% else %}primary{% endif %} ms-2">
+                                            {{ enrollment.get_status_display }}
+                                        </span>
+                                    </div>
+                                    {% if user.userprofile.user_type == 'teacher' and group.teacher.user == user %}
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'students:detail' enrollment.student.pk %}" class="btn btn-outline-info" title="Detay">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        <a href="{% url 'notes:create' %}?course={{ group.course.pk }}&student={{ enrollment.student.user.id }}" class="btn btn-outline-success" title="Not Ekle">
+                                            <i class="fas fa-plus"></i>
+                                        </a>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Ödevler -->
+    {% if assignments %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-tasks me-2"></i>Ödevler ({{ assignments.count }})</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Ödev Başlığı</th>
+                                    <th>Oluşturma Tarihi</th>
+                                    <th>Teslim Tarihi</th>
+                                    <th>Max Puan</th>
+                                    <th>Durum</th>
+                                    <th>İşlemler</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for assignment in assignments %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ assignment.title }}</strong><br>
+                                        <small class="text-muted">{{ assignment.description|truncatewords:10 }}</small>
+                                    </td>
+                                    <td>{{ assignment.create_date|date:"d.m.Y H:i" }}</td>
+                                    <td>{{ assignment.due_date|date:"d.m.Y H:i" }}</td>
+                                    <td>{{ assignment.max_score }}</td>
+                                    <td>
+                                        <span class="badge {% if assignment.status == 'active' %}bg-success{% elif assignment.status == 'expired' %}bg-danger{% else %}bg-warning{% endif %}">
+                                            {{ assignment.get_status_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'courses:assignment_detail' assignment.pk %}" class="btn btn-outline-info btn-sm" title="Detay">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <!-- Duyurular -->
+    {% if announcements %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-bullhorn me-2"></i>Duyurular ({{ announcements.count }})</h5>
+                </div>
+                <div class="card-body">
+                    {% for announcement in announcements %}
+                    <div class="card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="card-title">{{ announcement.title }}</h6>
+                                    <p class="card-text">{{ announcement.content|truncatewords:20 }}</p>
+                                    <small class="text-muted">
+                                        <i class="fas fa-calendar me-1"></i>{{ announcement.create_date|date:"d.m.Y H:i" }}
+                                        <i class="fas fa-user ms-3 me-1"></i>{{ announcement.teacher.full_name }}
+                                    </small>
+                                </div>
+                                <span class="badge {% if announcement.status == 'active' %}bg-success{% elif announcement.status == 'expired' %}bg-danger{% else %}bg-warning{% endif %}">
+                                    {{ announcement.get_status_display }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="row mt-4">
+        <div class="col-12">
+            <a href="{% url 'courses:list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Ders Listesine Dön
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background-color: #6c757d;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+.form-label-sm {
+    font-size: 0.75rem;
+    margin-bottom: 0.25rem;
+}
+
+.grade-input {
+    transition: background-color 0.3s ease;
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Not input'larına event listener ekle
+    document.querySelectorAll('.grade-input').forEach(input => {
+        input.addEventListener('blur', function() {
+            const container = this.closest('.grade-edit-container');
+            const enrollmentId = container.dataset.enrollmentId;
+            const gradeType = this.dataset.gradeType;
+            const score = this.value;
+            
+            if (score && score >= 0 && score <= 100) {
+                updateGrade(enrollmentId, gradeType, score, this);
+            }
+        });
+        
+        // Enter tuşuna basıldığında da kaydet
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                this.blur();
+            }
+        });
+    });
+});
+
+function updateGrade(enrollmentId, gradeType, score, inputElement) {
+    // Loading göster
+    inputElement.style.backgroundColor = '#fff3cd';
+    
+    fetch('/courses/ajax/update-grade/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('input[name="csrfmiddlewaretoken"]').value || '{{ csrf_token }}'
+        },
+        body: JSON.stringify({
+            enrollment_id: enrollmentId,
+            grade_type: gradeType,
+            score: score
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Başarılı - yeşil arka plan
+            inputElement.style.backgroundColor = '#d1edff';
+            
+            // Harf notunu güncelle
+            const container = inputElement.closest('.grade-edit-container');
+            const gradeDisplay = container.querySelector('.badge');
+            if (gradeDisplay && data.letter_grade) {
+                gradeDisplay.textContent = 'Harf: ' + data.letter_grade;
+                
+                // Badge rengini güncelle
+                gradeDisplay.className = 'badge ';
+                if (data.letter_grade === 'AA' || data.letter_grade === 'BA') {
+                    gradeDisplay.className += 'bg-success';
+                } else if (data.letter_grade === 'FF') {
+                    gradeDisplay.className += 'bg-danger';
+                } else if (data.letter_grade === 'NA') {
+                    gradeDisplay.className += 'bg-secondary';
+                } else {
+                    gradeDisplay.className += 'bg-warning';
+                }
+            }
+            
+            // 2 saniye sonra normal renge dön
+            setTimeout(() => {
+                inputElement.style.backgroundColor = '';
+            }, 2000);
+        } else {
+            // Hata - kırmızı arka plan
+            inputElement.style.backgroundColor = '#f8d7da';
+            alert('Not kaydedilirken hata oluştu: ' + (data.error || 'Bilinmeyen hata'));
+            
+            setTimeout(() => {
+                inputElement.style.backgroundColor = '';
+            }, 3000);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        inputElement.style.backgroundColor = '#f8d7da';
+        alert('Bağlantı hatası oluştu');
+        
+        setTimeout(() => {
+            inputElement.style.backgroundColor = '';
+        }, 3000);
+    });
+}
+</script>
+
+<!-- CSRF Token -->
+<input type="hidden" name="csrfmiddlewaretoken" value="{{ csrf_token }}">
+{% endblock %}

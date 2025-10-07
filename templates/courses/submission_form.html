@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ assignment.title }} - Ödev Teslimi{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-upload me-2"></i>Ödev Teslimi</h4>
+                    <small class="text-muted">{{ assignment.title }}</small>
+                </div>
+                <div class="card-body">
+                    <div class="alert alert-info">
+                        <h6><i class="fas fa-info-circle me-2"></i>Ödev Bilgileri</h6>
+                        <p><strong>Ders:</strong> {{ assignment.group.course.name }}</p>
+                        <p><strong>Teslim Tarihi:</strong> {{ assignment.due_date|date:"d.m.Y H:i" }}</p>
+                        <p><strong>Maksimum Puan:</strong> {{ assignment.max_score }}</p>
+                        <p class="mb-0"><strong>Açıklama:</strong> {{ assignment.description|truncatewords:20 }}</p>
+                    </div>
+                    
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle me-2"></i>
+                            <strong>Dikkat:</strong> Ödev teslim ettikten sonra değiştiremezsiniz. Lütfen dosyanızı kontrol edin.
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'courses:assignment_detail' assignment.pk %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>İptal
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-upload me-1"></i>Ödev Teslim Et
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

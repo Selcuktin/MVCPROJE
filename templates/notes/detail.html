@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ note.course.name }} - {{ note.get_exam_type_display }} Notu{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Ana Sayfa</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'notes:list' %}">{% if is_student %}Notlarım{% else %}Notlar{% endif %}</a></li>
+                    <li class="breadcrumb-item active">{{ note.course.code }} - {{ note.get_exam_type_display }}</li>
+                </ol>
+            </nav>
+
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <h4 class="mb-0">
+                        <i class="fas fa-graduation-cap"></i> {{ note.course.name }}
+                    </h4>
+                    <span class="badge bg-{% if note.grade == 'AA' or note.grade == 'BA' %}success{% elif note.grade == 'BB' or note.grade == 'CB' %}info{% elif note.grade == 'CC' or note.grade == 'DC' %}warning{% else %}danger{% endif %} fs-5">
+                        {{ note.grade }}
+                    </span>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="text-center mb-4">
+                                <h2 class="display-4 text-primary">{{ note.score }}/100</h2>
+                                <p class="text-muted">{{ note.get_exam_type_display }} Puanı</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="info-section">
+                                <div class="mb-3">
+                                    <strong><i class="fas fa-book text-primary"></i> Ders Kodu:</strong><br>
+                                    <span class="text-muted">{{ note.course.code }}</span>
+                                </div>
+                                <div class="mb-3">
+                                    <strong><i class="fas fa-user text-success"></i> Öğrenci:</strong><br>
+                                    <span class="text-muted">{{ note.student.get_full_name }}</span>
+                                </div>
+                                <div class="mb-3">
+                                    <strong><i class="fas fa-chalkboard-teacher text-info"></i> Öğretmen:</strong><br>
+                                    <span class="text-muted">{{ note.teacher.get_full_name }}</span>
+                                </div>
+                                <div class="mb-3">
+                                    <strong><i class="fas fa-clipboard-check text-warning"></i> Sınav Türü:</strong><br>
+                                    <span class="text-muted">{{ note.get_exam_type_display }}</span>
+                                </div>
+                                <div class="mb-3">
+                                    <strong><i class="fas fa-calendar text-secondary"></i> Tarih:</strong><br>
+                                    <span class="text-muted">{{ note.created_at|date:"d.m.Y H:i" }}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Harf Notu Açıklaması -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <div class="alert alert-light">
+                                <h6><i class="fas fa-info-circle"></i> Harf Notu Sistemi</h6>
+                                <div class="row text-center">
+                                    <div class="col-md-3">
+                                        <span class="badge bg-success">AA</span> 90-100<br>
+                                        <span class="badge bg-success">BA</span> 85-89
+                                    </div>
+                                    <div class="col-md-3">
+                                        <span class="badge bg-primary">BB</span> 80-84<br>
+                                        <span class="badge bg-primary">CB</span> 75-79
+                                    </div>
+                                    <div class="col-md-3">
+                                        <span class="badge bg-warning">CC</span> 70-74<br>
+                                        <span class="badge bg-warning">DC</span> 65-69<br>
+                                        <span class="badge bg-warning">DD</span> 60-64
+                                    </div>
+                                    <div class="col-md-3">
+                                        <span class="badge bg-danger">FD</span> 50-59<br>
+                                        <span class="badge bg-danger">FF</span> 0-49
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-footer bg-light">
+                    {% if is_student %}
+                    <div class="d-flex justify-content-center">
+                        <a href="{% url 'notes:list' %}" class="btn btn-primary">
+                            <i class="fas fa-arrow-left"></i> Notlarıma Geri Dön
+                        </a>
+                    </div>
+                    {% else %}
+                    <div class="btn-group w-100" role="group">
+                        <a href="{% url 'notes:list' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Geri
+                        </a>
+                        <a href="{% url 'notes:edit' note.pk %}" class="btn btn-warning">
+                            <i class="fas fa-edit"></i> Düzenle
+                        </a>
+                        <a href="{% url 'notes:delete' note.pk %}" class="btn btn-danger">
+                            <i class="fas fa-trash"></i> Sil
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

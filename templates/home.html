@@ -1,0 +1,319 @@
+{% extends 'base.html' %}
+
+{% block title %}Ana Sayfa - Kurs Yönetim Sistemi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .hero-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        margin-top: -76px;
+        padding-top: 76px;
+    }
+    
+    .login-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+        transition: transform 0.3s ease;
+    }
+    
+    .login-card:hover {
+        transform: translateY(-5px);
+    }
+    
+    .portal-title {
+        font-size: 1.2rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        color: #333;
+    }
+    
+    .portal-description {
+        color: #666;
+        font-size: 0.9rem;
+        margin-bottom: 1.5rem;
+        line-height: 1.5;
+    }
+    
+    .portal-btn {
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        font-weight: 500;
+        text-transform: none;
+        transition: all 0.3s ease;
+    }
+    
+    .student-btn {
+        background-color: #2c3e50;
+        border-color: #2c3e50;
+        color: white;
+    }
+    
+    .student-btn:hover {
+        background-color: #34495e;
+        border-color: #34495e;
+        color: white;
+    }
+    
+    .teacher-btn {
+        background-color: transparent;
+        border: 2px solid #2c3e50;
+        color: #2c3e50;
+    }
+    
+    .teacher-btn:hover {
+        background-color: #2c3e50;
+        color: white;
+    }
+    
+    .main-title {
+        color: white;
+        font-size: 2.5rem;
+        font-weight: 300;
+        margin-bottom: 1rem;
+        text-align: center;
+    }
+    
+    .main-subtitle {
+        color: rgba(255, 255, 255, 0.8);
+        font-size: 1.1rem;
+        text-align: center;
+        margin-bottom: 3rem;
+    }
+    
+    .register-link {
+        text-align: center;
+        margin-top: 2rem;
+        color: rgba(255, 255, 255, 0.8);
+    }
+    
+    .register-link a {
+        color: white;
+        text-decoration: none;
+        font-weight: 500;
+    }
+    
+    .register-link a:hover {
+        text-decoration: underline;
+    }
+    
+    .demo-credentials {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 10px;
+        padding: 1rem;
+        margin-top: 1rem;
+        font-size: 0.85rem;
+    }
+    
+    .demo-credentials h6 {
+        color: white;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .demo-credentials small {
+        color: rgba(255, 255, 255, 0.8);
+        display: block;
+        margin-bottom: 0.3rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% if not user.is_authenticated %}
+<div class="hero-section">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <h1 class="main-title">Kurs Yönetim Sistemi</h1>
+                <p class="main-subtitle">Dersleri yönetin, ödevleri gönderin ve ilerlemenizi takip edin</p>
+                
+                <div class="row justify-content-center">
+                    <div class="col-md-5 mb-4">
+                        <div class="login-card">
+                            <h3 class="portal-title">
+                                <i class="fas fa-user-graduate me-2"></i>Öğrenci Portalı
+                            </h3>
+                            <p class="portal-description">
+                                Derslere kayıt olun, ödevleri gönderin ve ilerlemenizi takip edin
+                            </p>
+                            <a href="{% url 'accounts:login' %}?next={% url 'students:dashboard' %}" class="btn student-btn portal-btn">
+                                Öğrenci Girişi
+                            </a>
+                            
+                            <div class="demo-credentials">
+                                <h6><i class="fas fa-key me-1"></i>Demo Giriş</h6>
+                                <small><strong>Kullanıcı:</strong> student1</small>
+                                <small><strong>Şifre:</strong> student123</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-5 mb-4">
+                        <div class="login-card">
+                            <h3 class="portal-title">
+                                <i class="fas fa-chalkboard-teacher me-2"></i>Öğretmen Portalı
+                            </h3>
+                            <p class="portal-description">
+                                Dersleri oluşturun, içerik yükleyin ve öğrenci çalışmalarını değerlendirin
+                            </p>
+                            <a href="{% url 'accounts:login' %}?next={% url 'teachers:dashboard' %}" class="btn teacher-btn portal-btn">
+                                Öğretmen Girişi
+                            </a>
+                            
+                            <div class="demo-credentials">
+                                <h6><i class="fas fa-key me-1"></i>Demo Giriş</h6>
+                                <small><strong>Kullanıcı:</strong> teacher1</small>
+                                <small><strong>Şifre:</strong> teacher123</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="register-link">
+                    Hesabınız yok mu? <a href="{% url 'accounts:register' %}">Buradan kayıt olun</a>
+                </div>
+                
+                <!-- Admin Demo Credentials -->
+                <div class="row justify-content-center mt-4">
+                    <div class="col-md-6">
+                        <div class="demo-credentials text-center">
+                            <h6><i class="fas fa-user-shield me-1"></i>Admin Demo Girişi</h6>
+                            <small><strong>Kullanıcı:</strong> admin | <strong>Şifre:</strong> admin123</small>
+                            <div class="mt-2">
+                                <a href="{% url 'accounts:login' %}" class="btn btn-outline-light btn-sm">
+                                    Admin Girişi
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+    <!-- Giriş yapmış kullanıcılar için yönlendirme -->
+    {% if user.userprofile.user_type == 'student' %}
+        <script>
+            window.location.href = "{% url 'students:dashboard' %}";
+        </script>
+    {% elif user.userprofile.user_type == 'teacher' %}
+        <script>
+            window.location.href = "{% url 'teachers:dashboard' %}";
+        </script>
+    {% else %}
+        <!-- Admin kullanıcılar için dashboard -->
+        <div class="row">
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-book fa-3x text-primary mb-3"></i>
+                        <h5 class="card-title">Dersler</h5>
+                        <p class="card-text">Ders programları ve içeriklerini yönetin</p>
+                        <a href="{% url 'courses:list' %}" class="btn btn-primary">Dersleri Görüntüle</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-users fa-3x text-success mb-3"></i>
+                        <h5 class="card-title">Öğrenciler</h5>
+                        <p class="card-text">Öğrenci bilgilerini ve ilerlemelerini takip edin</p>
+                        <a href="{% url 'students:list' %}" class="btn btn-success">Öğrencileri Görüntüle</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-chalkboard-teacher fa-3x text-info mb-3"></i>
+                        <h5 class="card-title">Öğretmenler</h5>
+                        <p class="card-text">Öğretmen bilgilerini yönetin</p>
+                        <a href="{% url 'teachers:list' %}" class="btn btn-info">Öğretmenleri Görüntüle</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <i class="fas fa-sticky-note fa-3x text-warning mb-3"></i>
+                        <h5 class="card-title">Notlar</h5>
+                        <p class="card-text">Öğrenci notlarını yönetin</p>
+                        <a href="{% url 'notes:list' %}" class="btn btn-warning">Notları Görüntüle</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Admin Stats -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <h3>Sistem İstatistikleri</h3>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-primary text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4>{{ total_courses }}</h4>
+                                <p>Toplam Ders</p>
+                            </div>
+                            <i class="fas fa-book fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-success text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4>{{ total_students }}</h4>
+                                <p>Toplam Öğrenci</p>
+                            </div>
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-info text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4>{{ total_teachers }}</h4>
+                                <p>Toplam Öğretmen</p>
+                            </div>
+                            <i class="fas fa-chalkboard-teacher fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card bg-warning text-white">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <div>
+                                <h4>{{ total_enrollments }}</h4>
+                                <p>Toplam Kayıt</p>
+                            </div>
+                            <i class="fas fa-user-plus fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endif %}
+{% endblock %}

@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ teacher.full_name }} - Öğretmen Detayı{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-chalkboard-teacher me-2"></i>{{ teacher.full_name }}</h4>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Kişisel Bilgiler</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>TC No:</strong></td>
+                                    <td>{{ teacher.tc_no }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Email:</strong></td>
+                                    <td>{{ teacher.email }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Telefon:</strong></td>
+                                    <td>{{ teacher.phone }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Doğum Tarihi:</strong></td>
+                                    <td>{{ teacher.birth_date|date:"d.m.Y" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Cinsiyet:</strong></td>
+                                    <td>{{ teacher.get_gender_display }}</td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Akademik Bilgiler</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td><strong>Unvan:</strong></td>
+                                    <td>{{ teacher.title }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Bölüm:</strong></td>
+                                    <td>{{ teacher.department }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>İşe Başlama:</strong></td>
+                                    <td>{{ teacher.hire_date|date:"d.m.Y" }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Durum:</strong></td>
+                                    <td>
+                                        <span class="badge {% if teacher.status == 'active' %}bg-success{% elif teacher.status == 'retired' %}bg-primary{% else %}bg-warning{% endif %}">
+                                            {{ teacher.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-chart-bar me-2"></i>İstatistikler</h6>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <small class="text-muted">Verdiği Dersler</small>
+                        <h4 class="text-primary">{{ course_groups.count }}</h4>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">Toplam Ödev</small>
+                        <h4 class="text-success">{{ assignments }}</h4>
+                    </div>
+                    <div class="mb-3">
+                        <small class="text-muted">Toplam Duyuru</small>
+                        <h4 class="text-info">{{ announcements }}</h4>
+                    </div>
+                </div>
+            </div>
+            
+            {% if user.is_staff or user.userprofile.user_type == 'admin' %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h6><i class="fas fa-cogs me-2"></i>İşlemler</h6>
+                </div>
+                <div class="card-body">
+                    <a href="{% url 'teachers:update' teacher.pk %}" class="btn btn-warning btn-sm mb-2 w-100">
+                        <i class="fas fa-edit me-1"></i>Düzenle
+                    </a>
+                    <a href="{% url 'teachers:delete' teacher.pk %}" class="btn btn-danger btn-sm w-100" 
+                       onclick="return confirm('Bu öğretmeni silmek istediğinizden emin misiniz?')">
+                        <i class="fas fa-trash me-1"></i>Sil
+                    </a>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Verdiği Dersler -->
+    {% if course_groups %}
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5><i class="fas fa-book me-2"></i>Verdiği Dersler</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Ders Kodu</th>
+                                    <th>Ders Adı</th>
+                                    <th>Dönem</th>
+                                    <th>Sınıf</th>
+                                    <th>Program</th>
+                                    <th>Durum</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for group in course_groups %}
+                                <tr>
+                                    <td>{{ group.course.code }}</td>
+                                    <td>{{ group.course.name }}</td>
+                                    <td>{{ group.semester }}</td>
+                                    <td>{{ group.classroom }}</td>
+                                    <td>{{ group.schedule }}</td>
+                                    <td>
+                                        <span class="badge {% if group.status == 'active' %}bg-success{% elif group.status == 'completed' %}bg-primary{% else %}bg-warning{% endif %}">
+                                            {{ group.get_status_display }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    
+    <div class="row mt-4">
+        <div class="col-12">
+            <a href="{% url 'teachers:list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left me-1"></i>Öğretmen Listesine Dön
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

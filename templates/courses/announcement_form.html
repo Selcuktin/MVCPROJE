@@ -1,0 +1,227 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+    {% if form.instance.pk %}
+        {{ form.instance.title }} - Duyuru Düzenle
+    {% else %}
+        Yeni Duyuru Oluştur
+    {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border-left: 4px solid #007bff;
+    }
+    
+    .section-title {
+        color: #495057;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+    }
+    
+    .help-text {
+        background: #e3f2fd;
+        border: 1px solid #bbdefb;
+        border-radius: 6px;
+        padding: 0.75rem;
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+        color: #1565c0;
+    }
+    
+    .preview-box {
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-top: 1rem;
+        min-height: 100px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-bullhorn me-2"></i>
+                        {% if form.instance.pk %}
+                            Duyuru Düzenle
+                        {% else %}
+                            Yeni Duyuru Oluştur
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="announcementForm">
+                        {% csrf_token %}
+                        
+                        <!-- Ders Seçimi -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <i class="fas fa-book me-2"></i>Ders Bilgileri
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    {{ form.group|as_crispy_field }}
+                                    <div class="help-text">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        Duyurunun hangi ders grubu için olduğunu seçin. Sadece bu gruba kayıtlı öğrenciler duyuruyu görebilecektir.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Duyuru Detayları -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <i class="fas fa-edit me-2"></i>Duyuru Detayları
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    {{ form.title|as_crispy_field }}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    {{ form.content|as_crispy_field }}
+                                    <div class="help-text">
+                                        <i class="fas fa-lightbulb me-2"></i>
+                                        Duyuru içeriğinizi detaylı bir şekilde yazın. Öğrencilerinizin anlayabileceği açık ve net bir dil kullanın.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Son Geçerlilik Tarihi -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <i class="fas fa-calendar-alt me-2"></i>Geçerlilik Süresi
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    {{ form.expire_date|as_crispy_field }}
+                                    <div class="help-text">
+                                        <i class="fas fa-clock me-2"></i>
+                                        İsteğe bağlı: Duyurunun ne zamana kadar geçerli olacağını belirleyin. Boş bırakırsanız süresiz olur.
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Hızlı Seçenekler</label>
+                                    <div class="d-grid gap-2">
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setExpireDate(1)">
+                                            <i class="fas fa-calendar-day me-1"></i>1 Gün Sonra
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setExpireDate(7)">
+                                            <i class="fas fa-calendar-week me-1"></i>1 Hafta Sonra
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary btn-sm" onclick="setExpireDate(30)">
+                                            <i class="fas fa-calendar-alt me-1"></i>1 Ay Sonra
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Önizleme -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <i class="fas fa-eye me-2"></i>Önizleme
+                            </div>
+                            <div class="preview-box" id="previewBox">
+                                <div class="text-muted text-center">
+                                    <i class="fas fa-file-text fa-2x mb-2"></i>
+                                    <p>Başlık ve içerik yazdıkça önizleme burada görünecektir.</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'courses:announcement_list' %}" class="btn btn-secondary btn-lg">
+                                <i class="fas fa-arrow-left me-2"></i>İptal
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save me-2"></i>
+                                {% if form.instance.pk %}Güncelle{% else %}Yayınla{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Hızlı tarih seçimi
+function setExpireDate(days) {
+    const now = new Date();
+    now.setDate(now.getDate() + days);
+    
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
+    const hours = String(now.getHours()).padStart(2, '0');
+    const minutes = String(now.getMinutes()).padStart(2, '0');
+    
+    const dateTimeString = `${year}-${month}-${day}T${hours}:${minutes}`;
+    document.getElementById('id_expire_date').value = dateTimeString;
+}
+
+// Önizleme güncelleme
+function updatePreview() {
+    const title = document.getElementById('id_title').value;
+    const content = document.getElementById('id_content').value;
+    const previewBox = document.getElementById('previewBox');
+    
+    if (title || content) {
+        previewBox.innerHTML = `
+            <div class="border-start border-primary border-3 ps-3">
+                <h5 class="text-primary mb-2">
+                    <i class="fas fa-bullhorn me-2"></i>${title || 'Duyuru Başlığı'}
+                </h5>
+                <div class="text-muted mb-2">
+                    <small>
+                        <i class="fas fa-user me-1"></i>{{ request.user.get_full_name }}
+                        <i class="fas fa-calendar ms-3 me-1"></i>${new Date().toLocaleDateString('tr-TR')}
+                    </small>
+                </div>
+                <p class="mb-0">${content.replace(/\n/g, '<br>') || 'Duyuru içeriği burada görünecektir...'}</p>
+            </div>
+        `;
+    } else {
+        previewBox.innerHTML = `
+            <div class="text-muted text-center">
+                <i class="fas fa-file-text fa-2x mb-2"></i>
+                <p>Başlık ve içerik yazdıkça önizleme burada görünecektir.</p>
+            </div>
+        `;
+    }
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    const titleField = document.getElementById('id_title');
+    const contentField = document.getElementById('id_content');
+    
+    if (titleField) {
+        titleField.addEventListener('input', updatePreview);
+        updatePreview(); // İlk yükleme
+    }
+    
+    if (contentField) {
+        contentField.addEventListener('input', updatePreview);
+    }
+});
+</script>
+{% endblock %}

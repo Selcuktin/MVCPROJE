@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+
+{% block title %}Ödevlerim - Kurs Yönetim Sistemi{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-tasks"></i> Ödevlerim</h2>
+        <p class="lead">Ödevlerinizi görüntüleyin ve teslim edin.</p>
+    </div>
+</div>
+
+<div class="row">
+    {% for assignment in assignments %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h6 class="mb-0">{{ assignment.group.course.code }}</h6>
+                <span class="badge bg-{% if assignment.due_date > now %}warning{% else %}danger{% endif %}">
+                    {% if assignment.due_date > now %}Aktif{% else %}Süresi Doldu{% endif %}
+                </span>
+            </div>
+            <div class="card-body">
+                <h5 class="card-title">{{ assignment.title }}</h5>
+                <p class="card-text">{{ assignment.description|truncatewords:20 }}</p>
+                <div class="mb-2">
+                    <small class="text-muted">Ders:</small> {{ assignment.group.course.name }}<br>
+                    <small class="text-muted">Son Teslim:</small> {{ assignment.due_date|date:"d.m.Y H:i" }}<br>
+                    <small class="text-muted">Max Puan:</small> {{ assignment.max_score }}
+                </div>
+                
+                {% if assignment.submission %}
+                <div class="alert alert-success">
+                    <i class="fas fa-check"></i> Teslim Edildi
+                    {% if assignment.submission.score %}
+                        <br><strong>Puan:</strong> {{ assignment.submission.score }}/{{ assignment.max_score }}
+                    {% endif %}
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'courses:assignment_detail' assignment.pk %}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-eye"></i> Detay
+                    </a>
+                    {% if not assignment.submission and assignment.due_date > now %}
+                    <a href="{% url 'courses:submit_assignment' assignment.pk %}" class="btn btn-success btn-sm">
+                        <i class="fas fa-upload"></i> Teslim Et
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-info text-center">
+            <h4>Henüz Ödev Yok</h4>
+            <p>Kayıtlı derslerinizde henüz ödev bulunmuyor.</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Giriş - Kurs Yönetim Sistemi{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h4 class="mb-0"><i class="fas fa-sign-in-alt"></i> Giriş Yap</h4>
+                    </div>
+                    <div class="card-body">
+                        <form method="post">
+                            {% csrf_token %}
+                            {{ form|crispy }}
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="fas fa-sign-in-alt"></i> Giriş Yap
+                            </button>
+                        </form>
+                        
+                        <hr>
+                        <div class="text-center">
+                            <p>Hesabınız yok mu? <a href="{% url 'accounts:register' %}">Kayıt olun</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0"><i class="fas fa-key"></i> Örnek Giriş Bilgileri</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <h6 class="text-danger"><i class="fas fa-user-shield"></i> Admin Girişi</h6>
+                            <div class="input-group mb-2">
+                                <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                <input type="text" class="form-control" value="admin" readonly onclick="this.select()">
+                            </div>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                <input type="text" class="form-control" value="admin123" readonly onclick="this.select()">
+                            </div>
+                            <small class="text-muted">Tüm yetkilere sahip admin hesabı</small>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <h6 class="text-primary"><i class="fas fa-chalkboard-teacher"></i> Öğretmen Girişi</h6>
+                            <div class="input-group mb-2">
+                                <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                <input type="text" class="form-control" value="teacher1" readonly onclick="this.select()">
+                            </div>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                <input type="text" class="form-control" value="teacher123" readonly onclick="this.select()">
+                            </div>
+                            <small class="text-muted">Ders ve not yönetimi yetkisi</small>
+                        </div>
+                        
+                        <div class="mb-0">
+                            <h6 class="text-success"><i class="fas fa-user-graduate"></i> Öğrenci Girişi</h6>
+                            <div class="input-group mb-2">
+                                <span class="input-group-text"><i class="fas fa-user"></i></span>
+                                <input type="text" class="form-control" value="student1" readonly onclick="this.select()">
+                            </div>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                                <input type="text" class="form-control" value="student123" readonly onclick="this.select()">
+                            </div>
+                            <small class="text-muted">Ders ve not görüntüleme yetkisi</small>
+                        </div>
+                    </div>
+                    <div class="card-footer bg-light">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle"></i> 
+                            Bilgileri kopyalamak için üzerine tıklayın
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

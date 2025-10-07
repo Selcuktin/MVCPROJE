@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ course.name }} - Kurs Yönetim Sistemi{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0">{{ course.code }} - {{ course.name }}</h4>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <p><strong>Bölüm:</strong> {{ course.department }}</p>
+                        <p><strong>Kredi:</strong> {{ course.credits }}</p>
+                        <p><strong>Dönem:</strong> {{ course.get_semester_display }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <p><strong>Kapasite:</strong> {{ course.capacity }}</p>
+                        <p><strong>Ders Tipi:</strong> 
+                            <span class="badge bg-{% if course.is_elective %}warning{% else %}primary{% endif %}">
+                                {% if course.is_elective %}Seçmeli{% else %}Zorunlu{% endif %}
+                            </span>
+                        </p>
+                        <p><strong>Durum:</strong> 
+                            <span class="badge bg-success">{{ course.get_status_display }}</span>
+                        </p>
+                    </div>
+                </div>
+                
+                <h5>Ders Açıklaması</h5>
+                <p>{{ course.description }}</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+
+        
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-users"></i> Ders Grupları</h5>
+            </div>
+            <div class="card-body">
+                {% for group in groups %}
+                <div class="card mb-3">
+                    <div class="card-body">
+                        <h6 class="card-title">{{ group.teacher.full_name }}</h6>
+                        <p class="card-text">
+                            <small class="text-muted">
+                                <i class="fas fa-door-open"></i> {{ group.classroom }}<br>
+                                <i class="fas fa-clock"></i> {{ group.schedule }}<br>
+                                <i class="fas fa-calendar"></i> {{ group.semester }}<br>
+                                <i class="fas fa-users"></i> {{ group.enrollments.count }}/{{ course.capacity }} öğrenci
+                            </small>
+                        </p>
+                        
+
+                        
+                        <a href="{% url 'courses:group_detail' group.pk %}" class="btn btn-outline-info btn-sm">
+                            <i class="fas fa-eye"></i> Detay
+                        </a>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-muted">Bu ders için henüz grup oluşturulmamış.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <a href="{% url 'courses:list' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Ders Listesine Dön
+        </a>
+        {% if user.is_staff or user.userprofile.user_type == 'admin' or user.userprofile.user_type == 'teacher' %}
+        <a href="{% url 'courses:update' course.pk %}" class="btn btn-warning">
+            <i class="fas fa-edit"></i> Düzenle
+        </a>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

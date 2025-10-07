@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+
+{% block title %}Öğretmenler{% endblock %}
+
+{% block extra_css %}
+<style>
+    .teacher-card {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    
+    .teacher-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+    }
+    
+    .avatar-circle {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+    }
+    
+    .info-item {
+        font-size: 0.9rem;
+    }
+    
+    .toggle-info {
+        font-size: 0.75rem;
+        color: #6c757d;
+    }
+    
+    .toggle-info:hover {
+        color: #495057;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-chalkboard-teacher me-2"></i>Öğretmenler</h2>
+        {% if user.is_staff or user.userprofile.user_type == 'admin' %}
+        <a href="{% url 'teachers:create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>Yeni Öğretmen
+        </a>
+        {% endif %}
+    </div>
+    
+    <!-- Arama ve Filtreleme -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <input type="text" name="search" class="form-control" placeholder="Ad, soyad, TC, email ara..." value="{{ request.GET.search }}">
+                </div>
+                <div class="col-md-3">
+                    <select name="department" class="form-select">
+                        <option value="">Tüm Bölümler</option>
+                        <option value="Bilgisayar Mühendisliği" {% if request.GET.department == 'Bilgisayar Mühendisliği' %}selected{% endif %}>Bilgisayar Mühendisliği</option>
+                        <option value="Elektrik Mühendisliği" {% if request.GET.department == 'Elektrik Mühendisliği' %}selected{% endif %}>Elektrik Mühendisliği</option>
+                        <option value="Makine Mühendisliği" {% if request.GET.department == 'Makine Mühendisliği' %}selected{% endif %}>Makine Mühendisliği</option>
+                        <option value="İnşaat Mühendisliği" {% if request.GET.department == 'İnşaat Mühendisliği' %}selected{% endif %}>İnşaat Mühendisliği</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select name="status" class="form-select">
+                        <option value="">Tüm Durumlar</option>
+                        <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Aktif</option>
+                        <option value="inactive" {% if request.GET.status == 'inactive' %}selected{% endif %}>Pasif</option>
+                        <option value="retired" {% if request.GET.status == 'retired' %}selected{% endif %}>Emekli</option>
+                        <option value="suspended" {% if request.GET.status == 'suspended' %}selected{% endif %}>Askıda</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <button type="submit" class="btn btn-outline-primary w-100">
+                        <i class="fas fa-search me-1"></i>Ara
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Öğretmen Listesi -->
+    <div class="row">
+        {% for teacher in teachers %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm border-0 teacher-card">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-center mb-3">
+                        <div class="avatar-circle me-3">
+                            <i class="fas fa-chalkboard-teacher fa-2x text-white"></i>
+                        </div>
+                        <div>
+                            <h5 class="card-title mb-1">{{ teacher.full_name }}</h5>
+                            <small class="text-muted">{{ teacher.tc_no }}</small>
+                        </div>
+                    </div>
+                    
+                    <div class="teacher-info mb-3" style="flex-grow: 1;">
+                        <div class="info-item mb-2">
+                            <i class="fas fa-building text-muted me-2"></i>
+                            <span class="info-short">{{ teacher.department|truncatechars:20 }}</span>
+                            <span class="info-full d-none">{{ teacher.department }}</span>
+                            {% if teacher.department|length > 20 %}
+                            <button class="btn btn-link btn-sm p-0 ms-1 toggle-info" type="button">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="info-item mb-2">
+                            <i class="fas fa-envelope text-muted me-2"></i>
+                            <span class="info-short">{{ teacher.email|truncatechars:25 }}</span>
+                            <span class="info-full d-none">{{ teacher.email }}</span>
+                            {% if teacher.email|length > 25 %}
+                            <button class="btn btn-link btn-sm p-0 ms-1 toggle-info" type="button">
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                            {% endif %}
+                        </div>
+                        
+                        {% if teacher.phone %}
+                        <div class="info-item mb-2">
+                            <i class="fas fa-phone text-muted me-2"></i>
+                            <span>{{ teacher.phone }}</span>
+                        </div>
+                        {% endif %}
+                        
+                        {% if teacher.hire_date %}
+                        <div class="info-item mb-2">
+                            <i class="fas fa-calendar text-muted me-2"></i>
+                            <span>{{ teacher.hire_date|date:"d.m.Y" }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="badge bg-{% if teacher.status == 'active' %}success{% elif teacher.status == 'retired' %}primary{% else %}warning{% endif %} rounded-pill">
+                            {{ teacher.get_status_display }}
+                        </span>
+                        
+                        <div class="btn-group" role="group">
+                            <a href="{% url 'teachers:detail' teacher.pk %}" class="btn btn-primary btn-sm rounded-pill" title="Detay">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            {% if user.is_staff or user.userprofile.user_type == 'admin' %}
+                            <a href="{% url 'teachers:update' teacher.pk %}" class="btn btn-outline-warning btn-sm rounded-pill" title="Düzenle">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            <a href="{% url 'teachers:delete' teacher.pk %}" class="btn btn-outline-danger btn-sm rounded-pill" title="Sil" 
+                               onclick="return confirm('Bu öğretmeni silmek istediğinizden emin misiniz?')">
+                                <i class="fas fa-trash"></i>
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info text-center border-0 shadow-sm">
+                <i class="fas fa-chalkboard-teacher fa-3x text-info mb-3"></i>
+                <h4>Öğretmen Bulunamadı</h4>
+                <p class="mb-0">Arama kriterlerinize uygun öğretmen bulunamadı.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <nav aria-label="Sayfa navigasyonu" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+                <li class="page-item">
+                    <a class="page-link rounded-pill me-2" href="?page={{ page_obj.previous_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                        <i class="fas fa-chevron-left"></i> Önceki
+                    </a>
+                </li>
+            {% endif %}
+            
+            <li class="page-item active">
+                <span class="page-link rounded-pill mx-2">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+            </li>
+            
+            {% if page_obj.has_next %}
+                <li class="page-item">
+                    <a class="page-link rounded-pill ms-2" href="?page={{ page_obj.next_page_number }}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}{% if request.GET.department %}&department={{ request.GET.department }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">
+                        Sonraki <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle info functionality
+    const toggleButtons = document.querySelectorAll('.toggle-info');
+    
+    toggleButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const infoItem = this.closest('.info-item');
+            const shortInfo = infoItem.querySelector('.info-short');
+            const fullInfo = infoItem.querySelector('.info-full');
+            const icon = this.querySelector('i');
+            
+            if (shortInfo.classList.contains('d-none')) {
+                // Currently showing full, switch to short
+                shortInfo.classList.remove('d-none');
+                fullInfo.classList.add('d-none');
+                icon.className = 'fas fa-chevron-down';
+            } else {
+                // Currently showing short, switch to full
+                shortInfo.classList.add('d-none');
+                fullInfo.classList.remove('d-none');
+                icon.className = 'fas fa-chevron-up';
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Ana Sayfa</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'notes:list' %}">Notlar</a></li>
+                    <li class="breadcrumb-item active">{{ title }}</li>
+                </ol>
+            </nav>
+
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0"><i class="fas fa-plus-circle"></i> {{ title }}</h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" id="noteForm">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.course.id_for_label }}" class="form-label">Ders *</label>
+                            {{ form.course }}
+                            {% if request.GET.course %}
+                                <div class="form-text text-success">
+                                    <i class="fas fa-check-circle"></i> Ders otomatik seçildi
+                                </div>
+                            {% else %}
+                                <div class="form-text">Önce not gireceğiniz dersi seçin</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.student.id_for_label }}" class="form-label">Öğrenci *</label>
+                            {{ form.student }}
+                            {% if request.GET.student %}
+                                <div class="form-text text-success">
+                                    <i class="fas fa-check-circle"></i> Öğrenci otomatik seçildi
+                                </div>
+                            {% else %}
+                                <div class="form-text">Ders seçildikten sonra o derse kayıtlı öğrenciler listelenir</div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.exam_type.id_for_label }}" class="form-label">Sınav Türü *</label>
+                                    {{ form.exam_type }}
+                                    {% if request.GET.exam_type %}
+                                        <div class="form-text text-success">
+                                            <i class="fas fa-check-circle"></i> Sınav türü otomatik seçildi
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.score.id_for_label }}" class="form-label">Puan *</label>
+                                    {{ form.score }}
+                                    <div class="form-text">0-100 arası puan girin (harf notu otomatik hesaplanır)</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Harf Notu Önizleme -->
+                        <div class="mb-3">
+                            <div class="alert alert-info d-none" id="gradePreview">
+                                <strong>Harf Notu Önizleme:</strong> <span id="gradeDisplay"></span>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <a href="{% if note %}{% url 'notes:detail' note.pk %}{% else %}{% url 'notes:list' %}{% endif %}" class="btn btn-secondary">
+                                <i class="fas fa-times"></i> İptal
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Notu Kaydet
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const courseSelect = document.getElementById('id_course');
+    const studentSelect = document.getElementById('id_student');
+    const scoreInput = document.getElementById('id_score');
+    const gradePreview = document.getElementById('gradePreview');
+    const gradeDisplay = document.getElementById('gradeDisplay');
+    
+    // Ders seçildiğinde öğrencileri getir
+    courseSelect.addEventListener('change', function() {
+        const courseId = this.value;
+        
+        // Öğrenci listesini temizle
+        studentSelect.innerHTML = '<option value="">---------</option>';
+        
+        if (courseId) {
+            fetch(`{% url 'notes:get_students_by_course' %}?course_id=${courseId}`)
+                .then(response => response.json())
+                .then(data => {
+                    data.students.forEach(student => {
+                        const option = document.createElement('option');
+                        option.value = student.id;
+                        option.textContent = student.name;
+                        studentSelect.appendChild(option);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        }
+    });
+    
+    // Puan girildiğinde harf notu önizlemesi
+    scoreInput.addEventListener('input', function() {
+        const score = parseInt(this.value);
+        let grade = '';
+        let gradeClass = '';
+        
+        if (score >= 90) {
+            grade = 'AA (90-100)';
+            gradeClass = 'success';
+        } else if (score >= 85) {
+            grade = 'BA (85-89)';
+            gradeClass = 'success';
+        } else if (score >= 80) {
+            grade = 'BB (80-84)';
+            gradeClass = 'primary';
+        } else if (score >= 75) {
+            grade = 'CB (75-79)';
+            gradeClass = 'primary';
+        } else if (score >= 70) {
+            grade = 'CC (70-74)';
+            gradeClass = 'warning';
+        } else if (score >= 65) {
+            grade = 'DC (65-69)';
+            gradeClass = 'warning';
+        } else if (score >= 60) {
+            grade = 'DD (60-64)';
+            gradeClass = 'warning';
+        } else if (score >= 50) {
+            grade = 'FD (50-59)';
+            gradeClass = 'danger';
+        } else if (score >= 0) {
+            grade = 'FF (0-49)';
+            gradeClass = 'danger';
+        }
+        
+        if (grade && !isNaN(score)) {
+            gradeDisplay.innerHTML = `<span class="badge bg-${gradeClass}">${grade}</span>`;
+            gradePreview.classList.remove('d-none');
+        } else {
+            gradePreview.classList.add('d-none');
+        }
+    });
+});
+</script>
+{% endblock %}

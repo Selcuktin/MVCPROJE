@@ -1,0 +1,215 @@
+{% extends 'base.html' %}
+
+{% block title %}Ödevlerim{% endblock %}
+
+{% block extra_css %}
+<style>
+    .assignment-card {
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+        margin-bottom: 1.5rem;
+    }
+    
+    .assignment-card:hover {
+        box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        transform: translateY(-2px);
+    }
+    
+    .stats-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        text-align: center;
+    }
+    
+    .due-date-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        font-size: 0.8rem;
+    }
+    
+    .progress-bar-custom {
+        height: 8px;
+        border-radius: 4px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Ana Sayfa</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'teachers:dashboard' %}">Öğretmen Paneli</a></li>
+            <li class="breadcrumb-item active">Ödevlerim</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-tasks"></i> Ödevlerim</h2>
+        <a href="{% url 'courses:assignment_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Yeni Ödev Oluştur
+        </a>
+    </div>
+
+    <!-- İstatistikler -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <i class="fas fa-tasks fa-3x mb-3"></i>
+                <h3>{{ assignments|length }}</h3>
+                <p class="mb-0">Toplam Ödev</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <i class="fas fa-clock fa-3x mb-3"></i>
+                <h3>{{ active_assignments }}</h3>
+                <p class="mb-0">Aktif Ödev</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <i class="fas fa-check-circle fa-3x mb-3"></i>
+                <h3>{{ completed_assignments }}</h3>
+                <p class="mb-0">Tamamlanan</p>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                <h3>{{ expired_assignments }}</h3>
+                <p class="mb-0">Süresi Dolmuş</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filtreleme -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="course" class="form-label">Ders</label>
+                    <select class="form-select" id="course" name="course">
+                        <option value="">Tüm Dersler</option>
+                        {% for group in course_groups %}
+                        <option value="{{ group.id }}" {% if request.GET.course == group.id|stringformat:"s" %}selected{% endif %}>
+                            {{ group.course.code }} - {{ group.course.name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="status" class="form-label">Durum</label>
+                    <select class="form-select" id="status" name="status">
+                        <option value="">Tüm Durumlar</option>
+                        <option value="active" {% if request.GET.status == "active" %}selected{% endif %}>Aktif</option>
+                        <option value="inactive" {% if request.GET.status == "inactive" %}selected{% endif %}>Pasif</option>
+                        <option value="expired" {% if request.GET.status == "expired" %}selected{% endif %}>Süresi Dolmuş</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label for="search" class="form-label">Arama</label>
+                    <input type="text" class="form-control" id="search" name="search" 
+                           placeholder="Ödev başlığı..." value="{{ request.GET.search }}">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-search"></i> Filtrele
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Ödev Listesi -->
+    {% if assignments %}
+        <div class="row">
+            {% for assignment in assignments %}
+                <div class="col-lg-6 col-xl-4 mb-4">
+                    <div class="assignment-card card h-100 position-relative">
+                        <!-- Durum Badge -->
+                        {% if assignment.status == 'active' %}
+                            {% now "Y-m-d H:i:s" as current_time %}
+                            {% if assignment.due_date|date:"Y-m-d H:i:s" < current_time %}
+                                <span class="due-date-badge badge bg-danger">Süresi Dolmuş</span>
+                            {% else %}
+                                <span class="due-date-badge badge bg-success">Aktif</span>
+                            {% endif %}
+                        {% elif assignment.status == 'inactive' %}
+                            <span class="due-date-badge badge bg-secondary">Pasif</span>
+                        {% else %}
+                            <span class="due-date-badge badge bg-warning">{{ assignment.get_status_display }}</span>
+                        {% endif %}
+
+                        <div class="card-header bg-primary text-white">
+                            <h6 class="card-title mb-0">
+                                <i class="fas fa-book"></i> {{ assignment.group.course.code }}
+                            </h6>
+                        </div>
+                        
+                        <div class="card-body">
+                            <h5 class="card-title">{{ assignment.title }}</h5>
+                            <p class="card-text text-muted">
+                                {{ assignment.description|truncatewords:15 }}
+                            </p>
+                            
+                            <div class="mb-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar"></i> Oluşturulma: {{ assignment.create_date|date:"d.m.Y H:i" }}<br>
+                                    <i class="fas fa-clock"></i> Son Teslim: {{ assignment.due_date|date:"d.m.Y H:i" }}<br>
+                                    <i class="fas fa-star"></i> Maksimum Puan: {{ assignment.max_score }}
+                                </small>
+                            </div>
+                            
+                            <!-- Teslim İstatistikleri -->
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <small class="text-muted">Teslim Durumu</small>
+                                    <small class="text-muted">{{ assignment.submission_count }} / {{ assignment.group.enrollments.count }}</small>
+                                </div>
+                                {% if assignment.group.enrollments.count > 0 %}
+                                    {% widthratio assignment.submission_count assignment.group.enrollments.count 100 as progress_percent %}
+                                    <div class="progress progress-bar-custom">
+                                        <div class="progress-bar bg-{% if progress_percent >= 80 %}success{% elif progress_percent >= 50 %}warning{% else %}danger{% endif %}" 
+                                             style="width: {{ progress_percent }}%"></div>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="card-footer bg-light">
+                            <div class="btn-group w-100" role="group">
+                                <a href="{% url 'courses:assignment_detail' assignment.pk %}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye"></i> Detay
+                                </a>
+                                <a href="#" class="btn btn-outline-warning btn-sm" onclick="alert('Düzenleme özelliği yakında eklenecek')">
+                                    <i class="fas fa-edit"></i> Düzenle
+                                </a>
+                                <a href="#" class="btn btn-outline-info btn-sm" onclick="alert('Teslimler özelliği yakında eklenecek')">
+                                    <i class="fas fa-file-alt"></i> Teslimler
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center">
+            <i class="fas fa-info-circle fa-2x mb-3"></i>
+            <h4>Henüz Ödev Yok</h4>
+            <p>Henüz hiç ödev oluşturmamışsınız. İlk ödevinizi oluşturmak için aşağıdaki butona tıklayın.</p>
+            <a href="{% url 'courses:assignment_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> İlk Ödevimi Oluştur
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

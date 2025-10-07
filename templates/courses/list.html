@@ -1,0 +1,222 @@
+{% extends 'base.html' %}
+
+{% block title %}Ders Listesi - Kurs Yönetim Sistemi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .course-card {
+        transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    }
+    
+    .course-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15) !important;
+    }
+    
+    .stat-item {
+        padding: 0.5rem;
+        border-radius: 8px;
+        background: rgba(0,123,255,0.05);
+        margin: 0 2px;
+    }
+    
+    .toggle-description {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    
+    .toggle-description:hover {
+        color: #495057;
+    }
+    
+    .card-header.bg-gradient {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2><i class="fas fa-book"></i> Ders Listesi</h2>
+    {% if user.is_staff or user.userprofile.user_type == 'admin' or user.userprofile.user_type == 'teacher' %}
+    <a href="{% url 'courses:create' %}" class="btn btn-primary">
+        <i class="fas fa-plus"></i> Yeni Ders
+    </a>
+    {% endif %}
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-4">
+                <input type="text" name="search" class="form-control" placeholder="Ders kodu, adı veya bölüm ara..." value="{{ request.GET.search }}">
+            </div>
+            <div class="col-md-3">
+                <select name="department" class="form-control">
+                    <option value="">Tüm Bölümler</option>
+                    <option value="Bilgisayar Mühendisliği" {% if request.GET.department == 'Bilgisayar Mühendisliği' %}selected{% endif %}>Bilgisayar Mühendisliği</option>
+                    <option value="Elektrik Mühendisliği" {% if request.GET.department == 'Elektrik Mühendisliği' %}selected{% endif %}>Elektrik Mühendisliği</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <select name="semester" class="form-control">
+                    <option value="">Tüm Dönemler</option>
+                    <option value="fall" {% if request.GET.semester == 'fall' %}selected{% endif %}>Güz</option>
+                    <option value="spring" {% if request.GET.semester == 'spring' %}selected{% endif %}>Bahar</option>
+                    <option value="summer" {% if request.GET.semester == 'summer' %}selected{% endif %}>Yaz</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-outline-primary">
+                    <i class="fas fa-search"></i> Ara
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Course List -->
+<div class="row">
+    {% for course in courses %}
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card h-100 shadow-sm border-0 course-card">
+            <div class="card-header bg-gradient border-0 d-flex justify-content-between align-items-center">
+                <h6 class="mb-0 fw-bold">{{ course.code }}</h6>
+                <span class="badge bg-{% if course.is_elective %}warning{% else %}primary{% endif %} rounded-pill">
+                    {% if course.is_elective %}Seçmeli{% else %}Zorunlu{% endif %}
+                </span>
+            </div>
+            <div class="card-body d-flex flex-column">
+                <h5 class="card-title text-primary mb-3">{{ course.name }}</h5>
+                <div class="course-description mb-3" style="flex-grow: 1;">
+                    <p class="card-text text-muted course-desc-short">
+                        {{ course.description|truncatewords:10 }}
+                    </p>
+                    <p class="card-text text-muted course-desc-full d-none">
+                        {{ course.description }}
+                    </p>
+                    {% if course.description|wordcount > 10 %}
+                    <button class="btn btn-link btn-sm p-0 text-decoration-none toggle-description" type="button">
+                        <span class="show-more">Daha fazla <i class="fas fa-chevron-down"></i></span>
+                        <span class="show-less d-none">Daha az <i class="fas fa-chevron-up"></i></span>
+                    </button>
+                    {% endif %}
+                </div>
+                <div class="row text-center mb-3">
+                    <div class="col-4">
+                        <div class="stat-item">
+                            <i class="fas fa-star text-warning mb-1"></i>
+                            <small class="text-muted d-block">Kredi</small>
+                            <strong class="text-primary">{{ course.credits }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-item">
+                            <i class="fas fa-users text-info mb-1"></i>
+                            <small class="text-muted d-block">Kapasite</small>
+                            <strong class="text-primary">{{ course.capacity }}</strong>
+                        </div>
+                    </div>
+                    <div class="col-4">
+                        <div class="stat-item">
+                            <i class="fas fa-calendar text-success mb-1"></i>
+                            <small class="text-muted d-block">Dönem</small>
+                            <strong class="text-primary">{{ course.get_semester_display }}</strong>
+                        </div>
+                    </div>
+                </div>
+                {% if course.instructor %}
+                <div class="mb-3">
+                    <small class="text-muted">
+                        <i class="fas fa-chalkboard-teacher"></i> {{ course.instructor.get_full_name }}
+                    </small>
+                </div>
+                {% endif %}
+            </div>
+            <div class="card-footer bg-transparent border-0">
+                <div class="d-flex justify-content-between align-items-center">
+                    <a href="{% url 'courses:detail' course.pk %}" class="btn btn-primary btn-sm rounded-pill px-3">
+                        <i class="fas fa-eye"></i> Detay
+                    </a>
+                    {% if user.is_staff or user.userprofile.user_type == 'admin' or user.userprofile.user_type == 'teacher' %}
+                    <div class="btn-group" role="group">
+                        <a href="{% url 'courses:update' course.pk %}" class="btn btn-outline-warning btn-sm rounded-pill">
+                            <i class="fas fa-edit"></i>
+                        </a>
+                        <a href="{% url 'courses:delete' course.pk %}" class="btn btn-outline-danger btn-sm rounded-pill">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div class="col-12">
+        <div class="alert alert-info text-center border-0 shadow-sm">
+            <i class="fas fa-info-circle fa-2x text-info mb-3"></i>
+            <h4>Ders Bulunamadı</h4>
+            <p class="mb-0">Arama kriterlerinize uygun ders bulunamadı.</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if is_paginated %}
+<nav aria-label="Page navigation">
+    <ul class="pagination justify-content-center">
+        {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Önceki</a>
+            </li>
+        {% endif %}
+        
+        <li class="page-item active">
+            <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        </li>
+        
+        {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Sonraki</a>
+            </li>
+        {% endif %}
+    </ul>
+</nav>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Toggle description functionality
+    const toggleButtons = document.querySelectorAll('.toggle-description');
+    
+    toggleButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const courseDescription = this.closest('.course-description');
+            const shortDesc = courseDescription.querySelector('.course-desc-short');
+            const fullDesc = courseDescription.querySelector('.course-desc-full');
+            const showMore = this.querySelector('.show-more');
+            const showLess = this.querySelector('.show-less');
+            
+            if (shortDesc.classList.contains('d-none')) {
+                // Currently showing full, switch to short
+                shortDesc.classList.remove('d-none');
+                fullDesc.classList.add('d-none');
+                showMore.classList.remove('d-none');
+                showLess.classList.add('d-none');
+            } else {
+                // Currently showing short, switch to full
+                shortDesc.classList.add('d-none');
+                fullDesc.classList.remove('d-none');
+                showMore.classList.add('d-none');
+                showLess.classList.remove('d-none');
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

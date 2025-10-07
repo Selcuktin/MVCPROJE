@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}
+    {% if form.instance.pk %}
+        {{ form.instance.title }} - Ödev Düzenle
+    {% else %}
+        Yeni Ödev Oluştur
+    {% endif %}
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .form-section {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border-left: 4px solid #007bff;
+    }
+    
+    .section-title {
+        color: #495057;
+        font-weight: 600;
+        margin-bottom: 1rem;
+        font-size: 1.1rem;
+    }
+    
+    .date-help {
+        background: #e3f2fd;
+        border: 1px solid #bbdefb;
+        border-radius: 6px;
+        padding: 0.75rem;
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+        color: #1565c0;
+    }
+    
+    .preset-info {
+        background: #f3e5f5;
+        border: 1px solid #e1bee7;
+        border-radius: 6px;
+        padding: 0.75rem;
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+        color: #7b1fa2;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-10">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-tasks me-2"></i>
+                        {% if form.instance.pk %}
+                            Ödev Düzenle
+                        {% else %}
+                            Yeni Ödev Oluştur
+                        {% endif %}
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data" id="assignmentForm">
+                        {% csrf_token %}
+                        
+                        <!-- Ders Seçimi -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <i class="fas fa-book me-2"></i>Ders Bilgileri
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    {{ form.group|as_crispy_field }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Ödev Detayları -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <i class="fas fa-edit me-2"></i>Ödev Detayları
+                            </div>
+                            <div class="row">
+                                <div class="col-md-8">
+                                    {{ form.title|as_crispy_field }}
+                                </div>
+                                <div class="col-md-4">
+                                    {{ form.max_score|as_crispy_field }}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    {{ form.description|as_crispy_field }}
+                                </div>
+                            </div>
+                            <div class="row">
+                                <div class="col-12">
+                                    {{ form.file_url|as_crispy_field }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Teslim Tarihi -->
+                        <div class="form-section">
+                            <div class="section-title">
+                                <i class="fas fa-calendar-alt me-2"></i>Teslim Tarihi
+                            </div>
+                            
+                            <div class="preset-info">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Pratik Seçim:</strong> Aşağıdaki hızlı seçeneklerden birini kullanabilir veya manuel tarih girebilirsiniz.
+                            </div>
+                            
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    {{ form.due_date_preset|as_crispy_field }}
+                                </div>
+                                <div class="col-md-6">
+                                    {{ form.due_date|as_crispy_field }}
+                                    <div class="date-help">
+                                        <i class="fas fa-lightbulb me-2"></i>
+                                        Hızlı seçenek kullanıyorsanız bu alanı boş bırakabilirsiniz.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'courses:assignment_list' %}" class="btn btn-secondary btn-lg">
+                                <i class="fas fa-arrow-left me-2"></i>İptal
+                            </a>
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="fas fa-save me-2"></i>
+                                {% if form.instance.pk %}Güncelle{% else %}Oluştur{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const presetSelect = document.getElementById('id_due_date_preset');
+    const manualDate = document.getElementById('id_due_date');
+    
+    if (presetSelect && manualDate) {
+        presetSelect.addEventListener('change', function() {
+            if (this.value) {
+                manualDate.value = '';
+                manualDate.disabled = true;
+                manualDate.parentElement.style.opacity = '0.6';
+            } else {
+                manualDate.disabled = false;
+                manualDate.parentElement.style.opacity = '1';
+            }
+        });
+        
+        manualDate.addEventListener('change', function() {
+            if (this.value) {
+                presetSelect.value = '';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

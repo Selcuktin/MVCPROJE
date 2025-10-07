@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}{{ object.student.full_name }} - Not Düzenle{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header">
+                    <h4><i class="fas fa-star me-2"></i>Not Düzenle</h4>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>Öğrenci:</strong> {{ object.student.full_name }}<br>
+                            <strong>Ders:</strong> {{ object.group.course.code }} - {{ object.group.course.name }}
+                        </div>
+                        <div class="text-end">
+                            <small class="text-muted">Mevcut Harf Notu:</small><br>
+                            <span class="badge {% if object.grade == 'AA' or object.grade == 'BA' %}bg-success{% elif object.grade == 'FF' %}bg-danger{% elif object.grade == 'NA' %}bg-secondary{% else %}bg-warning{% endif %} fs-6">
+                                {{ object.grade }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.midterm_grade.label_tag }}
+                                    {{ form.midterm_grade }}
+                                    {% if form.midterm_grade.help_text %}
+                                        <small class="form-text text-muted">{{ form.midterm_grade.help_text }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.final_grade.label_tag }}
+                                    {{ form.final_grade }}
+                                    {% if form.final_grade.help_text %}
+                                        <small class="form-text text-muted">{{ form.final_grade.help_text }}</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.makeup_grade.label_tag }}
+                                    {{ form.makeup_grade }}
+                                    <small class="form-text text-muted">Final yerine geçer (daha yüksekse)</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.project_grade.label_tag }}
+                                    {{ form.project_grade }}
+                                    <small class="form-text text-muted">Bonus puan olarak eklenir</small>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    {{ form.attendance.label_tag }}
+                                    {{ form.attendance }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <h6><i class="fas fa-info-circle me-2"></i>Not Hesaplama Sistemi</h6>
+                            <ul class="mb-0">
+                                <li>Vize: %40, Final/Büt: %60</li>
+                                <li>Büt notu final notundan yüksekse final yerine geçer</li>
+                                <li>Proje notu bonus olarak eklenir (%10)</li>
+                                <li>Harf notu otomatik hesaplanır: AA(90+), BA(85+), BB(80+), CB(75+), CC(70+), DC(65+), DD(60+), FF(60-)</li>
+                            </ul>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between mt-4">
+                            <a href="{% url 'courses:group_detail' object.group.pk %}" class="btn btn-secondary">
+                                <i class="fas fa-arrow-left me-1"></i>İptal
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save me-1"></i>Notları Kaydet
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

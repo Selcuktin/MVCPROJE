@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Derslerim{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Ana Sayfa</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'teachers:dashboard' %}">Öğretmen Paneli</a></li>
+            <li class="breadcrumb-item active">Derslerim</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-book"></i> Derslerim</h2>
+    </div>
+
+    {% if course_groups %}
+        <div class="row">
+            {% for group in course_groups %}
+                <div class="col-lg-6 col-xl-4 mb-4">
+                    <div class="card h-100 shadow-sm">
+                        <div class="card-header bg-primary text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="fas fa-graduation-cap"></i> {{ group.course.code }}
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <h6 class="card-subtitle mb-2 text-muted">{{ group.course.name }}</h6>
+                            
+                            <div class="mb-3">
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar"></i> {{ group.semester }}<br>
+                                    <i class="fas fa-map-marker-alt"></i> {{ group.classroom }}<br>
+                                    <i class="fas fa-clock"></i> {{ group.schedule }}<br>
+                                    <i class="fas fa-users"></i> {{ group.enrollments.count }} öğrenci
+                                </small>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <span class="badge bg-info">{{ group.course.credits }} Kredi</span>
+                                {% if group.course.is_elective %}
+                                    <span class="badge bg-warning">Seçmeli</span>
+                                {% else %}
+                                    <span class="badge bg-success">Zorunlu</span>
+                                {% endif %}
+                                <span class="badge bg-secondary">{{ group.get_status_display }}</span>
+                            </div>
+                        </div>
+                        <div class="card-footer bg-light">
+                            <div class="btn-group w-100" role="group">
+                                <a href="{% url 'courses:detail' group.course.pk %}" class="btn btn-outline-primary btn-sm">
+                                    <i class="fas fa-eye"></i> Detay
+                                </a>
+                                <a href="{% url 'teachers:students' %}?course={{ group.course.pk }}" class="btn btn-outline-info btn-sm">
+                                    <i class="fas fa-users"></i> Öğrenciler
+                                </a>
+                                <a href="{% url 'notes:create' %}?course={{ group.course.pk }}" class="btn btn-outline-success btn-sm">
+                                    <i class="fas fa-plus"></i> Not Ekle
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center">
+            <i class="fas fa-info-circle fa-2x mb-3"></i>
+            <h4>Henüz Ders Atanmamış</h4>
+            <p>Size henüz herhangi bir ders atanmamış. Lütfen yönetici ile iletişime geçin.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

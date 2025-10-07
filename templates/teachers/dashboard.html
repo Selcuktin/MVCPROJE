@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+
+{% block title %}Öğretmen Paneli - Kurs Yönetim Sistemi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .quick-action-btn {
+        height: 120px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+        border-radius: 12px;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        padding: 15px 10px;
+    }
+    
+    .quick-action-btn:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        text-decoration: none;
+    }
+    
+    .quick-action-btn i {
+        margin-bottom: 8px;
+    }
+    
+    .quick-action-btn small {
+        font-size: 0.75rem;
+        opacity: 0.8;
+    }
+    
+    .card {
+        border-radius: 12px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .card:hover {
+        box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h2><i class="fas fa-tachometer-alt"></i> Öğretmen Paneli</h2>
+        {% if teacher %}
+            <p class="lead">Hoş geldiniz, {{ teacher.full_name }}!</p>
+        {% endif %}
+    </div>
+</div>
+
+{% if teacher %}
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ course_groups.count }}</h4>
+                        <p>Verdiğim Ders</p>
+                    </div>
+                    <i class="fas fa-book fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ total_students }}</h4>
+                        <p>Toplam Öğrenci</p>
+                    </div>
+                    <i class="fas fa-users fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-warning text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ recent_assignments.count }}</h4>
+                        <p>Aktif Ödev</p>
+                    </div>
+                    <i class="fas fa-tasks fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card bg-info text-white">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4>{{ teacher.department }}</h4>
+                        <p>Bölüm</p>
+                    </div>
+                    <i class="fas fa-building fa-2x"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-book"></i> Verdiğim Dersler</h5>
+                <a href="{% url 'courses:group_create' %}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus"></i> Yeni Grup
+                </a>
+            </div>
+            <div class="card-body">
+                {% for group in course_groups %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>{{ group.course.code }}</strong> - {{ group.course.name }}
+                        <br>
+                        <small class="text-muted">{{ group.classroom }} - {{ group.schedule }}</small>
+                        <br>
+                        <small class="text-success">{{ group.enrollments.count }} öğrenci</small>
+                    </div>
+                    <a href="{% url 'courses:group_detail' group.pk %}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-eye"></i>
+                    </a>
+                </div>
+                <hr>
+                {% empty %}
+                <p class="text-muted">Henüz ders grubu yok.</p>
+                {% endfor %}
+                <a href="{% url 'teachers:courses' %}" class="btn btn-primary btn-sm">Tüm Dersleri Görüntüle</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-tasks"></i> Son Ödevler</h5>
+                <a href="{% url 'courses:assignment_create' %}" class="btn btn-warning btn-sm">
+                    <i class="fas fa-plus"></i> Yeni Ödev
+                </a>
+            </div>
+            <div class="card-body">
+                {% for assignment in recent_assignments %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>{{ assignment.title }}</strong>
+                        <br>
+                        <small class="text-muted">{{ assignment.group.course.name }}</small>
+                        <br>
+                        <small class="text-muted">Son Teslim: {{ assignment.due_date|date:"d.m.Y H:i" }}</small>
+                    </div>
+                    <span class="badge bg-{% if assignment.due_date > now %}warning{% else %}danger{% endif %}">
+                        {% if assignment.due_date > now %}Aktif{% else %}Süresi Doldu{% endif %}
+                    </span>
+                </div>
+                <hr>
+                {% empty %}
+                <p class="text-muted">Henüz ödev yok.</p>
+                {% endfor %}
+                <a href="{% url 'teachers:assignments' %}" class="btn btn-warning btn-sm">Tüm Ödevleri Görüntüle</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-bullhorn"></i> Son Duyurular</h5>
+                <a href="{% url 'courses:announcement_create' %}" class="btn btn-info btn-sm">
+                    <i class="fas fa-plus"></i> Yeni Duyuru
+                </a>
+            </div>
+            <div class="card-body">
+                {% for announcement in recent_announcements %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <div>
+                        <strong>{{ announcement.title }}</strong>
+                        <br>
+                        <small class="text-muted">{{ announcement.group.course.name }}</small>
+                        <br>
+                        <small class="text-muted">{{ announcement.create_date|date:"d.m.Y H:i" }}</small>
+                    </div>
+                    <span class="badge bg-{% if announcement.status == 'active' %}success{% else %}secondary{% endif %}">
+                        {{ announcement.get_status_display }}
+                    </span>
+                </div>
+                <hr>
+                {% empty %}
+                <p class="text-muted">Henüz duyuru yok.</p>
+                {% endfor %}
+                <a href="{% url 'courses:announcement_list' %}" class="btn btn-info btn-sm">Tüm Duyuruları Görüntüle</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-bullhorn"></i> Hızlı İşlemler</h5>
+            </div>
+            <div class="card-body">
+                <div class="row justify-content-center">
+                    <div class="col-md-4">
+                        <a href="{% url 'courses:assignment_create' %}" class="btn btn-outline-warning w-100 mb-2 quick-action-btn">
+                            <i class="fas fa-tasks fa-2x mb-2"></i><br>Yeni Ödev<br><small>Oluştur</small>
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="{% url 'courses:announcement_create' %}" class="btn btn-outline-info w-100 mb-2 quick-action-btn">
+                            <i class="fas fa-bullhorn fa-2x mb-2"></i><br>Duyuru<br><small>Yayınla</small>
+                        </a>
+                    </div>
+                    <div class="col-md-4">
+                        <a href="{% url 'notes:create' %}" class="btn btn-outline-secondary w-100 mb-2 quick-action-btn">
+                            <i class="fas fa-sticky-note fa-2x mb-2"></i><br>Not<br><small>Ekle</small>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% else %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="alert alert-warning">
+            <h4>Öğretmen Profili Bulunamadı</h4>
+            <p>Hesabınız öğretmen profili ile ilişkilendirilmemiş. Lütfen yönetici ile iletişime geçin.</p>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0"><i class="fas fa-key"></i> Örnek Giriş Bilgileri</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6 class="text-primary"><i class="fas fa-chalkboard-teacher"></i> Öğretmen Girişi</h6>
+                    <small class="text-muted">
+                        <strong>Kullanıcı Adı:</strong> teacher1<br>
+                        <strong>Şifre:</strong> teacher123
+                    </small>
+                </div>
+                <div class="mb-3">
+                    <h6 class="text-success"><i class="fas fa-user-graduate"></i> Öğrenci Girişi</h6>
+                    <small class="text-muted">
+                        <strong>Kullanıcı Adı:</strong> student1<br>
+                        <strong>Şifre:</strong> student123
+                    </small>
+                </div>
+                <div class="mb-0">
+                    <h6 class="text-danger"><i class="fas fa-user-shield"></i> Admin Girişi</h6>
+                    <small class="text-muted">
+                        <strong>Kullanıcı Adı:</strong> admin<br>
+                        <strong>Şifre:</strong> admin123
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
