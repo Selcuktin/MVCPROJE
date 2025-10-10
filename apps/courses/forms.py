@@ -1,0 +1,261 @@
+"""
+DOSYA: apps/courses/forms.py
+AMAÇ: Ders yönetimi form sınıfları
+KULLANIM: 
+- CourseForm: Ders oluşturma/düzenleme
+- CourseGroupForm: Ders grubu yönetimi
+- AssignmentForm: Ödev oluşturma (hızlı tarih seçenekleri ile)
+- SubmissionForm: Öğrenci ödev teslimi
+- AnnouncementForm: Duyuru yayınlama
+- GradeForm: Not girişi
+- CourseContentForm: Ders içeriği (döküman, video) ekleme
+"""
+from django import forms
+from django.utils import timezone
+from .models import Course, CourseGroup, Assignment, Submission, Announcement, Enrollment, CourseContent
+from apps.teachers.models import Teacher
+
+class CourseForm(forms.ModelForm):
+    class Meta:
+        model = Course
+        fields = ['code', 'name', 'credits', 'description', 'department', 'semester', 'capacity', 'is_elective', 'status']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 4}),
+        }
+        labels = {
+            'code': 'Ders Kodu',
+            'name': 'Ders Adı',
+            'credits': 'Kredi',
+            'description': 'Açıklama',
+            'department': 'Bölüm',
+            'semester': 'Dönem',
+            'capacity': 'Kapasite',
+            'is_elective': 'Seçmeli Ders',
+            'status': 'Durum',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            self.fields[field].widget.attrs.update({'class': 'form-control'})
+        
+        self.fields['is_elective'].widget.attrs.update({'class': 'form-check-input'})
+
+class CourseGroupForm(forms.ModelForm):
+    class Meta:
+        model = CourseGroup
+        fields = ['course', 'teacher', 'semester', 'classroom', 'schedule', 'status']
+        labels = {
+            'course': 'Ders',
+            'teacher': 'Öğretmen',
+            'semester': 'Dönem',
+            'classroom': 'Sınıf',
+            'schedule': 'Program',
+            'status': 'Durum',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields:
+            self.fields[field].widget.attrs.update({'class': 'form-control'})
+        
+        self.fields['teacher'].queryset = Teacher.objects.filter(status='active')
+
+class AssignmentForm(forms.ModelForm):
+    # Pratik teslim tarihi seçenekleri
+    DUE_DATE_CHOICES = [
+        ('', 'Manuel tarih seç'),
+        ('1_day', '1 Gün sonra'),
+        ('3_days', '3 Gün sonra'),
+        ('1_week', '1 Hafta sonra'),
+        ('2_weeks', '2 Hafta sonra'),
+        ('3_weeks', '3 Hafta sonra'),
+        ('1_month', '1 Ay sonra'),
+    ]
+    
+    due_date_preset = forms.ChoiceField(
+        choices=DUE_DATE_CHOICES,
+        required=False,
+        label='Hızlı Teslim Tarihi',
+        widget=forms.Select(attrs={'class': 'form-control'})
+    )
+    
+    class Meta:
+        model = Assignment
+        fields = ['group', 'title', 'description', 'file_url', 'due_date_preset', 'due_date', 'max_score']
+        widgets = {
+            'description': forms.Textarea(attrs={'rows': 4}),
+            'due_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+        }
+        labels = {
+            'group': 'Ders Grubu',
+            'title': 'Başlık',
+            'description': 'Açıklama',
+            'file_url': 'Dosya',
+            'due_date': 'Manuel Teslim Tarihi',
+            'max_score': 'Maksimum Puan',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        for field in self.fields:
+            if field != 'due_date_preset':
+                self.fields[field].widget.attrs.update({'class': 'form-control'})
+        
+        # Ders grubu seçeneklerini ders ismiyle birlikte göster
+        if user and hasattr(user, 'userprofile') and user.userprofile.user_type == 'teacher':
+            try:
+                teacher = Teacher.objects.get(user=user)
+                groups = CourseGroup.objects.filter(teacher=teacher, status='active').select_related('course')
+                self.fields['group'].queryset = groups
+                
+                # Dropdown'da ders ismini göster
+                choices = [(group.id, f"{group.course.name} - {group.course.code} ({group.semester})") 
+                          for group in groups]
+                self.fields['group'].choices = [('', '---------')] + choices
+                
+            except Teacher.DoesNotExist:
+                self.fields['group'].queryset = CourseGroup.objects.none()
+        
+        # Due date alanını opsiyonel yap
+        self.fields['due_date'].required = False
+        self.fields['due_date'].help_text = 'Hızlı seçenek kullanmıyorsanız manuel tarih girin'
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        due_date_preset = cleaned_data.get('due_date_preset')
+        due_date = cleaned_data.get('due_date')
+        
+        # Eğer preset seçilmişse, due_date'i hesapla
+        if due_date_preset:
+            from datetime import timedelta
+            now = timezone.now()
+            
+            if due_date_preset == '1_day':
+                cleaned_data['due_date'] = now + timedelta(days=1)
+            elif due_date_preset == '3_days':
+                cleaned_data['due_date'] = now + timedelta(days=3)
+            elif due_date_preset == '1_week':
+                cleaned_data['due_date'] = now + timedelta(weeks=1)
+            elif due_date_preset == '2_weeks':
+                cleaned_data['due_date'] = now + timedelta(weeks=2)
+            elif due_date_preset == '3_weeks':
+                cleaned_data['due_date'] = now + timedelta(weeks=3)
+            elif due_date_preset == '1_month':
+                cleaned_data['due_date'] = now + timedelta(days=30)
+        
+        # Eğer ne preset ne de manuel tarih seçilmişse hata ver
+        elif not due_date:
+            raise forms.ValidationError('Lütfen hızlı seçenek kullanın veya manuel tarih girin.')
+        
+        # Manuel tarih kontrolü
+        elif due_date and due_date <= timezone.now():
+            raise forms.ValidationError('Teslim tarihi gelecekte olmalıdır.')
+        
+        return cleaned_data
+
+class SubmissionForm(forms.ModelForm):
+    class Meta:
+        model = Submission
+        fields = ['file_url']
+        labels = {
+            'file_url': 'Ödev Dosyası',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['file_url'].widget.attrs.update({'class': 'form-control'})
+        self.fields['file_url'].required = True
+
+class AnnouncementForm(forms.ModelForm):
+    class Meta:
+        model = Announcement
+        fields = ['group', 'title', 'content', 'expire_date']
+        widgets = {
+            'content': forms.Textarea(attrs={'rows': 6}),
+            'expire_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
+        }
+        labels = {
+            'group': 'Ders Grubu',
+            'title': 'Başlık',
+            'content': 'İçerik',
+            'expire_date': 'Son Geçerlilik Tarihi',
+        }
+    
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        
+        for field in self.fields:
+            self.fields[field].widget.attrs.update({'class': 'form-control'})
+        
+        self.fields['expire_date'].required = False
+        
+        if user and hasattr(user, 'userprofile') and user.userprofile.user_type == 'teacher':
+            try:
+                teacher = Teacher.objects.get(user=user)
+                self.fields['group'].queryset = CourseGroup.objects.filter(teacher=teacher, status='active')
+            except Teacher.DoesNotExist:
+                self.fields['group'].queryset = CourseGroup.objects.none()
+
+class EnrollmentForm(forms.ModelForm):
+    class Meta:
+        model = Enrollment
+        fields = []  # No fields needed, student and group will be set in view
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+class GradeForm(forms.ModelForm):
+    class Meta:
+        model = Enrollment
+        fields = ['midterm_grade', 'final_grade', 'makeup_grade', 'project_grade', 'attendance']
+        widgets = {
+            'midterm_grade': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'max': '100', 'step': '0.1'}),
+            'final_grade': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'max': '100', 'step': '0.1'}),
+            'makeup_grade': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'max': '100', 'step': '0.1'}),
+            'project_grade': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'max': '100', 'step': '0.1'}),
+            'attendance': forms.NumberInput(attrs={'class': 'form-control', 'min': '0', 'max': '100'}),
+        }
+        labels = {
+            'midterm_grade': 'Vize Notu',
+            'final_grade': 'Final Notu',
+            'makeup_grade': 'Büt Notu',
+            'project_grade': 'Proje Notu',
+            'attendance': 'Devam (%)',
+        }
+
+class CourseContentForm(forms.ModelForm):
+    class Meta:
+        model = CourseContent
+        fields = ['week_number', 'title', 'description', 'content_type', 'file', 'url', 'is_active']
+        widgets = {
+            'week_number': forms.NumberInput(attrs={'class': 'form-control', 'min': '1', 'max': '16'}),
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 3}),
+            'content_type': forms.Select(attrs={'class': 'form-control'}),
+            'file': forms.FileInput(attrs={'class': 'form-control'}),
+            'url': forms.URLInput(attrs={'class': 'form-control'}),
+            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+        }
+        labels = {
+            'week_number': 'Hafta Numarası',
+            'title': 'Başlık',
+            'description': 'Açıklama',
+            'content_type': 'İçerik Tipi',
+            'file': 'Dosya',
+            'url': 'Link (Opsiyonel)',
+            'is_active': 'Aktif',
+        }
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        file = cleaned_data.get('file')
+        url = cleaned_data.get('url')
+        
+        if not file and not url:
+            raise forms.ValidationError('Lütfen bir dosya yükleyin veya bir link girin.')
+        
+        return cleaned_data

@@ -15,6 +15,9 @@
     <style>
         body {
             background-color: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
         .navbar-brand {
             font-weight: bold;
@@ -26,20 +29,23 @@
         .btn {
             border-radius: 0.375rem;
         }
+        main {
+            flex: 1;
+        }
         .footer {
             background-color: #343a40;
             color: white;
             padding: 1rem 0;
-            margin-top: 2rem;
+            margin-top: auto;
         }
     </style>
 </head>
 <body>
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container">
+        <div class="container-fluid">
             <a class="navbar-brand" href="{% url 'home' %}">
-                <i class="fas fa-graduation-cap me-2"></i>Kurs Yönetimi
+                <i class="fas fa-graduation-cap me-2"></i>Yönetim Paneli
             </a>
             
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -48,21 +54,16 @@
             
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="{% url 'home' %}">
-                            <i class="fas fa-home me-1"></i>Ana Sayfa
-                        </a>
-                    </li>
-                    
                     {% if user.is_authenticated %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'home' %}">
+                                <i class="fas fa-home me-1"></i>Ana Sayfa
+                            </a>
+                        </li>
+                        
                         {% if user.userprofile.user_type == 'student' %}
                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'students:dashboard' %}">
-                                    <i class="fas fa-tachometer-alt me-1"></i>Panelim
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'students:courses' %}">
+                                <a class="nav-link" href="{% url 'courses:list' %}">
                                     <i class="fas fa-book me-1"></i>Derslerim
                                 </a>
                             </li>
@@ -73,18 +74,13 @@
                             </li>
                         {% elif user.userprofile.user_type == 'teacher' %}
                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'teachers:dashboard' %}">
-                                    <i class="fas fa-chalkboard-teacher me-1"></i>Panelim
-                                </a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'teachers:courses' %}">
+                                <a class="nav-link" href="{% url 'courses:list' %}">
                                     <i class="fas fa-book me-1"></i>Derslerim
                                 </a>
                             </li>
                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'teachers:students' %}">
-                                    <i class="fas fa-users me-1"></i>Öğrencilerim
+                                <a class="nav-link" href="{% url 'students:list' %}">
+                                    <i class="fas fa-user-graduate me-1"></i>Öğrencilerim
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -92,15 +88,12 @@
                                     <i class="fas fa-star me-1"></i>Notlar
                                 </a>
                             </li>
-                        {% endif %}
-                        
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'courses:list' %}">
-                                <i class="fas fa-list me-1"></i>Dersler
-                            </a>
-                        </li>
-                        
-                        {% if user.is_staff %}
+                        {% else %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'courses:list' %}">
+                                    <i class="fas fa-book me-1"></i>Dersler
+                                </a>
+                            </li>
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'students:list' %}">
                                     <i class="fas fa-user-graduate me-1"></i>Öğrenciler
@@ -111,6 +104,18 @@
                                     <i class="fas fa-chalkboard-teacher me-1"></i>Öğretmenler
                                 </a>
                             </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'notes:list' %}">
+                                    <i class="fas fa-star me-1"></i>Notlar
+                                </a>
+                            </li>
+                            {% if user.is_staff %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'utils:activity_log_list' %}">
+                                    <i class="fas fa-history me-1"></i>Loglar
+                                </a>
+                            </li>
+                            {% endif %}
                         {% endif %}
                     {% endif %}
                 </ul>
@@ -118,23 +123,28 @@
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}
                         <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
                                 <i class="fas fa-user me-1"></i>{{ user.get_full_name|default:user.username }}
                             </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'accounts:profile' %}">
-                                    <i class="fas fa-user-edit me-1"></i>Profil
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="{% url 'utils:my_activity_log' %}">
+                                    <i class="fas fa-history me-2"></i>Aktivitelerim
                                 </a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'accounts:logout' %}">
-                                    <i class="fas fa-sign-out-alt me-1"></i>Çıkış
+                                <li><a class="dropdown-item" href="{% url 'users:logout' %}">
+                                    <i class="fas fa-sign-out-alt me-2"></i>Çıkış
                                 </a></li>
                             </ul>
                         </li>
                     {% else %}
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'accounts:login' %}">
+                            <a class="nav-link" href="{% url 'users:login' %}">
                                 <i class="fas fa-sign-in-alt me-1"></i>Giriş
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'users:register' %}">
+                                <i class="fas fa-user-plus me-1"></i>Kayıt Ol
                             </a>
                         </li>
                     {% endif %}
@@ -156,15 +166,14 @@
     {% endif %}
 
     <!-- Main Content -->
-    <main class="container mt-4">
-        {% block content %}
-        {% endblock %}
+    <main class="py-4">
+        {% block content %}{% endblock %}
     </main>
 
     <!-- Footer -->
     <footer class="footer mt-auto">
         <div class="container text-center">
-            <p class="mb-0">&copy; 2024 Kurs Yönetim Sistemi. Tüm hakları saklıdır.</p>
+            <span>&copy; 2025 Kurs Yönetim Sistemi. Tüm hakları saklıdır.</span>
         </div>
     </footer>
 

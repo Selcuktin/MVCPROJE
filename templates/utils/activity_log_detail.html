@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+
+{% block title %}Aktivite Detayı - Kurs Yönetim Sistemi{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <a href="{% url 'utils:activity_log_list' %}" class="btn btn-outline-secondary mb-3">
+                <i class="fas fa-arrow-left me-1"></i>Geri
+            </a>
+            <h2><i class="fas fa-info-circle me-2"></i>Aktivite Detayı</h2>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <!-- Basic Info Card -->
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info me-2"></i>Genel Bilgiler</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-4"><strong>Kullanıcı:</strong></div>
+                        <div class="col-md-8">
+                            {% if log.user %}
+                                <i class="fas fa-user me-1"></i>{{ log.user.get_full_name|default:log.user.username }}
+                            {% else %}
+                                <span class="text-muted">Anonim</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4"><strong>İşlem:</strong></div>
+                        <div class="col-md-8">
+                            {% if log.action == 'create' %}
+                                <span class="badge bg-success">{{ log.get_action_display }}</span>
+                            {% elif log.action == 'update' %}
+                                <span class="badge bg-warning">{{ log.get_action_display }}</span>
+                            {% elif log.action == 'delete' %}
+                                <span class="badge bg-danger">{{ log.get_action_display }}</span>
+                            {% elif log.action == 'login' %}
+                                <span class="badge bg-info">{{ log.get_action_display }}</span>
+                            {% elif log.action == 'logout' %}
+                                <span class="badge bg-secondary">{{ log.get_action_display }}</span>
+                            {% else %}
+                                <span class="badge bg-primary">{{ log.get_action_display }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4"><strong>Model:</strong></div>
+                        <div class="col-md-8">{{ log.model_name }}</div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4"><strong>Nesne ID:</strong></div>
+                        <div class="col-md-8">{{ log.object_id|default:"-" }}</div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4"><strong>Nesne:</strong></div>
+                        <div class="col-md-8">{{ log.object_repr|default:"-" }}</div>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-4"><strong>Zaman:</strong></div>
+                        <div class="col-md-8">
+                            <i class="fas fa-clock me-1"></i>{{ log.timestamp|date:"d.m.Y H:i:s" }}
+                        </div>
+                    </div>
+                    
+                    {% if log.description %}
+                    <div class="row mb-3">
+                        <div class="col-md-4"><strong>Açıklama:</strong></div>
+                        <div class="col-md-8">{{ log.description }}</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Change History -->
+            {% if changes %}
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h5 class="mb-0"><i class="fas fa-exchange-alt me-2"></i>Değişiklikler</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Alan</th>
+                                    <th>Eski Değer</th>
+                                    <th></th>
+                                    <th>Yeni Değer</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for change in changes %}
+                                <tr>
+                                    <td><strong>{{ change.field_name }}</strong></td>
+                                    <td>
+                                        <span class="badge bg-light text-dark">{{ change.old_value|default:"<boş>" }}</span>
+                                    </td>
+                                    <td class="text-center">
+                                        <i class="fas fa-arrow-right"></i>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-success">{{ change.new_value|default:"<boş>" }}</span>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-md-4">
+            <!-- Technical Info Card -->
+            <div class="card">
+                <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="fas fa-server me-2"></i>Teknik Bilgiler</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <strong>IP Adresi:</strong>
+                        <p class="mb-0">{{ log.ip_address|default:"-" }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Tarayıcı:</strong>
+                        <p class="mb-0 small text-muted">{{ log.user_agent|default:"-" }}</p>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <strong>Log ID:</strong>
+                        <p class="mb-0"><code>{{ log.id }}</code></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+

@@ -1,0 +1,282 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ course.name }} - Yönetim Paneli{% endblock %}
+
+{% block extra_css %}
+<style>
+    .course-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 12px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .info-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        border-left: 4px solid #667eea;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    .student-item {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 0.5rem;
+        border: 1px solid #e0e0e0;
+        transition: all 0.3s ease;
+    }
+    
+    .student-item:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        transform: translateY(-2px);
+    }
+    
+    .add-student-form {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Ders Başlığı -->
+    <div class="course-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h2 class="mb-2">{{ course.code }} - {{ course.name }}</h2>
+                <p class="mb-0 opacity-75">
+                    <i class="fas fa-building me-2"></i>{{ course.department }}
+                    <span class="ms-3">
+                        <i class="fas fa-star me-2"></i>{{ course.credits }} Kredi
+                    </span>
+                    <span class="ms-3">
+                        <i class="fas fa-calendar me-2"></i>{{ course.get_semester_display }}
+                    </span>
+                </p>
+            </div>
+            <div>
+                <span class="badge bg-{% if course.is_elective %}warning{% else %}light{% endif %} fs-6 me-2">
+                    {% if course.is_elective %}Seçmeli{% else %}Zorunlu{% endif %}
+                </span>
+                <span class="badge bg-success fs-6">{{ course.get_status_display }}</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Sol Taraf - Ders Bilgileri -->
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i>Ders Bilgileri</h5>
+                </div>
+                <div class="card-body">
+                    <div class="info-card">
+                        <small class="text-muted">Kapasite</small>
+                        <h4 class="mb-0">{{ enrolled_count }}/{{ course.capacity }}</h4>
+                    </div>
+                    
+                    <div class="info-card">
+                        <small class="text-muted">Ders Açıklaması</small>
+                        <p class="mb-0 mt-2">{{ course.description|default:"Açıklama bulunmuyor." }}</p>
+                    </div>
+                    
+                    {% if teacher %}
+                    <div class="info-card">
+                        <small class="text-muted">Öğretmen</small>
+                        <h6 class="mb-0 mt-2">
+                            <i class="fas fa-chalkboard-teacher me-2 text-primary"></i>
+                            {{ teacher.full_name }}
+                        </h6>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="d-grid gap-2">
+                <a href="{% url 'courses:list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Ders Listesine Dön
+                </a>
+                {% if user.is_staff or user.userprofile.user_type == 'admin' or user.userprofile.user_type == 'teacher' %}
+                <a href="{% url 'courses:update' course.pk %}" class="btn btn-warning">
+                    <i class="fas fa-edit me-1"></i>Dersi Düzenle
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Sağ Taraf - Öğrenci Listesi -->
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5 class="mb-0"><i class="fas fa-user-graduate me-2"></i>Kayıtlı Öğrenciler ({{ enrolled_count }})</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Öğrenci Ekleme Formu -->
+                    {% if user.is_staff or user.userprofile.user_type == 'admin' or user.userprofile.user_type == 'teacher' %}
+                    <div class="add-student-form">
+                        <h6 class="mb-3"><i class="fas fa-plus-circle me-2"></i>Öğrenci Ekle</h6>
+                        <form method="post" action="{% url 'courses:add_student' course.pk %}" class="row g-3">
+                            {% csrf_token %}
+                            <div class="col-md-9">
+                                <select name="student_id" class="form-select" required>
+                                    <option value="">Öğrenci Seçin...</option>
+                                    {% for student in available_students %}
+                                    <option value="{{ student.id }}">
+                                        {{ student.school_number }} - {{ student.full_name }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="fas fa-plus me-1"></i>Ekle
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                    {% endif %}
+
+                    <!-- Öğrenci Listesi -->
+                    <div class="student-list">
+                        {% for enrollment in enrollments %}
+                        <div class="student-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="flex-grow-1">
+                                    <h6 class="mb-1">
+                                        <i class="fas fa-user-circle me-2 text-primary"></i>
+                                        {{ enrollment.student.full_name }}
+                                    </h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-id-card me-1"></i>{{ enrollment.student.school_number }}
+                                        <span class="ms-3"><i class="fas fa-envelope me-1"></i>{{ enrollment.student.email }}</span>
+                                    </small>
+                                </div>
+                                <div>
+                                    <span class="badge bg-{% if enrollment.status == 'enrolled' %}success{% elif enrollment.status == 'completed' %}info{% else %}secondary{% endif %} me-2">
+                                        {{ enrollment.get_status_display }}
+                                    </span>
+                                    {% if user.is_staff or user.userprofile.user_type == 'admin' or user.userprofile.user_type == 'teacher' %}
+                                    <form method="post" action="{% url 'courses:remove_student' course.pk enrollment.student.id %}" style="display: inline;">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-outline-danger btn-sm" 
+                                                onclick="return confirm('{{ enrollment.student.full_name }} öğrencisini dersten çıkarmak istediğinize emin misiniz?')">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div class="alert alert-info text-center">
+                            <i class="fas fa-info-circle fa-2x mb-3"></i>
+                            <h5>Henüz kayıtlı öğrenci bulunmuyor</h5>
+                            <p class="mb-0">Yukarıdaki formu kullanarak öğrenci ekleyebilirsiniz.</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Haftalık İçerikler -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card shadow-sm">
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-book-open me-2"></i>Haftalık Ders İçerikleri</h5>
+                    {% if user.is_staff or user.userprofile.user_type == 'admin' or user.userprofile.user_type == 'teacher' %}
+                    <a href="{% url 'courses:content_create' course.pk %}" class="btn btn-light btn-sm">
+                        <i class="fas fa-plus me-1"></i>İçerik Ekle
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if contents %}
+                    <div class="accordion" id="weeklyContent">
+                        {% regroup contents by week_number as week_groups %}
+                        {% for week_group in week_groups %}
+                        <div class="accordion-item">
+                            <h2 class="accordion-header" id="heading{{ week_group.grouper }}">
+                                <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ week_group.grouper }}">
+                                    <strong>Hafta {{ week_group.grouper }}</strong>
+                                    <span class="badge bg-primary ms-2">{{ week_group.list|length }} içerik</span>
+                                </button>
+                            </h2>
+                            <div id="collapse{{ week_group.grouper }}" class="accordion-collapse collapse {% if forloop.first %}show{% endif %}" data-bs-parent="#weeklyContent">
+                                <div class="accordion-body">
+                                    <div class="list-group">
+                                        {% for content in week_group.list %}
+                                        <div class="list-group-item">
+                                            <div class="d-flex justify-content-between align-items-start">
+                                                <div class="flex-grow-1">
+                                                    <h6 class="mb-1">
+                                                        <i class="fas fa-{% if content.content_type == 'presentation' %}file-powerpoint text-danger{% elif content.content_type == 'video' %}video text-primary{% elif content.content_type == 'lecture' %}book text-success{% else %}file text-secondary{% endif %} me-2"></i>
+                                                        {{ content.title }}
+                                                        <span class="badge bg-secondary ms-2">{{ content.get_content_type_display }}</span>
+                                                    </h6>
+                                                    {% if content.description %}
+                                                    <p class="mb-2 text-muted small">{{ content.description }}</p>
+                                                    {% endif %}
+                                                    <small class="text-muted">
+                                                        <i class="fas fa-calendar me-1"></i>{{ content.upload_date|date:"d.m.Y H:i" }}
+                                                    </small>
+                                                </div>
+                                                <div class="btn-group" role="group">
+                                                    {% if content.file %}
+                                                    <a href="{{ content.file.url }}" class="btn btn-sm btn-outline-primary" download>
+                                                        <i class="fas fa-download"></i>
+                                                    </a>
+                                                    {% endif %}
+                                                    {% if content.url %}
+                                                    <a href="{{ content.url }}" class="btn btn-sm btn-outline-info" target="_blank">
+                                                        <i class="fas fa-external-link-alt"></i>
+                                                    </a>
+                                                    {% endif %}
+                                                    {% if user.is_staff or user.userprofile.user_type == 'admin' or user.userprofile.user_type == 'teacher' %}
+                                                    <a href="{% url 'courses:content_update' content.pk %}" class="btn btn-sm btn-outline-warning">
+                                                        <i class="fas fa-edit"></i>
+                                                    </a>
+                                                    <a href="{% url 'courses:content_delete' content.pk %}" class="btn btn-sm btn-outline-danger">
+                                                        <i class="fas fa-trash"></i>
+                                                    </a>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="alert alert-info text-center">
+                        <i class="fas fa-info-circle fa-2x mb-3"></i>
+                        <h5>Henüz içerik eklenmemiş</h5>
+                        <p class="mb-0">
+                            {% if user.is_staff or user.userprofile.user_type == 'admin' or user.userprofile.user_type == 'teacher' %}
+                            Yukarıdaki "İçerik Ekle" butonunu kullanarak haftalık içerik ekleyebilirsiniz.
+                            {% else %}
+                            Öğretmeniniz tarafından içerik eklendiğinde burada görüntülenecektir.
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

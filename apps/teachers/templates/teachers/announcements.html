@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+
+{% block title %}Duyurularım - Kurs Yönetim Sistemi{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="fas fa-bullhorn me-2"></i>Duyurularım
+            </h2>
+            <div>
+                <a href="{% url 'teachers:dashboard' %}" class="btn btn-secondary me-2">
+                    <i class="fas fa-arrow-left me-1"></i>Panele Dön
+                </a>
+                <a href="#" class="btn btn-primary">
+                    <i class="fas fa-plus me-1"></i>Yeni Duyuru
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>Tüm Duyurular
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if announcements %}
+                    <div class="row">
+                        {% for announcement in announcements %}
+                        <div class="col-md-6 col-lg-4 mb-4">
+                            <div class="card h-100">
+                                <div class="card-header d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">{{ announcement.title }}</h6>
+                                    {% if announcement.status == 'active' %}
+                                        <span class="badge bg-success">Aktif</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Pasif</span>
+                                    {% endif %}
+                                </div>
+                                <div class="card-body">
+                                    <p class="card-text">{{ announcement.content|truncatewords:20 }}</p>
+                                    <div class="mb-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-book me-1"></i>
+                                            {{ announcement.group.course.name }}
+                                        </small>
+                                    </div>
+                                    <div class="mb-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-calendar me-1"></i>
+                                            {{ announcement.create_date|date:"d.m.Y H:i" }}
+                                        </small>
+                                    </div>
+                                    {% if announcement.expire_date %}
+                                    <div class="mb-2">
+                                        <small class="text-muted">
+                                            <i class="fas fa-clock me-1"></i>
+                                            Son: {{ announcement.expire_date|date:"d.m.Y H:i" }}
+                                        </small>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                <div class="card-footer">
+                                    <a href="#" class="btn btn-sm btn-primary me-1">
+                                        <i class="fas fa-eye"></i> Görüntüle
+                                    </a>
+                                    <a href="#" class="btn btn-sm btn-warning me-1">
+                                        <i class="fas fa-edit"></i> Düzenle
+                                    </a>
+                                    <a href="#" class="btn btn-sm btn-danger">
+                                        <i class="fas fa-trash"></i> Sil
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-bullhorn fa-4x text-muted mb-3"></i>
+                        <h4 class="text-muted">Henüz duyuru yayınlamadınız</h4>
+                        <p class="text-muted">Öğrencileriniz için yeni duyuru yayınlamak için aşağıdaki butona tıklayın.</p>
+                        <a href="#" class="btn btn-primary">
+                            <i class="fas fa-plus me-1"></i>İlk Duyurunuzu Yayınlayın
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
