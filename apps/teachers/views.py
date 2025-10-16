@@ -22,7 +22,7 @@ class TeacherListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
         return self.request.user.is_staff or hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type in ['teacher', 'admin']
     
     def get_queryset(self):
-        queryset = Teacher.objects.all()
+        queryset = Teacher.objects.select_related().prefetch_related('course_groups__course')
         search = self.request.GET.get('search')
         department = self.request.GET.get('department')
         status = self.request.GET.get('status')
@@ -48,6 +48,17 @@ class TeacherDetailView(LoginRequiredMixin, DetailView):
     model = Teacher
     template_name = 'teachers/detail.html'
     context_object_name = 'teacher'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        teacher = self.get_object()
+        
+        # Get teacher's course groups
+        from apps.courses.models import CourseGroup
+        course_groups = CourseGroup.objects.filter(teacher=teacher).select_related('course').prefetch_related('enrollments')
+        context['course_groups'] = course_groups
+        
+        return context
 
 class TeacherDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'teachers/dashboard.html'
