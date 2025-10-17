@@ -1,123 +1,406 @@
 {% extends 'base.html' %}
 
-{% block title %}Giriş - Kurs Yönetim Sistemi{% endblock %}
+{% block title %}Giriş Yap - Kurs Yönetim Sistemi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .login-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        margin-top: -76px;
+        padding-top: 76px;
+        position: relative;
+    }
+    
+    .login-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 100" fill="white" opacity="0.05"><polygon points="0,0 1000,100 1000,0"/></svg>');
+        background-size: cover;
+    }
+    
+    .login-container {
+        position: relative;
+        z-index: 2;
+    }
+    
+    .login-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(10px);
+        border: none;
+        overflow: hidden;
+        animation: slideInUp 0.6s ease-out;
+    }
+    
+    .login-header {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+        border-radius: 20px 20px 0 0;
+    }
+    
+    .login-header h2 {
+        margin: 0;
+        font-weight: 600;
+        font-size: 1.8rem;
+    }
+    
+    .login-header p {
+        margin: 0.5rem 0 0 0;
+        opacity: 0.9;
+        font-size: 0.95rem;
+    }
+    
+    .login-body {
+        padding: 2.5rem;
+    }
+    
+    .form-label {
+        color: #6c757d;
+        font-weight: 500;
+        margin-bottom: 0.5rem;
+    }
+    
+    .form-control {
+        border: 2px solid #e9ecef;
+        border-radius: 15px;
+        padding: 1rem 0.75rem;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background: #f8f9fa;
+    }
+    
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        background: white;
+    }
+    
+    .login-btn {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border: none;
+        border-radius: 15px;
+        padding: 1rem;
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: white;
+        width: 100%;
+        transition: all 0.3s ease;
+        margin-bottom: 1.5rem;
+    }
+    
+    .login-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+    
+    .demo-card {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(10px);
+        border: none;
+        animation: slideInUp 0.6s ease-out 0.2s both;
+    }
+    
+    .demo-header {
+        background: linear-gradient(135deg, #f093fb, #f5576c);
+        color: white;
+        padding: 1.5rem;
+        text-align: center;
+        border-radius: 20px 20px 0 0;
+    }
+    
+    .demo-body {
+        padding: 2rem;
+    }
+    
+    .demo-account {
+        background: #f8f9fa;
+        border-radius: 15px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        border-left: 4px solid;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    
+    .demo-account:hover {
+        background: white;
+        transform: translateX(5px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .demo-account.admin {
+        border-left-color: #dc3545;
+    }
+    
+    .demo-account.teacher {
+        border-left-color: #0d6efd;
+    }
+    
+    .demo-account.student {
+        border-left-color: #198754;
+    }
+    
+    .demo-title {
+        font-weight: 600;
+        margin-bottom: 0.8rem;
+        display: flex;
+        align-items: center;
+    }
+    
+    .demo-title i {
+        margin-right: 0.5rem;
+    }
+    
+    .demo-credentials {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .demo-field {
+        flex: 1;
+        background: white;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        padding: 0.5rem 0.75rem;
+        font-family: monospace;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .demo-field:hover {
+        border-color: #667eea;
+        background: #f8f9ff;
+    }
+    
+    .demo-description {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin: 0;
+    }
+    
+    .back-to-home {
+        position: absolute;
+        top: 100px;
+        left: 2rem;
+        color: white;
+        text-decoration: none;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        z-index: 3;
+    }
+    
+    .back-to-home:hover {
+        color: white;
+        text-decoration: none;
+        transform: translateX(-5px);
+    }
+    
+    .register-link {
+        text-align: center;
+        padding-top: 1.5rem;
+        border-top: 1px solid #e9ecef;
+        margin-top: 1.5rem;
+    }
+    
+    .register-link a {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .register-link a:hover {
+        color: #764ba2;
+        text-decoration: underline;
+    }
+    
+    @keyframes slideInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @media (max-width: 768px) {
+        .login-section {
+            padding: 2rem 1rem;
+        }
+        
+        .login-body, .demo-body {
+            padding: 1.5rem;
+        }
+        
+        .demo-credentials {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .back-to-home {
+            position: static;
+            display: block;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="row justify-content-center">
-    <div class="col-md-8">
-        <div class="row">
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header">
-                        <h4 class="mb-0"><i class="fas fa-sign-in-alt"></i> Giriş Yap</h4>
-                    </div>
-                    <div class="card-body">
-                        <form method="post">
-                            {% csrf_token %}
-                            
-                            <div class="mb-3">
-                                <label for="{{ form.username.id_for_label }}" class="form-label">
-                                    <i class="fas fa-user me-1"></i>Kullanıcı Adı
-                                </label>
-                                {{ form.username }}
-                                {% if form.username.errors %}
-                                    <div class="text-danger">
-                                        {% for error in form.username.errors %}
-                                            <small>{{ error }}</small>
-                                        {% endfor %}
-                                    </div>
-                                {% endif %}
+<section class="login-section">
+    <a href="{% url 'home' %}" class="back-to-home">
+        <i class="fas fa-arrow-left me-2"></i>Ana Sayfaya Dön
+    </a>
+    
+    <div class="container login-container">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="row">
+                    <!-- Login Form -->
+                    <div class="col-lg-6 mb-4">
+                        <div class="login-card">
+                            <div class="login-header">
+                                <h2><i class="fas fa-sign-in-alt me-2"></i>Giriş Yap</h2>
+                                <p>Hesabınıza giriş yaparak devam edin</p>
                             </div>
                             
-                            <div class="mb-3">
-                                <label for="{{ form.password.id_for_label }}" class="form-label">
-                                    <i class="fas fa-lock me-1"></i>Şifre
-                                </label>
-                                {{ form.password }}
-                                {% if form.password.errors %}
-                                    <div class="text-danger">
-                                        {% for error in form.password.errors %}
-                                            <small>{{ error }}</small>
-                                        {% endfor %}
+                            <div class="login-body">
+                                <form method="post">
+                                    {% csrf_token %}
+                                    
+                                    <div class="mb-3">
+                                        <label for="{{ form.username.id_for_label }}" class="form-label">
+                                            <i class="fas fa-user me-2"></i>Kullanıcı Adı
+                                        </label>
+                                        {{ form.username }}
+                                        {% if form.username.errors %}
+                                            <div class="text-danger mt-1">
+                                                {% for error in form.username.errors %}
+                                                    <small><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</small>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
                                     </div>
-                                {% endif %}
-                            </div>
-                            
-                            {% if form.non_field_errors %}
-                                <div class="alert alert-danger">
-                                    {% for error in form.non_field_errors %}
-                                        {{ error }}
-                                    {% endfor %}
+                                    
+                                    <div class="mb-3">
+                                        <label for="{{ form.password.id_for_label }}" class="form-label">
+                                            <i class="fas fa-lock me-2"></i>Şifre
+                                        </label>
+                                        {{ form.password }}
+                                        {% if form.password.errors %}
+                                            <div class="text-danger mt-1">
+                                                {% for error in form.password.errors %}
+                                                    <small><i class="fas fa-exclamation-circle me-1"></i>{{ error }}</small>
+                                                {% endfor %}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    {% if form.non_field_errors %}
+                                        <div class="alert alert-danger">
+                                            {% for error in form.non_field_errors %}
+                                                <i class="fas fa-exclamation-triangle me-2"></i>{{ error }}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <button type="submit" class="login-btn">
+                                        <i class="fas fa-sign-in-alt me-2"></i>Giriş Yap
+                                    </button>
+                                </form>
+                                
+                                <div class="register-link">
+                                    <p class="mb-0">Hesabınız yok mu? <a href="{% url 'users:register' %}">Hemen kayıt olun</a></p>
                                 </div>
-                            {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Demo Accounts -->
+                    <div class="col-lg-6">
+                        <div class="demo-card">
+                            <div class="demo-header">
+                                <h4 class="mb-0"><i class="fas fa-key me-2"></i>Demo Hesaplar</h4>
+                                <p class="mb-0 mt-2 opacity-75">Test için hazır hesapları kullanın</p>
+                            </div>
                             
-                            <button type="submit" class="btn btn-primary w-100">
-                                <i class="fas fa-sign-in-alt"></i> Giriş Yap
-                            </button>
-                        </form>
-                        
-                        <hr>
-                        <div class="text-center">
-                            <p>Hesabınız yok mu? <a href="{% url 'users:register' %}">Kayıt olun</a></p>
+                            <div class="demo-body">
+                                <div class="demo-account admin" onclick="fillLogin('admin', 'admin123')">
+                                    <div class="demo-title text-danger">
+                                        <i class="fas fa-user-shield"></i>Yönetici Hesabı
+                                    </div>
+                                    <div class="demo-credentials">
+                                        <div class="demo-field">admin</div>
+                                        <div class="demo-field">admin123</div>
+                                    </div>
+                                    <p class="demo-description">Tüm yetkilere sahip sistem yöneticisi</p>
+                                </div>
+                                
+                                <div class="demo-account teacher" onclick="fillLogin('teacher1', 'teacher123')">
+                                    <div class="demo-title text-primary">
+                                        <i class="fas fa-chalkboard-teacher"></i>Öğretmen Hesabı
+                                    </div>
+                                    <div class="demo-credentials">
+                                        <div class="demo-field">teacher1</div>
+                                        <div class="demo-field">teacher123</div>
+                                    </div>
+                                    <p class="demo-description">Ders ve ödev yönetimi yetkisi</p>
+                                </div>
+                                
+                                <div class="demo-account student" onclick="fillLogin('student1', 'student123')">
+                                    <div class="demo-title text-success">
+                                        <i class="fas fa-user-graduate"></i>Öğrenci Hesabı
+                                    </div>
+                                    <div class="demo-credentials">
+                                        <div class="demo-field">student1</div>
+                                        <div class="demo-field">student123</div>
+                                    </div>
+                                    <p class="demo-description">Ders takibi ve ödev teslimi</p>
+                                </div>
+                                
+                                <div class="text-center mt-3">
+                                    <small class="text-muted">
+                                        <i class="fas fa-info-circle me-1"></i>
+                                        Hesap bilgilerini otomatik doldurmak için kartlara tıklayın
+                                    </small>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-6">
-                <div class="card">
-                    <div class="card-header bg-info text-white">
-                        <h6 class="mb-0"><i class="fas fa-key"></i> Örnek Giriş Bilgileri</h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="mb-3">
-                            <h6 class="text-danger"><i class="fas fa-user-shield"></i> Admin Girişi</h6>
-                            <div class="input-group mb-2">
-                                <span class="input-group-text"><i class="fas fa-user"></i></span>
-                                <input type="text" class="form-control" value="admin" readonly onclick="this.select()">
-                            </div>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                                <input type="text" class="form-control" value="admin123" readonly onclick="this.select()">
-                            </div>
-                            <small class="text-muted">Tüm yetkilere sahip admin hesabı</small>
-                        </div>
-                        
-                        <div class="mb-3">
-                            <h6 class="text-primary"><i class="fas fa-chalkboard-teacher"></i> Öğretmen Girişi</h6>
-                            <div class="input-group mb-2">
-                                <span class="input-group-text"><i class="fas fa-user"></i></span>
-                                <input type="text" class="form-control" value="teacher1" readonly onclick="this.select()">
-                            </div>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                                <input type="text" class="form-control" value="teacher123" readonly onclick="this.select()">
-                            </div>
-                            <small class="text-muted">Ders ve not yönetimi yetkisi</small>
-                        </div>
-                        
-                        <div class="mb-0">
-                            <h6 class="text-success"><i class="fas fa-user-graduate"></i> Öğrenci Girişi</h6>
-                            <div class="input-group mb-2">
-                                <span class="input-group-text"><i class="fas fa-user"></i></span>
-                                <input type="text" class="form-control" value="student1" readonly onclick="this.select()">
-                            </div>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                                <input type="text" class="form-control" value="student123" readonly onclick="this.select()">
-                            </div>
-                            <small class="text-muted">Ders ve not görüntüleme yetkisi</small>
-                        </div>
-                    </div>
-                    <div class="card-footer bg-light">
-                        <small class="text-muted">
-                            <i class="fas fa-info-circle"></i> 
-                            Bilgileri kopyalamak için üzerine tıklayın
-                        </small>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+</section>
+
+<script>
+function fillLogin(username, password) {
+    document.getElementById('{{ form.username.id_for_label }}').value = username;
+    document.getElementById('{{ form.password.id_for_label }}').value = password;
+    
+    // Focus effect
+    document.getElementById('{{ form.username.id_for_label }}').focus();
+    document.getElementById('{{ form.username.id_for_label }}').blur();
+    document.getElementById('{{ form.password.id_for_label }}').focus();
+    document.getElementById('{{ form.password.id_for_label }}').blur();
+}
+</script>
 {% endblock %}

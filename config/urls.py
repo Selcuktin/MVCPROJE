@@ -16,7 +16,7 @@ urlpatterns = [
     path('students/', include('apps.students.urls')),
     path('teachers/', include('apps.teachers.urls')),
     path('notes/', include('apps.notes.urls')),
-    path('utils/', include('utils.urls')),
+
 ]
 
 if settings.DEBUG:

@@ -43,3 +43,28 @@ class UserProfile(models.Model):
     
     def __str__(self):
         return f"{self.user.get_full_name()} Profile"
+
+
+class NotificationStatus(models.Model):
+    """Track notification read status for users"""
+    NOTIFICATION_TYPES = [
+        ('assignment', 'Ödev'),
+        ('announcement', 'Duyuru'),
+        ('grade', 'Not'),
+        ('welcome', 'Hoş Geldin'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='notification_statuses')
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+    notification_id = models.CharField(max_length=100)  # e.g., "assignment_123"
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    read_at = models.DateTimeField(null=True, blank=True)
+    
+    class Meta:
+        unique_together = ['user', 'notification_id']
+        verbose_name = 'Bildirim Durumu'
+        verbose_name_plural = 'Bildirim Durumları'
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.notification_id} ({'Okundu' if self.is_read else 'Okunmadı'})"

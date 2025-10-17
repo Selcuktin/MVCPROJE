@@ -64,6 +64,26 @@
                     </h4>
                 </div>
                 <div class="card-body">
+                    <!-- Form Hataları -->
+                    {% if form.errors %}
+                        <div class="alert alert-danger" role="alert">
+                            <h6><i class="fas fa-exclamation-triangle me-2"></i>Form Hataları:</h6>
+                            <ul class="mb-0">
+                                {% for field, errors in form.errors.items %}
+                                    {% for error in errors %}
+                                        <li>
+                                            {% if field == '__all__' %}
+                                                <strong>Genel Hata:</strong> {{ error }}
+                                            {% else %}
+                                                <strong>{{ field }}:</strong> {{ error }}
+                                            {% endif %}
+                                        </li>
+                                    {% endfor %}
+                                {% endfor %}
+                            </ul>
+                        </div>
+                    {% endif %}
+                    
                     <form method="post" enctype="multipart/form-data" id="assignmentForm">
                         {% csrf_token %}
                         
@@ -117,7 +137,18 @@
                             
                             <div class="row mt-3">
                                 <div class="col-md-6">
-                                    {{ form.due_date_preset|as_crispy_field }}
+                                    <div class="mb-3">
+                                        <label for="id_due_date_preset" class="form-label">Hızlı Teslim Tarihi</label>
+                                        <select class="form-control" id="id_due_date_preset" name="due_date_preset">
+                                            <option value="">Manuel tarih seç</option>
+                                            <option value="1_day">1 Gün sonra</option>
+                                            <option value="3_days">3 Gün sonra</option>
+                                            <option value="1_week">1 Hafta sonra</option>
+                                            <option value="2_weeks">2 Hafta sonra</option>
+                                            <option value="3_weeks">3 Hafta sonra</option>
+                                            <option value="1_month">1 Ay sonra</option>
+                                        </select>
+                                    </div>
                                 </div>
                                 <div class="col-md-6">
                                     {{ form.due_date|as_crispy_field }}
@@ -133,7 +164,7 @@
                             <a href="{% url 'courses:assignment_list' %}" class="btn btn-secondary btn-lg">
                                 <i class="fas fa-arrow-left me-2"></i>İptal
                             </a>
-                            <button type="submit" class="btn btn-primary btn-lg">
+                            <button type="submit" class="btn btn-primary btn-lg" id="submitBtn">
                                 <i class="fas fa-save me-2"></i>
                                 {% if form.instance.pk %}Güncelle{% else %}Oluştur{% endif %}
                             </button>
@@ -149,6 +180,8 @@
 document.addEventListener('DOMContentLoaded', function() {
     const presetSelect = document.getElementById('id_due_date_preset');
     const manualDate = document.getElementById('id_due_date');
+    const form = document.getElementById('assignmentForm');
+    const submitBtn = document.getElementById('submitBtn');
     
     if (presetSelect && manualDate) {
         presetSelect.addEventListener('change', function() {
@@ -165,6 +198,30 @@ document.addEventListener('DOMContentLoaded', function() {
         manualDate.addEventListener('change', function() {
             if (this.value) {
                 presetSelect.value = '';
+            }
+        });
+    }
+    
+    // Form submit handling
+    if (form && submitBtn) {
+        form.addEventListener('submit', function(e) {
+            console.log('Form submitted');
+            
+            // Re-enable all disabled fields before submit
+            const disabledFields = form.querySelectorAll('input:disabled, select:disabled, textarea:disabled');
+            disabledFields.forEach(field => {
+                field.disabled = false;
+            });
+            
+            // Show loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Kaydediliyor...';
+            
+            // Debug form data
+            const formData = new FormData(form);
+            console.log('Form data:');
+            for (let [key, value] of formData.entries()) {
+                console.log(key, value);
             }
         });
     }

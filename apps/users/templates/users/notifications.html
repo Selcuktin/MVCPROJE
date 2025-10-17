@@ -1,0 +1,510 @@
+{% extends 'base.html' %}
+
+{% block title %}Bildirimler - Kurs Yönetim Sistemi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .notifications-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+    
+    .notification-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        border: none;
+        overflow: hidden;
+    }
+    
+    .notification-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .notification-card.unread {
+        border-left: 4px solid #667eea;
+        background: rgba(102, 126, 234, 0.02);
+    }
+    
+    .notification-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        color: white;
+        margin-right: 1rem;
+    }
+    
+    .notification-content {
+        flex: 1;
+    }
+    
+    .notification-title {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.5rem;
+        font-size: 1.1rem;
+    }
+    
+    .notification-message {
+        color: #666;
+        margin-bottom: 0.5rem;
+        line-height: 1.5;
+    }
+    
+    .notification-time {
+        color: #999;
+        font-size: 0.85rem;
+    }
+    
+    .notification-actions {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .mark-read-btn {
+        background: none;
+        border: none;
+        color: #667eea;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        padding: 0.25rem 0.5rem;
+        border-radius: 5px;
+    }
+    
+    .mark-read-btn:hover {
+        background: rgba(102, 126, 234, 0.1);
+        color: #764ba2;
+    }
+    
+    .stats-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .stats-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #667eea;
+        display: block;
+    }
+    
+    .stats-label {
+        color: #666;
+        font-size: 0.9rem;
+        margin-top: 0.5rem;
+    }
+    
+    .filter-tabs {
+        background: white;
+        border-radius: 15px;
+        padding: 1rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .filter-btn {
+        background: none;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        color: #666;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        margin-right: 0.5rem;
+    }
+    
+    .filter-btn.active {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+    }
+    
+    .filter-btn:hover {
+        background: rgba(102, 126, 234, 0.1);
+        color: #667eea;
+    }
+    
+    .filter-btn.active:hover {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #999;
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        opacity: 0.5;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="notifications-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <h1 class="mb-0">
+                    <i class="fas fa-bell me-2"></i>Bildirimler
+                </h1>
+                <p class="mb-0 opacity-75">Tüm bildirimlerinizi buradan takip edebilirsiniz</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Stats -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="stats-card">
+                <span class="stats-number" id="total-count">{{ total_count }}</span>
+                <div class="stats-label">Toplam Bildirim</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card">
+                <span class="stats-number" id="unread-count">{{ unread_count }}</span>
+                <div class="stats-label">Okunmamış</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stats-card">
+                <span class="stats-number" id="read-count">3</span>
+                <div class="stats-label">Okunmuş</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Filter Tabs -->
+    <div class="filter-tabs">
+        <button class="filter-btn active" data-filter="all">
+            <i class="fas fa-list me-1"></i>Tümü
+        </button>
+        <button class="filter-btn" data-filter="unread">
+            <i class="fas fa-envelope me-1"></i>Okunmamış
+        </button>
+        <button class="filter-btn" data-filter="assignment">
+            <i class="fas fa-tasks me-1"></i>Ödevler
+        </button>
+        <button class="filter-btn" data-filter="grade">
+            <i class="fas fa-star me-1"></i>Notlar
+        </button>
+        <button class="filter-btn" data-filter="announcement">
+            <i class="fas fa-bullhorn me-1"></i>Duyurular
+        </button>
+    </div>
+    
+    <!-- Notifications List -->
+    <div class="row">
+        <div class="col-12">
+            {% for notification in notifications %}
+            <div class="notification-card {% if not notification.is_read %}unread{% endif %}" 
+                 data-type="{{ notification.type }}" 
+                 data-read="{{ notification.is_read|yesno:'true,false' }}"
+                 onclick="handleNotificationClick('{{ notification.id }}', this)">
+                <div class="card-body">
+                    <div class="d-flex align-items-start">
+                        <div class="notification-icon bg-{{ notification.color }}">
+                            <i class="{{ notification.icon }}"></i>
+                        </div>
+                        
+                        <div class="notification-content">
+                            <div class="notification-title">{{ notification.title }}</div>
+                            <div class="notification-message">{{ notification.message }}</div>
+                            <div class="notification-time">{{ notification.time }}</div>
+                        </div>
+                        
+                        <div class="notification-actions" onclick="event.stopPropagation()">
+                            {% if not notification.is_read %}
+                            <button class="mark-read-btn" onclick="markAsRead('{{ notification.id }}', this)">
+                                <i class="fas fa-check me-1"></i>Okundu İşaretle
+                            </button>
+                            {% else %}
+                            <span class="text-muted small">
+                                <i class="fas fa-check-circle me-1"></i>Okundu
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="empty-state">
+                <i class="fas fa-bell-slash"></i>
+                <h5>Henüz bildirim yok</h5>
+                <p>Yeni bildirimler burada görünecek.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    
+    <!-- Actions -->
+    <div class="row mt-4">
+        <div class="col-12 text-center">
+            <button class="btn btn-primary me-2" onclick="showAllNotifications()">
+                <i class="fas fa-list me-1"></i>Tümünü Görüntüle
+            </button>
+            <button class="btn btn-outline-primary me-2" onclick="markAllAsRead()">
+                <i class="fas fa-check-double me-1"></i>Tümünü Okundu İşaretle
+            </button>
+            <button class="btn btn-outline-danger" onclick="clearAllNotifications()">
+                <i class="fas fa-trash me-1"></i>Tümünü Temizle
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize stats on page load
+    updateStats();
+    
+    // Filter functionality
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    const notificationCards = document.querySelectorAll('.notification-card');
+    
+    filterBtns.forEach(btn => {
+        btn.addEventListener('click', function() {
+            // Update active filter
+            filterBtns.forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            const filter = this.dataset.filter;
+            
+            // Filter notifications
+            notificationCards.forEach(card => {
+                const type = card.dataset.type;
+                const isRead = card.dataset.read === 'true';
+                
+                let show = false;
+                
+                if (filter === 'all') {
+                    show = true;
+                } else if (filter === 'unread') {
+                    show = !isRead;
+                } else {
+                    show = type === filter;
+                }
+                
+                if (show) {
+                    card.style.display = 'block';
+                    card.style.animation = 'fadeIn 0.3s ease';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+    });
+});
+
+// Mark single notification as read
+function markAsRead(notificationId, button) {
+    const card = button.closest('.notification-card');
+    
+    // Make AJAX call to update the server
+    fetch('{% url "users:mark_notification_read" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        },
+        body: JSON.stringify({
+            notification_id: notificationId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Visual update
+            card.classList.remove('unread');
+            card.dataset.read = 'true';
+            
+            // Update button
+            button.innerHTML = '<i class="fas fa-check-circle me-1"></i>Okundu';
+            button.classList.add('text-muted', 'small');
+            button.disabled = true;
+            
+            // Update stats
+            updateStats();
+            
+            // Show success message
+            showToast('Bildirim okundu olarak işaretlendi', 'success');
+        } else {
+            showToast('Hata: ' + data.error, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        showToast('Bildirim güncellenirken hata oluştu', 'danger');
+    });
+}
+
+// Mark all notifications as read
+function markAllAsRead() {
+    const unreadCards = document.querySelectorAll('.notification-card.unread');
+    
+    unreadCards.forEach(card => {
+        card.classList.remove('unread');
+        card.dataset.read = 'true';
+        
+        const button = card.querySelector('.mark-read-btn');
+        if (button) {
+            button.innerHTML = '<i class="fas fa-check-circle me-1"></i>Okundu';
+            button.classList.add('text-muted', 'small');
+            button.disabled = true;
+        }
+    });
+    
+    updateStats();
+    showToast('Tüm bildirimler okundu olarak işaretlendi', 'success');
+}
+
+// Clear all notifications
+function clearAllNotifications() {
+    if (confirm('Tüm bildirimleri silmek istediğinizden emin misiniz?')) {
+        const cards = document.querySelectorAll('.notification-card');
+        
+        cards.forEach(card => {
+            card.style.animation = 'fadeOut 0.3s ease';
+            setTimeout(() => card.remove(), 300);
+        });
+        
+        setTimeout(() => {
+            document.querySelector('.col-12').innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-bell-slash"></i>
+                    <h5>Tüm bildirimler temizlendi</h5>
+                    <p>Yeni bildirimler burada görünecek.</p>
+                </div>
+            `;
+            updateStats();
+        }, 300);
+        
+        showToast('Tüm bildirimler temizlendi', 'info');
+    }
+}
+
+// Update statistics
+function updateStats() {
+    const totalCards = document.querySelectorAll('.notification-card').length;
+    const unreadCards = document.querySelectorAll('.notification-card.unread').length;
+    const readCards = totalCards - unreadCards;
+    
+    // Update stats display
+    document.getElementById('total-count').textContent = totalCards;
+    document.getElementById('unread-count').textContent = unreadCards;
+    document.getElementById('read-count').textContent = readCards;
+}
+
+// Show toast notification
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    toast.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    toast.style.cssText = 'top: 100px; right: 20px; z-index: 9999; min-width: 300px;';
+    toast.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.remove();
+    }, 3000);
+}
+
+// Show all notifications
+function showAllNotifications() {
+    const filterBtns = document.querySelectorAll('.filter-btn');
+    const notificationCards = document.querySelectorAll('.notification-card');
+    
+    // Set "Tümü" filter as active
+    filterBtns.forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.filter === 'all') {
+            btn.classList.add('active');
+        }
+    });
+    
+    // Show all notifications
+    notificationCards.forEach(card => {
+        card.style.display = 'block';
+        card.style.animation = 'fadeIn 0.3s ease';
+    });
+    
+    showToast('Tüm bildirimler görüntüleniyor', 'info');
+}
+
+// Handle notification click
+function handleNotificationClick(notificationId, card) {
+    // Mark as read if unread
+    if (card.classList.contains('unread')) {
+        const markReadBtn = card.querySelector('.mark-read-btn');
+        if (markReadBtn) {
+            markAsRead(notificationId, markReadBtn);
+        }
+    }
+    
+    // Navigate based on notification type
+    const type = card.dataset.type;
+    
+    switch(type) {
+        case 'assignment':
+            window.location.href = '/courses/assignments/';
+            break;
+        case 'grade':
+            window.location.href = '/notes/';
+            break;
+        case 'announcement':
+            window.location.href = '/courses/announcements/';
+            break;
+        case 'exam':
+            window.location.href = '/courses/';
+            break;
+        default:
+            showToast('Bildirim detayları görüntüleniyor...', 'info');
+    }
+}
+
+// Add CSS animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes fadeOut {
+        from { opacity: 1; transform: translateY(0); }
+        to { opacity: 0; transform: translateY(-10px); }
+    }
+    
+    .notification-card {
+        cursor: pointer;
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

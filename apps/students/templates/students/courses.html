@@ -2,57 +2,307 @@
 
 {% block title %}Derslerim - Kurs Yönetim Sistemi{% endblock %}
 
+{% block extra_css %}
+<style>
+    .courses-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 15px;
+    }
+    
+    .course-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        border: none;
+        overflow: hidden;
+        height: 100%;
+        position: relative;
+    }
+    
+    .course-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    }
+    
+    .course-card-header {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-bottom: 2px solid #dee2e6;
+        padding: 1.5rem;
+    }
+    
+    .course-code {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #495057;
+    }
+    
+    .grade-badge {
+        font-size: 1rem;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+    }
+    
+    .grade-AA, .grade-BA { background: linear-gradient(135deg, #2ed573, #17c0eb); color: white; }
+    .grade-BB, .grade-CB { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+    .grade-CC, .grade-DC { background: linear-gradient(135deg, #ffa502, #ff9500); color: white; }
+    .grade-DD, .grade-FF { background: linear-gradient(135deg, #ff4757, #ff3742); color: white; }
+    .grade-NA { background: linear-gradient(135deg, #747d8c, #57606f); color: white; }
+    
+    .course-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 1rem;
+    }
+    
+    .course-info {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .info-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .info-item:last-child {
+        margin-bottom: 0;
+    }
+    
+    .info-icon {
+        width: 20px;
+        color: #667eea;
+        margin-right: 0.5rem;
+    }
+    
+    .credit-display {
+        text-align: center;
+        background: white;
+        border-radius: 10px;
+        padding: 1rem;
+        border: 2px solid #e9ecef;
+    }
+    
+    .credit-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #667eea;
+        display: block;
+    }
+    
+    .credit-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .course-actions {
+        padding: 1rem 1.5rem;
+        background: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+    }
+    
+    .status-badge {
+        font-size: 0.9rem;
+        padding: 0.4rem 0.8rem;
+        border-radius: 15px;
+        font-weight: 500;
+    }
+    
+    .status-enrolled { background: #d4edda; color: #155724; }
+    .status-completed { background: #d1ecf1; color: #0c5460; }
+    .status-dropped { background: #f8d7da; color: #721c24; }
+    
+    .btn-modern {
+        border-radius: 20px;
+        padding: 0.5rem 1.2rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .empty-state i {
+        font-size: 5rem;
+        color: #dee2e6;
+        margin-bottom: 2rem;
+    }
+    
+    .stats-overview {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .stat-item {
+        text-align: center;
+        padding: 1rem;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <h2><i class="fas fa-book"></i> Kayıtlı Derslerim</h2>
-        <p class="lead">Kayıt olduğunuz dersleri görüntüleyin ve yönetin.</p>
+<!-- Header -->
+<div class="courses-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="mb-0">
+                            <i class="fas fa-book me-2"></i>Derslerim
+                        </h1>
+                        <p class="mb-0 opacity-75">Kayıtlı olduğunuz dersleri görüntüleyin ve yönetin</p>
+                    </div>
+                    <a href="{% url 'courses:list' %}" class="btn btn-light btn-lg">
+                        <i class="fas fa-plus me-2"></i>Yeni Ders Kayıt
+                    </a>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 
-<div class="row">
-    {% for enrollment in enrollments %}
-    <div class="col-md-6 col-lg-4 mb-4">
-        <div class="card h-100">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h6 class="mb-0">{{ enrollment.group.course.code }}</h6>
-                <span class="badge bg-{% if enrollment.grade == 'AA' or enrollment.grade == 'BA' %}success{% elif enrollment.grade == 'FF' %}danger{% else %}secondary{% endif %}">
-                    {{ enrollment.grade }}
-                </span>
+<div class="container">
+    <!-- İstatistikler -->
+    {% if enrollments %}
+    <div class="stats-overview">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <span class="stat-number text-primary">{{ enrollments|length }}</span>
+                    <div class="stat-label">Toplam Ders</div>
+                </div>
             </div>
-            <div class="card-body">
-                <h5 class="card-title">{{ enrollment.group.course.name }}</h5>
-                <p class="card-text">
-                    <strong>Öğretmen:</strong> {{ enrollment.group.teacher.full_name }}<br>
-                    <strong>Sınıf:</strong> {{ enrollment.group.classroom }}<br>
-                    <strong>Program:</strong> {{ enrollment.group.schedule }}
-                </p>
-                <div class="row text-center">
-                    <div class="col-12">
-                        <small class="text-muted">Kredi</small>
-                        <div><strong>{{ enrollment.group.course.credits }}</strong></div>
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <span class="stat-number text-success">
+                        {% for enrollment in enrollments %}
+                            {% if enrollment.status == 'enrolled' %}{{ forloop.counter0|add:1 }}{% endif %}
+                        {% endfor %}
+                    </span>
+                    <div class="stat-label">Aktif Kayıt</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <span class="stat-number text-info">
+                        {% for enrollment in enrollments %}
+                            {% if enrollment.status == 'completed' %}{{ forloop.counter0|add:1 }}{% endif %}
+                        {% endfor %}
+                    </span>
+                    <div class="stat-label">Tamamlanan</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-item">
+                    <span class="stat-number text-warning">
+                        {% widthratio enrollments|length 1 1 %}
+                    </span>
+                    <div class="stat-label">Toplam Kredi</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Dersler -->
+    <div class="row">
+        {% for enrollment in enrollments %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="course-card">
+                <div class="course-card-header">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div class="course-code">{{ enrollment.group.course.code }}</div>
+                        <div class="grade-badge grade-{{ enrollment.grade }}">
+                            {{ enrollment.grade }}
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body p-3">
+                    <h5 class="course-title">{{ enrollment.group.course.name }}</h5>
+                    
+                    <div class="course-info">
+                        <div class="info-item">
+                            <i class="fas fa-chalkboard-teacher info-icon"></i>
+                            <span>{{ enrollment.group.teacher.full_name }}</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-door-open info-icon"></i>
+                            <span>{{ enrollment.group.classroom }}</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-clock info-icon"></i>
+                            <span>{{ enrollment.group.schedule }}</span>
+                        </div>
+                        <div class="info-item">
+                            <i class="fas fa-calendar info-icon"></i>
+                            <span>{{ enrollment.group.semester }}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="credit-display">
+                        <span class="credit-number">{{ enrollment.group.course.credits }}</span>
+                        <div class="credit-label">Kredi</div>
+                    </div>
+                </div>
+                <div class="course-actions">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <a href="{% url 'courses:group_detail' enrollment.group.pk %}" class="btn btn-primary btn-modern">
+                            <i class="fas fa-eye me-1"></i>Detay
+                        </a>
+                        <span class="status-badge status-{{ enrollment.status }}">
+                            {{ enrollment.get_status_display }}
+                        </span>
                     </div>
                 </div>
             </div>
-            <div class="card-footer">
-                <div class="d-flex justify-content-between">
-                    <a href="{% url 'courses:group_detail' enrollment.group.pk %}" class="btn btn-outline-info btn-sm">
-                        <i class="fas fa-eye"></i> Detay
-                    </a>
-                    <span class="badge bg-{% if enrollment.status == 'enrolled' %}success{% elif enrollment.status == 'completed' %}info{% else %}secondary{% endif %}">
-                        {{ enrollment.get_status_display }}
-                    </span>
-                </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="empty-state">
+                <i class="fas fa-book-open"></i>
+                <h4>Henüz Kayıtlı Ders Yok</h4>
+                <p class="text-muted">Derslere kayıt olmak için ders listesini görüntüleyin ve ilginizi çeken derslere kayıt olun.</p>
+                <a href="{% url 'courses:list' %}" class="btn btn-primary btn-lg mt-3">
+                    <i class="fas fa-search me-2"></i>Ders Listesini Görüntüle
+                </a>
             </div>
         </div>
+        {% endfor %}
     </div>
-    {% empty %}
-    <div class="col-12">
-        <div class="alert alert-info text-center">
-            <h4>Henüz Kayıtlı Ders Yok</h4>
-            <p>Derslere kayıt olmak için <a href="{% url 'courses:list' %}">ders listesini</a> görüntüleyin.</p>
-        </div>
-    </div>
-    {% endfor %}
 </div>
 {% endblock %}

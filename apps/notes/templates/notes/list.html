@@ -3,25 +3,205 @@
 
 {% block title %}Notlar{% endblock %}
 
+{% block extra_css %}
+<style>
+    .notes-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 15px;
+    }
+    
+    .grade-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        border: none;
+        overflow: hidden;
+        height: 100%;
+    }
+    
+    .grade-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    }
+    
+    .grade-card-header {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 1.5rem;
+        border: none;
+    }
+    
+    .grade-card-header.student {
+        background: linear-gradient(135deg, #2ed573, #17c0eb);
+    }
+    
+    .exam-score-container {
+        background: #f8f9fa;
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .exam-score-container:hover {
+        background: #e9ecef;
+        transform: scale(1.02);
+    }
+    
+    .exam-type-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: #6c757d;
+        margin-bottom: 0.5rem;
+    }
+    
+    .grade-badge {
+        font-size: 1.2rem;
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        display: inline-block;
+        min-width: 60px;
+    }
+    
+    .grade-AA, .grade-BA { background: linear-gradient(135deg, #2ed573, #17c0eb); color: white; }
+    .grade-BB, .grade-CB { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+    .grade-CC, .grade-DC { background: linear-gradient(135deg, #ffa502, #ff9500); color: white; }
+    .grade-DD, .grade-FF { background: linear-gradient(135deg, #ff4757, #ff3742); color: white; }
+    
+    .score-display {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .action-buttons {
+        margin-top: 0.5rem;
+    }
+    
+    .btn-action {
+        border-radius: 20px;
+        padding: 0.3rem 0.8rem;
+        font-size: 0.8rem;
+        margin: 0.1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .empty-state i {
+        font-size: 4rem;
+        color: #dee2e6;
+        margin-bottom: 1rem;
+    }
+    
+    .filter-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        border: none;
+        margin-bottom: 2rem;
+    }
+    
+    .stats-overview {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+    }
+    
+    .stat-item {
+        text-align: center;
+        padding: 1rem;
+    }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+    
+    .stat-label {
+        color: #6c757d;
+        font-size: 0.9rem;
+    }
+    
+    .course-section {
+        margin-bottom: 2rem;
+    }
+    
+    .course-title {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        padding: 1rem 1.5rem;
+        border-radius: 12px 12px 0 0;
+        border-bottom: 2px solid #dee2e6;
+        font-weight: 600;
+        color: #495057;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
+<!-- Header -->
+<div class="notes-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="mb-0">
+                            <i class="fas fa-star me-2"></i>
+                            {% if is_student %}Notlarım{% else %}Not Yönetimi{% endif %}
+                        </h1>
+                        <p class="mb-0 opacity-75">
+                            {% if is_student %}
+                                Tüm derslerinizdeki notlarınızı buradan takip edebilirsiniz
+                            {% else %}
+                                Öğrenci notlarını görüntüleyin ve yönetin
+                            {% endif %}
+                        </p>
+                    </div>
+                    {% if not is_student %}
+                    <a href="{% url 'notes:create' %}" class="btn btn-light btn-lg">
+                        <i class="fas fa-plus me-2"></i>Yeni Not
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="container-fluid">
     <div class="row">
         <div class="col-12">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2><i class="fas fa-sticky-note text-warning"></i> 
-                    {% if is_student %}Notlarım{% else %}Notlar{% endif %}
-                </h2>
-                {% if not is_student %}
-                <a href="{% url 'notes:create' %}" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Yeni Not
-                </a>
-                {% endif %}
-            </div>
 
             <!-- Filtreler -->
             {% if not is_student %}
-            <div class="card mb-4">
+            <div class="filter-card">
                 <div class="card-body">
+                    <h5 class="mb-3">
+                        <i class="fas fa-filter me-2"></i>Filtreler
+                    </h5>
                     <form method="get" class="row g-3">
                         <div class="col-md-3">
                             {{ filter_form.course|as_crispy_field }}
@@ -37,11 +217,11 @@
                             <input type="text" name="search" class="form-control" placeholder="Ders veya öğrenci ara..." value="{{ search_query|default:'' }}">
                         </div>
                         <div class="col-12">
-                            <button type="submit" class="btn btn-outline-primary">
-                                <i class="fas fa-filter"></i> Filtrele
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-filter me-2"></i>Filtrele
                             </button>
                             <a href="{% url 'notes:list' %}" class="btn btn-outline-secondary">
-                                <i class="fas fa-times"></i> Temizle
+                                <i class="fas fa-times me-2"></i>Temizle
                             </a>
                         </div>
                     </form>
@@ -56,22 +236,22 @@
                 {% regroup notes by course as course_notes %}
                 {% for course_group in course_notes %}
                 <div class="col-lg-6 mb-4">
-                    <div class="card h-100 shadow-sm">
-                        <div class="card-header bg-primary text-white">
+                    <div class="grade-card">
+                        <div class="grade-card-header student">
                             <h6 class="mb-0">
-                                <i class="fas fa-book"></i> {{ course_group.grouper.code }} - {{ course_group.grouper.name }}
+                                <i class="fas fa-book me-2"></i>{{ course_group.grouper.code }} - {{ course_group.grouper.name }}
                             </h6>
                         </div>
-                        <div class="card-body">
+                        <div class="card-body p-3">
                             <div class="row">
                                 {% for note in course_group.list %}
-                                <div class="col-4 text-center mb-2">
-                                    <div class="exam-score">
-                                        <small class="text-muted d-block">{{ note.get_exam_type_display }}</small>
-                                        <span class="badge bg-{% if note.grade == 'AA' or note.grade == 'BA' %}success{% elif note.grade == 'BB' or note.grade == 'CB' %}primary{% elif note.grade == 'CC' or note.grade == 'DC' %}warning{% else %}danger{% endif %} fs-6 mb-1">
+                                <div class="col-4 mb-3">
+                                    <div class="exam-score-container text-center">
+                                        <div class="exam-type-label">{{ note.get_exam_type_display }}</div>
+                                        <div class="grade-badge grade-{{ note.grade }}">
                                             {{ note.grade }}
-                                        </span>
-                                        <div class="fw-bold">{{ note.score }}/100</div>
+                                        </div>
+                                        <div class="score-display">{{ note.score }}/100</div>
                                     </div>
                                 </div>
                                 {% endfor %}
@@ -81,10 +261,10 @@
                 </div>
                 {% empty %}
                 <div class="col-12">
-                    <div class="alert alert-info text-center">
-                        <i class="fas fa-info-circle fa-2x mb-3"></i>
+                    <div class="empty-state">
+                        <i class="fas fa-star"></i>
                         <h4>Henüz notunuz bulunmuyor</h4>
-                        <p>Öğretmenleriniz tarafından notlarınız girildiğinde burada görüntülenecektir.</p>
+                        <p class="text-muted">Öğretmenleriniz tarafından notlarınız girildiğinde burada görüntülenecektir.</p>
                     </div>
                 </div>
                 {% endfor %}
@@ -95,117 +275,121 @@
                 {% if structured_data %}
                     {% for student_data in structured_data %}
                     <div class="col-lg-6 mb-4">
-                        <div class="card h-100 shadow-sm">
-                            <div class="card-header bg-success text-white">
+                        <div class="grade-card">
+                            <div class="grade-card-header">
                                 <h6 class="mb-0">
-                                    <i class="fas fa-user-graduate"></i> {{ student_data.student.get_full_name }}
+                                    <i class="fas fa-user-graduate me-2"></i>{{ student_data.student.get_full_name }}
                                 </h6>
                             </div>
-                            <div class="card-body">
+                            <div class="card-body p-3">
                                 {% for course_data in student_data.courses %}
-                                <div class="mb-3">
-                                    <h6 class="text-primary mb-2">
-                                        <i class="fas fa-book"></i> {{ course_data.course.code }} - {{ course_data.course.name }}
-                                    </h6>
-                                    <div class="row">
+                                <div class="course-section">
+                                    <div class="course-title">
+                                        <i class="fas fa-book me-2"></i>{{ course_data.course.code }} - {{ course_data.course.name }}
+                                    </div>
+                                    <div class="row p-3">
                                         <!-- Vize -->
-                                        <div class="col-4 text-center mb-2">
+                                        <div class="col-4 mb-3">
                                             {% if course_data.vize %}
-                                            <div class="exam-score">
-                                                <small class="text-muted d-block">Vize</small>
-                                                <span class="badge bg-{% if course_data.vize.grade == 'AA' or course_data.vize.grade == 'BA' %}success{% elif course_data.vize.grade == 'BB' or course_data.vize.grade == 'CB' %}primary{% elif course_data.vize.grade == 'CC' or course_data.vize.grade == 'DC' %}warning{% else %}danger{% endif %} fs-6 mb-1">
+                                            <div class="exam-score-container text-center">
+                                                <div class="exam-type-label">Vize</div>
+                                                <div class="grade-badge grade-{{ course_data.vize.grade }}">
                                                     {{ course_data.vize.grade }}
-                                                </span>
-                                                <div class="fw-bold">{{ course_data.vize.score }}/100</div>
-                                                <div class="btn-group btn-group-sm mt-1" role="group">
-                                                    <a href="{% url 'notes:edit' course_data.vize.pk %}" class="btn btn-outline-warning btn-sm" title="Düzenle">
+                                                </div>
+                                                <div class="score-display">{{ course_data.vize.score }}/100</div>
+                                                <div class="action-buttons">
+                                                    <a href="{% url 'notes:edit' course_data.vize.pk %}" class="btn btn-warning btn-action" title="Düzenle">
                                                         <i class="fas fa-edit"></i>
                                                     </a>
-                                                    <a href="{% url 'notes:delete' course_data.vize.pk %}" class="btn btn-outline-danger btn-sm" title="Sil">
+                                                    <a href="{% url 'notes:delete' course_data.vize.pk %}" class="btn btn-danger btn-action" title="Sil">
                                                         <i class="fas fa-trash"></i>
                                                     </a>
                                                 </div>
                                             </div>
                                             {% else %}
-                                            <div class="exam-score">
-                                                <small class="text-muted d-block">Vize</small>
-                                                <div class="text-muted mb-2">-</div>
-                                                <a href="{% url 'notes:create' %}?course={{ course_data.course.id }}&student={{ student_data.student.id }}&exam_type=vize" class="btn btn-outline-primary btn-sm">
-                                                    <i class="fas fa-plus"></i> Ekle
+                                            <div class="exam-score-container text-center">
+                                                <div class="exam-type-label">Vize</div>
+                                                <div class="text-muted mb-2">Henüz girilmedi</div>
+                                                <a href="{% url 'notes:create' %}?course={{ course_data.course.id }}&student={{ student_data.student.id }}&exam_type=vize" class="btn btn-primary btn-action">
+                                                    <i class="fas fa-plus me-1"></i>Ekle
                                                 </a>
                                             </div>
                                             {% endif %}
                                         </div>
                                         
                                         <!-- Final -->
-                                        <div class="col-4 text-center mb-2">
+                                        <div class="col-4 mb-3">
                                             {% if course_data.final %}
-                                            <div class="exam-score">
-                                                <small class="text-muted d-block">Final</small>
-                                                <span class="badge bg-{% if course_data.final.grade == 'AA' or course_data.final.grade == 'BA' %}success{% elif course_data.final.grade == 'BB' or course_data.final.grade == 'CB' %}primary{% elif course_data.final.grade == 'CC' or course_data.final.grade == 'DC' %}warning{% else %}danger{% endif %} fs-6 mb-1">
+                                            <div class="exam-score-container text-center">
+                                                <div class="exam-type-label">Final</div>
+                                                <div class="grade-badge grade-{{ course_data.final.grade }}">
                                                     {{ course_data.final.grade }}
-                                                </span>
-                                                <div class="fw-bold">{{ course_data.final.score }}/100</div>
-                                                <div class="btn-group btn-group-sm mt-1" role="group">
-                                                    <a href="{% url 'notes:edit' course_data.final.pk %}" class="btn btn-outline-warning btn-sm" title="Düzenle">
+                                                </div>
+                                                <div class="score-display">{{ course_data.final.score }}/100</div>
+                                                <div class="action-buttons">
+                                                    <a href="{% url 'notes:edit' course_data.final.pk %}" class="btn btn-warning btn-action" title="Düzenle">
                                                         <i class="fas fa-edit"></i>
                                                     </a>
-                                                    <a href="{% url 'notes:delete' course_data.final.pk %}" class="btn btn-outline-danger btn-sm" title="Sil">
+                                                    <a href="{% url 'notes:delete' course_data.final.pk %}" class="btn btn-danger btn-action" title="Sil">
                                                         <i class="fas fa-trash"></i>
                                                     </a>
                                                 </div>
                                             </div>
                                             {% else %}
-                                            <div class="exam-score">
-                                                <small class="text-muted d-block">Final</small>
-                                                <div class="text-muted mb-2">-</div>
-                                                <a href="{% url 'notes:create' %}?course={{ course_data.course.id }}&student={{ student_data.student.id }}&exam_type=final" class="btn btn-outline-primary btn-sm">
-                                                    <i class="fas fa-plus"></i> Ekle
+                                            <div class="exam-score-container text-center">
+                                                <div class="exam-type-label">Final</div>
+                                                <div class="text-muted mb-2">Henüz girilmedi</div>
+                                                <a href="{% url 'notes:create' %}?course={{ course_data.course.id }}&student={{ student_data.student.id }}&exam_type=final" class="btn btn-primary btn-action">
+                                                    <i class="fas fa-plus me-1"></i>Ekle
                                                 </a>
                                             </div>
                                             {% endif %}
                                         </div>
                                         
                                         <!-- Bütünleme -->
-                                        <div class="col-4 text-center mb-2">
+                                        <div class="col-4 mb-3">
                                             {% if course_data.but %}
-                                            <div class="exam-score">
-                                                <small class="text-muted d-block">Bütünleme</small>
-                                                <span class="badge bg-{% if course_data.but.grade == 'AA' or course_data.but.grade == 'BA' %}success{% elif course_data.but.grade == 'BB' or course_data.but.grade == 'CB' %}primary{% elif course_data.but.grade == 'CC' or course_data.but.grade == 'DC' %}warning{% else %}danger{% endif %} fs-6 mb-1">
+                                            <div class="exam-score-container text-center">
+                                                <div class="exam-type-label">Bütünleme</div>
+                                                <div class="grade-badge grade-{{ course_data.but.grade }}">
                                                     {{ course_data.but.grade }}
-                                                </span>
-                                                <div class="fw-bold">{{ course_data.but.score }}/100</div>
-                                                <div class="btn-group btn-group-sm mt-1" role="group">
-                                                    <a href="{% url 'notes:edit' course_data.but.pk %}" class="btn btn-outline-warning btn-sm" title="Düzenle">
+                                                </div>
+                                                <div class="score-display">{{ course_data.but.score }}/100</div>
+                                                <div class="action-buttons">
+                                                    <a href="{% url 'notes:edit' course_data.but.pk %}" class="btn btn-warning btn-action" title="Düzenle">
                                                         <i class="fas fa-edit"></i>
                                                     </a>
-                                                    <a href="{% url 'notes:delete' course_data.but.pk %}" class="btn btn-outline-danger btn-sm" title="Sil">
+                                                    <a href="{% url 'notes:delete' course_data.but.pk %}" class="btn btn-danger btn-action" title="Sil">
                                                         <i class="fas fa-trash"></i>
                                                     </a>
                                                 </div>
                                             </div>
                                             {% else %}
-                                            <div class="exam-score">
-                                                <small class="text-muted d-block">Bütünleme</small>
-                                                <div class="text-muted mb-2">-</div>
-                                                <a href="{% url 'notes:create' %}?course={{ course_data.course.id }}&student={{ student_data.student.id }}&exam_type=but" class="btn btn-outline-primary btn-sm">
-                                                    <i class="fas fa-plus"></i> Ekle
+                                            <div class="exam-score-container text-center">
+                                                <div class="exam-type-label">Bütünleme</div>
+                                                <div class="text-muted mb-2">Henüz girilmedi</div>
+                                                <a href="{% url 'notes:create' %}?course={{ course_data.course.id }}&student={{ student_data.student.id }}&exam_type=but" class="btn btn-primary btn-action">
+                                                    <i class="fas fa-plus me-1"></i>Ekle
                                                 </a>
                                             </div>
                                             {% endif %}
                                         </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
                         </div>
                     </div>
                     {% endfor %}
                 {% else %}
                 <div class="col-12">
-                    <div class="alert alert-info text-center">
-                        <i class="fas fa-info-circle"></i> Henüz not bulunmuyor.
-                        <a href="{% url 'notes:create' %}" class="btn btn-primary ms-2">İlk notu oluştur</a>
+                    <div class="empty-state">
+                        <i class="fas fa-star"></i>
+                        <h4>Henüz not bulunmuyor</h4>
+                        <p class="text-muted">Öğrenci notlarını girmek için yeni not oluşturun.</p>
+                        <a href="{% url 'notes:create' %}" class="btn btn-primary btn-lg mt-3">
+                            <i class="fas fa-plus me-2"></i>İlk Notu Oluştur
+                        </a>
                     </div>
                 </div>
                 {% endif %}

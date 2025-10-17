@@ -1,0 +1,738 @@
+{% extends 'base.html' %}
+
+{% block title %}Ödevler - Kurs Yönetim Sistemi{% endblock %}
+
+{% block extra_css %}
+<style>
+    .assignment-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 15px;
+    }
+
+    .assignment-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        border: none;
+        overflow: hidden;
+        height: 100%;
+        position: relative;
+    }
+
+    .assignment-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    }
+
+    .assignment-card.urgent {
+        border-left: 5px solid #ff4757;
+        animation: pulse-urgent 2s infinite;
+    }
+
+    .assignment-card.warning {
+        border-left: 5px solid #ffa502;
+    }
+
+    .assignment-card.safe {
+        border-left: 5px solid #2ed573;
+    }
+
+    .assignment-card.expired {
+        border-left: 5px solid #747d8c;
+        opacity: 0.7;
+    }
+
+    @keyframes pulse-urgent {
+
+        0%,
+        100% {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        50% {
+            box-shadow: 0 8px 25px rgba(255, 71, 87, 0.3);
+        }
+    }
+
+    .card-header-custom {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-bottom: 1px solid #dee2e6;
+        padding: 1rem 1.5rem;
+    }
+
+    .course-badge {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .status-badge {
+        padding: 0.4rem 0.8rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .status-active {
+        background: #2ed573;
+        color: white;
+    }
+
+    .status-warning {
+        background: #ffa502;
+        color: white;
+    }
+
+    .status-urgent {
+        background: #ff4757;
+        color: white;
+        animation: blink 1s infinite;
+    }
+
+    .status-expired {
+        background: #747d8c;
+        color: white;
+    }
+
+    @keyframes blink {
+
+        0%,
+        50% {
+            opacity: 1;
+        }
+
+        51%,
+        100% {
+            opacity: 0.5;
+        }
+    }
+
+    .assignment-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 0.8rem;
+    }
+
+    .assignment-description {
+        color: #666;
+        line-height: 1.6;
+        margin-bottom: 1rem;
+    }
+
+    .assignment-meta {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+    }
+
+    .meta-item {
+        display: flex;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .meta-item:last-child {
+        margin-bottom: 0;
+    }
+
+    .meta-icon {
+        width: 20px;
+        color: #667eea;
+        margin-right: 0.5rem;
+    }
+
+    .countdown-timer {
+        background: linear-gradient(135deg, #ff4757, #ff3742);
+        color: white;
+        padding: 0.8rem;
+        border-radius: 10px;
+        text-align: center;
+        margin-bottom: 1rem;
+        font-weight: 600;
+    }
+
+    .countdown-timer.warning {
+        background: linear-gradient(135deg, #ffa502, #ff9500);
+    }
+
+    .countdown-timer.safe {
+        background: linear-gradient(135deg, #2ed573, #17c0eb);
+    }
+
+    .countdown-timer.expired {
+        background: linear-gradient(135deg, #747d8c, #57606f);
+    }
+
+    .timer-text {
+        font-size: 0.9rem;
+        margin-bottom: 0.3rem;
+    }
+
+    .timer-value {
+        font-size: 1.2rem;
+        font-weight: 700;
+    }
+
+    .progress-bar-custom {
+        height: 8px;
+        border-radius: 10px;
+        background: #e9ecef;
+        overflow: hidden;
+        margin-top: 0.5rem;
+    }
+
+    .progress-fill {
+        height: 100%;
+        border-radius: 10px;
+        transition: width 0.3s ease;
+    }
+
+    .progress-safe {
+        background: linear-gradient(90deg, #2ed573, #17c0eb);
+    }
+
+    .progress-warning {
+        background: linear-gradient(90deg, #ffa502, #ff9500);
+    }
+
+    .progress-urgent {
+        background: linear-gradient(90deg, #ff4757, #ff3742);
+    }
+
+    .progress-expired {
+        background: linear-gradient(90deg, #747d8c, #57606f);
+    }
+
+    .assignment-actions {
+        padding: 1rem 1.5rem;
+        background: #f8f9fa;
+        border-top: 1px solid #dee2e6;
+    }
+
+    .btn-modern {
+        border-radius: 20px;
+        padding: 0.5rem 1.2rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .btn-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .stats-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        margin-bottom: 2rem;
+    }
+
+    .stats-number {
+        font-size: 2rem;
+        font-weight: 700;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .stats-label {
+        color: #666;
+        font-size: 0.9rem;
+    }
+
+    .filter-tabs {
+        background: white;
+        border-radius: 15px;
+        padding: 1rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .filter-btn {
+        background: none;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        color: #666;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        margin-right: 0.5rem;
+    }
+
+    .filter-btn.active {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+    }
+
+    .filter-btn:hover {
+        background: rgba(102, 126, 234, 0.1);
+        color: #667eea;
+    }
+
+    .filter-btn.active:hover {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="assignment-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="mb-0"><i class="fas fa-tasks me-2"></i>Ödevler</h1>
+                        <p class="mb-0 opacity-75">Tüm ödevlerinizi buradan takip edebilirsiniz</p>
+                    </div>
+                    {% if user.userprofile.user_type == 'teacher' %}
+                    <a href="{% url 'courses:assignment_create' %}" class="btn btn-light btn-modern">
+                        <i class="fas fa-plus me-1"></i>Yeni Ödev
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <span class="stats-number text-primary" id="total-assignments">{{ assignments|length }}</span>
+                <div class="stats-label">Toplam Ödev</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <span class="stats-number text-success" id="active-assignments">0</span>
+                <div class="stats-label">Aktif</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <span class="stats-number text-warning" id="warning-assignments">0</span>
+                <div class="stats-label">Yaklaşan</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <span class="stats-number text-danger" id="urgent-assignments">0</span>
+                <div class="stats-label">Acil</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Tabs -->
+    <div class="filter-tabs">
+        <button class="filter-btn active" data-filter="all">
+            <i class="fas fa-list me-1"></i>Tümü
+        </button>
+        <button class="filter-btn" data-filter="active">
+            <i class="fas fa-check-circle me-1"></i>Aktif
+        </button>
+        <button class="filter-btn" data-filter="warning">
+            <i class="fas fa-exclamation-triangle me-1"></i>Yaklaşan
+        </button>
+        <button class="filter-btn" data-filter="urgent">
+            <i class="fas fa-fire me-1"></i>Acil
+        </button>
+        <button class="filter-btn" data-filter="expired">
+            <i class="fas fa-times-circle me-1"></i>Süresi Dolmuş
+        </button>
+    </div>
+
+    {% if assignments %}
+    <div class="row" id="assignments-container">
+        {% for assignment in assignments %}
+        <div class="col-md-6 col-lg-4 mb-4 assignment-item" data-due-date="{{ assignment.due_date|date:'Y-m-d H:i:s' }}"
+            data-assignment-id="{{ assignment.pk }}">
+            <div class="assignment-card clickable-card" id="card-{{ assignment.pk }}"
+                onclick="window.location.href='{% url 'courses:assignment_detail' assignment.pk %}'"
+                style="cursor: pointer;">
+                <!-- Header -->
+                <div class="card-header-custom">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="course-badge">{{ assignment.group.course.code }}</span>
+                        <span class="status-badge" id="status-{{ assignment.pk }}">Yükleniyor...</span>
+                    </div>
+                </div>
+
+                <!-- Body -->
+                <div class="card-body p-0">
+                    <div class="p-3">
+                        <h5 class="assignment-title">{{ assignment.title }}</h5>
+                        <p class="assignment-description">{{ assignment.description|truncatewords:15 }}</p>
+
+                        <!-- Countdown Timer -->
+                        <div class="countdown-timer" id="timer-{{ assignment.pk }}">
+                            <div class="timer-text">Kalan Süre</div>
+                            <div class="timer-value" id="countdown-{{ assignment.pk }}">Hesaplanıyor...</div>
+                            <div class="progress-bar-custom">
+                                <div class="progress-fill" id="progress-{{ assignment.pk }}" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Meta Information -->
+                        <div class="assignment-meta">
+                            <div class="meta-item">
+                                <i class="fas fa-book meta-icon"></i>
+                                <span>{{ assignment.group.course.name }}</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-calendar meta-icon"></i>
+                                <span>Son Tarih: {{ assignment.due_date|date:"d.m.Y H:i" }}</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-star meta-icon"></i>
+                                <span>Puan: {{ assignment.max_score|default:"--" }}</span>
+                            </div>
+                            <div class="meta-item">
+                                <i class="fas fa-users meta-icon"></i>
+                                <span>Teslim: {{ assignment.submission_count }}/{{ assignment.group.enrollments.count }}
+                                    öğrenci</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="assignment-actions">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <a href="{% url 'courses:assignment_detail' assignment.pk %}"
+                                class="btn btn-primary btn-modern btn-sm" onclick="event.stopPropagation();">
+                                <i class="fas fa-eye me-1"></i>Detay
+                            </a>
+                            {% if user.userprofile.user_type == 'teacher' and assignment.group.teacher.user == user %}
+                            <div class="btn-group" role="group">
+                                <a href="{% url 'courses:assignment_update' assignment.pk %}"
+                                    class="btn btn-warning btn-modern btn-sm" onclick="event.stopPropagation();">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <a href="{% url 'courses:assignment_delete' assignment.pk %}"
+                                    class="btn btn-danger btn-modern btn-sm" onclick="event.stopPropagation();">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Pagination -->
+    {% if is_paginated %}
+    <nav aria-label="Sayfa navigasyonu">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page=1">İlk</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Önceki</a>
+            </li>
+            {% endif %}
+
+            <li class="page-item active">
+                <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+            </li>
+
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Sonraki</a>
+            </li>
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Son</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+    {% else %}
+    <div class="text-center py-5">
+        <i class="fas fa-tasks fa-3x text-muted mb-3"></i>
+        <h5 class="text-muted">Henüz ödev bulunmuyor</h5>
+        {% if user.userprofile.user_type == 'teacher' %}
+        <p class="text-muted">Öğrencileriniz için yeni ödev oluşturun.</p>
+        <a href="{% url 'courses:assignment_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>İlk Ödevi Oluştur
+        </a>
+        {% else %}
+        <p class="text-muted">Öğretmenleriniz henüz ödev vermemiş.</p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+</div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        // Initialize assignment timers and status
+        initializeAssignments();
+
+        // Update stats after initialization
+        setTimeout(updateStats, 100);
+
+        // Update timers every second
+        setInterval(updateAllTimers, 1000);
+
+        // Initialize filter functionality
+        initializeFilters();
+    });
+
+    function initializeAssignments() {
+        const assignments = document.querySelectorAll('.assignment-item');
+
+        assignments.forEach(item => {
+            const assignmentId = item.dataset.assignmentId;
+            const dueDate = new Date(item.dataset.dueDate);
+
+            updateAssignmentStatus(assignmentId, dueDate);
+        });
+    }
+
+    function updateAssignmentStatus(assignmentId, dueDate) {
+        const now = new Date();
+        const timeDiff = dueDate - now;
+
+        const card = document.getElementById(`card-${assignmentId}`);
+        const statusBadge = document.getElementById(`status-${assignmentId}`);
+        const timer = document.getElementById(`timer-${assignmentId}`);
+        const countdown = document.getElementById(`countdown-${assignmentId}`);
+        const progress = document.getElementById(`progress-${assignmentId}`);
+
+        if (!card || !statusBadge || !timer || !countdown || !progress) {
+            console.warn(`Missing elements for assignment ${assignmentId}`);
+            return;
+        }
+
+        // Calculate time remaining
+        const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+        const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+        const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+        const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+
+        let status, statusClass, timerClass, progressClass, progressWidth;
+
+        // Clear previous classes
+        card.classList.remove('expired', 'urgent', 'warning', 'safe');
+
+        if (timeDiff <= 0) {
+            // Expired
+            status = 'Süresi Doldu';
+            statusClass = 'status-expired';
+            timerClass = 'expired';
+            progressClass = 'progress-expired';
+            progressWidth = 100;
+            countdown.textContent = 'Süresi Dolmuş';
+            card.classList.add('expired');
+            card.dataset.status = 'expired';
+        } else if (days === 0 && hours < 6) {
+            // Urgent (less than 6 hours)
+            status = 'Acil';
+            statusClass = 'status-urgent';
+            timerClass = 'urgent';
+            progressClass = 'progress-urgent';
+            progressWidth = 90;
+            countdown.textContent = `${hours}s ${minutes}d ${seconds}s`;
+            card.classList.add('urgent');
+            card.dataset.status = 'urgent';
+        } else if (days <= 2) {
+            // Warning (2 days or less)
+            status = 'Yaklaşan';
+            statusClass = 'status-warning';
+            timerClass = 'warning';
+            progressClass = 'progress-warning';
+            progressWidth = 70;
+            if (days === 0) {
+                countdown.textContent = `${hours}s ${minutes}d`;
+            } else if (days === 1) {
+                countdown.textContent = `1 gün ${hours}s`;
+            } else {
+                countdown.textContent = `${days} gün`;
+            }
+            card.classList.add('warning');
+            card.dataset.status = 'warning';
+        } else {
+            // Safe (more than 2 days)
+            status = 'Aktif';
+            statusClass = 'status-active';
+            timerClass = 'safe';
+            progressClass = 'progress-safe';
+            progressWidth = Math.max(10, Math.min(50, 100 - (days * 5)));
+
+            if (days > 7) {
+                countdown.textContent = `${days} gün`;
+            } else {
+                countdown.textContent = `${days}g ${hours}s`;
+            }
+            card.classList.add('safe');
+            card.dataset.status = 'active';
+        }
+
+        // Update UI elements
+        statusBadge.textContent = status;
+        statusBadge.className = `status-badge ${statusClass}`;
+
+        timer.className = `countdown-timer ${timerClass}`;
+
+        progress.className = `progress-fill ${progressClass}`;
+        progress.style.width = `${progressWidth}%`;
+
+        // Add special messages for urgent assignments
+        const timerText = timer.querySelector('.timer-text');
+        if (timerText) {
+            if (timeDiff > 0 && days === 0 && hours < 2) {
+                timerText.textContent = '🔥 Son 2 Saat!';
+            } else if (timeDiff > 0 && days === 0 && hours < 6) {
+                timerText.textContent = '⚠️ Bugün Bitiyor!';
+            } else if (timeDiff > 0 && days === 1) {
+                timerText.textContent = '📅 1 Gün Kaldı';
+            } else if (timeDiff <= 0) {
+                timerText.textContent = '❌ Süre Doldu';
+            } else {
+                timerText.textContent = 'Kalan Süre';
+            }
+        }
+    }
+
+    function updateAllTimers() {
+        const assignments = document.querySelectorAll('.assignment-item');
+
+        assignments.forEach(item => {
+            const assignmentId = item.dataset.assignmentId;
+            const dueDate = new Date(item.dataset.dueDate);
+
+            updateAssignmentStatus(assignmentId, dueDate);
+        });
+
+        updateStats();
+    }
+
+    function updateStats() {
+        const assignments = document.querySelectorAll('.assignment-item');
+        let activeCount = 0;
+        let warningCount = 0;
+        let urgentCount = 0;
+        let expiredCount = 0;
+
+        assignments.forEach(item => {
+            const assignmentId = item.dataset.assignmentId;
+            const dueDate = new Date(item.dataset.dueDate);
+            const now = new Date();
+            const timeDiff = dueDate - now;
+
+            // Calculate time remaining
+            const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+
+            // Determine status based on time remaining (same logic as updateAssignmentStatus)
+            if (timeDiff <= 0) {
+                expiredCount++;
+            } else if (days === 0 && hours < 6) {
+                urgentCount++;
+            } else if (days <= 2) {
+                warningCount++;
+            } else {
+                activeCount++;
+            }
+        });
+
+        // Update stat numbers with debug logging
+        console.log('Stats calculated:', { activeCount, warningCount, urgentCount, expiredCount });
+
+        const activeElement = document.getElementById('active-assignments');
+        const warningElement = document.getElementById('warning-assignments');
+        const urgentElement = document.getElementById('urgent-assignments');
+
+        if (activeElement) {
+            activeElement.textContent = activeCount;
+        }
+        if (warningElement) {
+            warningElement.textContent = warningCount;
+        }
+        if (urgentElement) {
+            urgentElement.textContent = urgentCount;
+        }
+    }
+
+    function initializeFilters() {
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const assignments = document.querySelectorAll('.assignment-item');
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', function () {
+                // Update active filter
+                filterBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+
+                const filter = this.dataset.filter;
+
+                // Filter assignments
+                assignments.forEach(item => {
+                    const status = item.dataset.status;
+                    let show = false;
+
+                    if (filter === 'all') {
+                        show = true;
+                    } else if (filter === status) {
+                        show = true;
+                    }
+
+                    if (show) {
+                        item.style.display = 'block';
+                        item.style.animation = 'fadeIn 0.3s ease';
+                    } else {
+                        item.style.display = 'none';
+                    }
+                });
+            });
+        });
+    }
+
+    // Add CSS animations
+    const style = document.createElement('style');
+    style.textContent = `
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .assignment-item {
+        transition: all 0.3s ease;
+    }
+    
+    .assignment-card.urgent .timer-value {
+        animation: pulse 1s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+    }
+`;
+    document.head.appendChild(style);
+</script>
+{% endblock %}

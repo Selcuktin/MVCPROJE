@@ -140,6 +140,61 @@ class Assignment(models.Model):
     
     def __str__(self):
         return f"{self.group.course.code} - {self.title}"
+    
+    @property
+    def is_expired(self):
+        """Check if assignment is expired"""
+        from django.utils import timezone
+        return timezone.now() > self.due_date
+    
+    @property
+    def time_remaining(self):
+        """Get time remaining until due date"""
+        from django.utils import timezone
+        if self.is_expired:
+            return None
+        
+        time_diff = self.due_date - timezone.now()
+        days = time_diff.days
+        hours = time_diff.seconds // 3600
+        minutes = (time_diff.seconds % 3600) // 60
+        
+        return {
+            'days': days,
+            'hours': hours,
+            'minutes': minutes,
+            'total_seconds': time_diff.total_seconds()
+        }
+    
+    @property
+    def urgency_level(self):
+        """Get urgency level of assignment"""
+        if self.is_expired:
+            return 'expired'
+        
+        remaining = self.time_remaining
+        if remaining:
+            total_hours = remaining['total_seconds'] / 3600
+            if total_hours <= 6:
+                return 'urgent'
+            elif total_hours <= 24:
+                return 'warning'
+            else:
+                return 'safe'
+        return 'expired'
+    
+    @property
+    def submission_count(self):
+        """Get number of submissions"""
+        return self.submissions.count()
+    
+    @property
+    def submission_percentage(self):
+        """Get submission percentage"""
+        total_students = self.group.enrollments.count()
+        if total_students == 0:
+            return 0
+        return (self.submission_count / total_students) * 100
 
 class Submission(models.Model):
     STATUS_CHOICES = [

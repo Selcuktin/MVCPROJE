@@ -4,233 +4,421 @@
 
 {% block extra_css %}
 <style>
-    .quick-action-btn {
-        height: 120px;
+    .dashboard-card {
+        transition: all 0.3s ease;
+        border: none;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        border-radius: 10px;
+    }
+    
+    .dashboard-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    }
+    
+    .stat-card {
+        background: linear-gradient(135deg, var(--bg-color-1), var(--bg-color-2));
+        border: none;
+        border-radius: 15px;
+        color: white;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        text-decoration: none;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        color: white;
+        text-decoration: none;
+    }
+    
+    .stat-card.courses {
+        --bg-color-1: #667eea;
+        --bg-color-2: #764ba2;
+    }
+    
+    .stat-card.students {
+        --bg-color-1: #4facfe;
+        --bg-color-2: #00f2fe;
+    }
+    
+    .stat-card.assignments {
+        --bg-color-1: #f093fb;
+        --bg-color-2: #f5576c;
+    }
+    
+    .stat-card.department {
+        --bg-color-1: #43e97b;
+        --bg-color-2: #38f9d7;
+    }
+    
+    .content-card {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .content-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .content-card .card-header {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border-radius: 15px 15px 0 0 !important;
+        border: none;
+        padding: 1rem 1.5rem;
+    }
+    
+    .item-card {
+        background: #f8f9fa;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        border: 2px solid transparent;
+    }
+    
+    .item-card:hover {
+        background: white;
+        border-color: #667eea;
+        transform: translateX(5px);
+        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    }
+    
+    .item-card:last-child {
+        margin-bottom: 0;
+    }
+    
+    .welcome-section {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        text-align: center;
+    }
+    
+    .welcome-section h2 {
+        margin-bottom: 0.5rem;
+        font-weight: 300;
+    }
+    
+    .welcome-section .lead {
+        opacity: 0.9;
+        margin-bottom: 0;
+    }
+    
+    .badge-modern {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 500;
+        font-size: 0.8rem;
+    }
+    
+    .btn-modern {
+        border-radius: 20px;
+        padding: 0.5rem 1.5rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    }
+    
+    .quick-action-card {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        border: none;
+        border-radius: 15px;
+        color: white;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        padding: 2rem;
+        text-align: center;
+        display: block;
+        height: 140px;
         display: flex;
         flex-direction: column;
         justify-content: center;
         align-items: center;
-        text-align: center;
-        border-radius: 12px;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        padding: 15px 10px;
     }
     
-    .quick-action-btn:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    .quick-action-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        color: white;
         text-decoration: none;
     }
     
-    .quick-action-btn i {
-        margin-bottom: 8px;
+    .quick-action-card.warning {
+        background: linear-gradient(135deg, #f093fb, #f5576c);
     }
     
-    .quick-action-btn small {
+    .quick-action-card.info {
+        background: linear-gradient(135deg, #4facfe, #00f2fe);
+    }
+    
+    .quick-action-card.secondary {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+    
+    .countdown-badge {
         font-size: 0.75rem;
-        opacity: 0.8;
+        min-width: 80px;
+        text-align: center;
     }
     
-    .card {
-        border-radius: 12px;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        transition: all 0.3s ease;
+    .countdown-badge.bg-success {
+        background-color: #28a745 !important;
     }
     
-    .card:hover {
-        box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    .countdown-badge.bg-warning {
+        background-color: #ffc107 !important;
+        color: #212529 !important;
+    }
+    
+    .countdown-badge.bg-danger {
+        background-color: #dc3545 !important;
+    }
+    
+    .countdown-badge.bg-secondary {
+        background-color: #6c757d !important;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <h2><i class="fas fa-tachometer-alt"></i> Öğretmen Paneli</h2>
-        {% if teacher %}
-            <p class="lead">Hoş geldiniz, {{ teacher.full_name }}!</p>
-        {% endif %}
-    </div>
-</div>
-
 {% if teacher %}
+<!-- Welcome Section -->
+<div class="welcome-section">
+    <h2><i class="fas fa-tachometer-alt me-2"></i>Öğretmen Paneli</h2>
+    <p class="lead">Hoş geldiniz, {{ teacher.full_name }}!</p>
+</div>
+
+<!-- Stats Cards -->
 <div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card bg-primary text-white">
+    <div class="col-md-3 mb-3">
+        <a href="{% url 'teachers:courses' %}" class="stat-card courses card text-decoration-none">
             <div class="card-body">
-                <div class="d-flex justify-content-between">
+                <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h4>{{ course_groups.count }}</h4>
-                        <p>Verdiğim Ders</p>
+                        <h3 class="mb-1">{{ course_groups.count }}</h3>
+                        <p class="mb-0">Verdiğim Ders</p>
                     </div>
-                    <i class="fas fa-book fa-2x"></i>
+                    <i class="fas fa-book fa-2x opacity-75"></i>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-success text-white">
+    <div class="col-md-3 mb-3">
+        <a href="{% url 'students:list' %}" class="stat-card students card text-decoration-none">
             <div class="card-body">
-                <div class="d-flex justify-content-between">
+                <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h4>{{ total_students }}</h4>
-                        <p>Toplam Öğrenci</p>
+                        <h3 class="mb-1">{{ total_students|default:0 }}</h3>
+                        <p class="mb-0">Toplam Öğrenci</p>
                     </div>
-                    <i class="fas fa-users fa-2x"></i>
+                    <i class="fas fa-users fa-2x opacity-75"></i>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-warning text-white">
+    <div class="col-md-3 mb-3">
+        <a href="{% url 'teachers:assignments' %}" class="stat-card assignments card text-decoration-none">
             <div class="card-body">
-                <div class="d-flex justify-content-between">
+                <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h4>{{ recent_assignments.count }}</h4>
-                        <p>Aktif Ödev</p>
+                        <h3 class="mb-1">{{ recent_assignments.count }}</h3>
+                        <p class="mb-0">Aktif Ödev</p>
                     </div>
-                    <i class="fas fa-tasks fa-2x"></i>
+                    <i class="fas fa-tasks fa-2x opacity-75"></i>
                 </div>
             </div>
-        </div>
+        </a>
     </div>
-    <div class="col-md-3">
-        <div class="card bg-info text-white">
+    <div class="col-md-3 mb-3">
+        <div class="stat-card department card">
             <div class="card-body">
-                <div class="d-flex justify-content-between">
+                <div class="d-flex justify-content-between align-items-center">
                     <div>
-                        <h4>{{ teacher.department }}</h4>
-                        <p>Bölüm</p>
+                        <h3 class="mb-1">{{ teacher.department|default:"--" }}</h3>
+                        <p class="mb-0">Bölüm</p>
                     </div>
-                    <i class="fas fa-building fa-2x"></i>
+                    <i class="fas fa-building fa-2x opacity-75"></i>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Content Cards -->
 <div class="row">
-    <div class="col-md-4">
-        <div class="card">
+    <div class="col-md-4 mb-4">
+        <div class="content-card card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5><i class="fas fa-book"></i> Verdiğim Dersler</h5>
-                <a href="{% url 'courses:group_create' %}" class="btn btn-primary btn-sm">
-                    <i class="fas fa-plus"></i> Yeni Grup
+                <h5 class="mb-0"><i class="fas fa-book me-2"></i>Verdiğim Dersler</h5>
+                <a href="{% url 'courses:group_create' %}" class="btn btn-light btn-sm btn-modern">
+                    <i class="fas fa-plus me-1"></i>Yeni
                 </a>
             </div>
             <div class="card-body">
                 {% for group in course_groups %}
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <div>
-                        <strong>{{ group.course.code }}</strong> - {{ group.course.name }}
-                        <br>
-                        <small class="text-muted">{{ group.classroom }} - {{ group.schedule }}</small>
-                        <br>
-                        <small class="text-success">{{ group.enrollments.count }} öğrenci</small>
+                <a href="{% url 'courses:group_detail' group.pk %}" class="text-decoration-none">
+                    <div class="item-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong class="text-dark">{{ group.course.code }}</strong>
+                                <p class="mb-1 text-dark">{{ group.course.name }}</p>
+                                <small class="text-muted">
+                                    <i class="fas fa-map-marker-alt me-1"></i>{{ group.classroom|default:"--" }}
+                                    {% if group.schedule %}
+                                    <i class="fas fa-clock ms-2 me-1"></i>{{ group.schedule }}
+                                    {% endif %}
+                                </small>
+                            </div>
+                            <span class="badge badge-modern bg-success">
+                                <i class="fas fa-users me-1"></i>{{ group.enrollments.count }}
+                            </span>
+                        </div>
                     </div>
-                    <a href="{% url 'courses:group_detail' group.pk %}" class="btn btn-outline-info btn-sm">
-                        <i class="fas fa-eye"></i>
+                </a>
+                {% empty %}
+                <div class="text-center py-4">
+                    <i class="fas fa-book fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">Henüz ders grubu yok.</p>
+                </div>
+                {% endfor %}
+                
+                <div class="text-center mt-3">
+                    <a href="{% url 'teachers:courses' %}" class="btn btn-primary btn-modern">
+                        <i class="fas fa-eye me-1"></i>Tüm Dersleri Görüntüle
                     </a>
                 </div>
-                <hr>
-                {% empty %}
-                <p class="text-muted">Henüz ders grubu yok.</p>
-                {% endfor %}
-                <a href="{% url 'teachers:courses' %}" class="btn btn-primary btn-sm">Tüm Dersleri Görüntüle</a>
             </div>
         </div>
     </div>
     
-    <div class="col-md-4">
-        <div class="card">
+    <div class="col-md-4 mb-4">
+        <div class="content-card card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5><i class="fas fa-tasks"></i> Son Ödevler</h5>
-                <a href="{% url 'courses:assignment_create' %}" class="btn btn-warning btn-sm">
-                    <i class="fas fa-plus"></i> Yeni Ödev
+                <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>Son Ödevler</h5>
+                <a href="{% url 'courses:assignment_create' %}" class="btn btn-light btn-sm btn-modern">
+                    <i class="fas fa-plus me-1"></i>Yeni
                 </a>
             </div>
             <div class="card-body">
                 {% for assignment in recent_assignments %}
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <div>
-                        <strong>{{ assignment.title }}</strong>
-                        <br>
-                        <small class="text-muted">{{ assignment.group.course.name }}</small>
-                        <br>
-                        <small class="text-muted">Son Teslim: {{ assignment.due_date|date:"d.m.Y H:i" }}</small>
+                <a href="{% url 'courses:assignment_detail' assignment.pk %}" class="text-decoration-none">
+                    <div class="item-card">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <strong class="text-dark">{{ assignment.title }}</strong>
+                                <p class="mb-1 text-dark small">{{ assignment.group.course.name }}</p>
+                                <small class="text-muted">
+                                    <i class="fas fa-calendar me-1"></i>{{ assignment.due_date|date:"d.m.Y H:i" }}
+                                </small>
+                            </div>
+                            <span class="badge badge-modern countdown-badge ms-2" 
+                                  data-due-date="{{ assignment.due_date|date:'Y-m-d H:i:s' }}"
+                                  id="countdown-teacher-{{ assignment.pk }}">
+                                <i class="fas fa-clock me-1"></i>Hesaplanıyor...
+                            </span>
+                        </div>
                     </div>
-                    <span class="badge bg-{% if assignment.due_date > now %}warning{% else %}danger{% endif %}">
-                        {% if assignment.due_date > now %}Aktif{% else %}Süresi Doldu{% endif %}
-                    </span>
-                </div>
-                <hr>
+                </a>
                 {% empty %}
-                <p class="text-muted">Henüz ödev yok.</p>
+                <div class="text-center py-4">
+                    <i class="fas fa-tasks fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">Henüz ödev yok.</p>
+                </div>
                 {% endfor %}
-                <a href="{% url 'teachers:assignments' %}" class="btn btn-warning btn-sm">Tüm Ödevleri Görüntüle</a>
+                
+                <div class="text-center mt-3">
+                    <a href="{% url 'teachers:assignments' %}" class="btn btn-warning btn-modern">
+                        <i class="fas fa-tasks me-1"></i>Tüm Ödevleri Görüntüle
+                    </a>
+                </div>
             </div>
         </div>
     </div>
     
-    <div class="col-md-4">
-        <div class="card">
+    <div class="col-md-4 mb-4">
+        <div class="content-card card">
             <div class="card-header d-flex justify-content-between align-items-center">
-                <h5><i class="fas fa-bullhorn"></i> Son Duyurular</h5>
-                <a href="{% url 'courses:announcement_create' %}" class="btn btn-info btn-sm">
-                    <i class="fas fa-plus"></i> Yeni Duyuru
+                <h5 class="mb-0"><i class="fas fa-bullhorn me-2"></i>Son Duyurular</h5>
+                <a href="{% url 'courses:announcement_create' %}" class="btn btn-light btn-sm btn-modern">
+                    <i class="fas fa-plus me-1"></i>Yeni
                 </a>
             </div>
             <div class="card-body">
                 {% for announcement in recent_announcements %}
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <div>
-                        <strong>{{ announcement.title }}</strong>
-                        <br>
-                        <small class="text-muted">{{ announcement.group.course.name }}</small>
-                        <br>
-                        <small class="text-muted">{{ announcement.create_date|date:"d.m.Y H:i" }}</small>
+                <a href="{% url 'courses:announcement_detail' announcement.pk %}" class="text-decoration-none">
+                    <div class="item-card">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <strong class="text-dark">{{ announcement.title }}</strong>
+                                <p class="mb-1 text-dark small">{{ announcement.group.course.name }}</p>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>{{ announcement.create_date|date:"d.m.Y H:i" }}
+                                </small>
+                            </div>
+                            <span class="badge badge-modern bg-{% if announcement.status == 'active' %}success{% else %}secondary{% endif %} ms-2">
+                                <i class="fas fa-{% if announcement.status == 'active' %}check{% else %}pause{% endif %} me-1"></i>
+                                {% if announcement.status == 'active' %}Aktif{% else %}Pasif{% endif %}
+                            </span>
+                        </div>
                     </div>
-                    <span class="badge bg-{% if announcement.status == 'active' %}success{% else %}secondary{% endif %}">
-                        {{ announcement.get_status_display }}
-                    </span>
-                </div>
-                <hr>
+                </a>
                 {% empty %}
-                <p class="text-muted">Henüz duyuru yok.</p>
+                <div class="text-center py-4">
+                    <i class="fas fa-bullhorn fa-2x text-muted mb-2"></i>
+                    <p class="text-muted mb-0">Henüz duyuru yok.</p>
+                </div>
                 {% endfor %}
-                <a href="{% url 'courses:announcement_list' %}" class="btn btn-info btn-sm">Tüm Duyuruları Görüntüle</a>
+                
+                <div class="text-center mt-3">
+                    <a href="{% url 'courses:announcement_list' %}" class="btn btn-info btn-modern">
+                        <i class="fas fa-bullhorn me-1"></i>Tüm Duyuruları Görüntüle
+                    </a>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
+<!-- Quick Actions -->
 <div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5><i class="fas fa-bullhorn"></i> Hızlı İşlemler</h5>
-            </div>
-            <div class="card-body">
-                <div class="row justify-content-center">
-                    <div class="col-md-4">
-                        <a href="{% url 'courses:assignment_create' %}" class="btn btn-outline-warning w-100 mb-2 quick-action-btn">
-                            <i class="fas fa-tasks fa-2x mb-2"></i><br>Yeni Ödev<br><small>Oluştur</small>
-                        </a>
-                    </div>
-                    <div class="col-md-4">
-                        <a href="{% url 'courses:announcement_create' %}" class="btn btn-outline-info w-100 mb-2 quick-action-btn">
-                            <i class="fas fa-bullhorn fa-2x mb-2"></i><br>Duyuru<br><small>Yayınla</small>
-                        </a>
-                    </div>
-                    <div class="col-md-4">
-                        <a href="{% url 'notes:create' %}" class="btn btn-outline-secondary w-100 mb-2 quick-action-btn">
-                            <i class="fas fa-sticky-note fa-2x mb-2"></i><br>Not<br><small>Ekle</small>
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
+    <div class="col-12 mb-3">
+        <h4 class="text-center text-muted">
+            <i class="fas fa-bolt me-2"></i>Hızlı İşlemler
+        </h4>
+    </div>
+    <div class="col-md-4 mb-3">
+        <a href="{% url 'courses:assignment_create' %}" class="quick-action-card warning text-decoration-none">
+            <i class="fas fa-tasks fa-3x mb-3"></i>
+            <h5 class="mb-1">Yeni Ödev</h5>
+            <small class="opacity-75">Öğrencileriniz için ödev oluşturun</small>
+        </a>
+    </div>
+    <div class="col-md-4 mb-3">
+        <a href="{% url 'courses:announcement_create' %}" class="quick-action-card info text-decoration-none">
+            <i class="fas fa-bullhorn fa-3x mb-3"></i>
+            <h5 class="mb-1">Duyuru Yayınla</h5>
+            <small class="opacity-75">Önemli duyuruları paylaşın</small>
+        </a>
+    </div>
+    <div class="col-md-4 mb-3">
+        <a href="{% url 'notes:create' %}" class="quick-action-card secondary text-decoration-none">
+            <i class="fas fa-star fa-3x mb-3"></i>
+            <h5 class="mb-1">Not Ekle</h5>
+            <small class="opacity-75">Öğrenci notlarını girin</small>
+        </a>
     </div>
 </div>
 {% else %}
@@ -273,4 +461,62 @@
     </div>
 </div>
 {% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize countdown timers for assignments
+    const countdownBadges = document.querySelectorAll('.countdown-badge');
+    
+    function updateCountdowns() {
+        countdownBadges.forEach(badge => {
+            const dueDate = new Date(badge.dataset.dueDate);
+            const now = new Date();
+            const timeDiff = dueDate - now;
+            
+            if (timeDiff <= 0) {
+                // Expired
+                badge.innerHTML = '<i class="fas fa-times me-1"></i>Doldu';
+                badge.className = 'badge badge-modern countdown-badge bg-secondary ms-2';
+            } else {
+                // Calculate time remaining
+                const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+                const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                
+                let displayText = '';
+                let badgeClass = 'badge badge-modern countdown-badge ms-2';
+                
+                if (days > 7) {
+                    displayText = `${days} gün`;
+                    badgeClass += ' bg-success';
+                } else if (days > 1) {
+                    displayText = `${days} gün`;
+                    badgeClass += ' bg-warning';
+                } else if (days === 1) {
+                    displayText = `1g ${hours}s`;
+                    badgeClass += ' bg-warning';
+                } else if (hours > 6) {
+                    displayText = `${hours} saat`;
+                    badgeClass += ' bg-warning';
+                } else if (hours > 0) {
+                    displayText = `${hours}s ${minutes}d`;
+                    badgeClass += ' bg-danger';
+                } else {
+                    displayText = `${minutes} dk`;
+                    badgeClass += ' bg-danger';
+                }
+                
+                badge.innerHTML = `<i class="fas fa-clock me-1"></i>${displayText}`;
+                badge.className = badgeClass;
+            }
+        });
+    }
+    
+    // Update immediately and then every minute
+    updateCountdowns();
+    setInterval(updateCountdowns, 60000); // Update every minute
+});
+</script>
 {% endblock %}

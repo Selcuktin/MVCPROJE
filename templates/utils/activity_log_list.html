@@ -4,144 +4,75 @@
 
 {% block content %}
 <div class="container">
-    <div class="row mb-4">
-        <div class="col-md-12">
-            <h2><i class="fas fa-history me-2"></i>Aktivite Logları</h2>
-            <p class="text-muted">Sistemdeki tüm kullanıcı aktiviteleri</p>
-        </div>
-    </div>
-
-    <!-- Filters -->
-    <div class="card mb-4">
-        <div class="card-body">
-            <form method="get" class="row g-3">
-                <div class="col-md-3">
-                    <label class="form-label">Kullanıcı</label>
-                    <input type="text" name="user" class="form-control" placeholder="Kullanıcı adı" value="{{ user_filter }}">
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">İşlem</label>
-                    <select name="action" class="form-select">
-                        <option value="">Tümü</option>
-                        {% for value, label in actions %}
-                            <option value="{{ value }}" {% if action_filter == value %}selected{% endif %}>{{ label }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-2">
-                    <label class="form-label">Model</label>
-                    <select name="model" class="form-select">
-                        <option value="">Tümü</option>
-                        {% for model in models %}
-                            <option value="{{ model }}" {% if model_filter == model %}selected{% endif %}>{{ model }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
-                <div class="col-md-3">
-                    <label class="form-label">Ara</label>
-                    <input type="text" name="search" class="form-control" placeholder="Açıklama ara" value="{{ search_query }}">
-                </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-primary w-100">
-                        <i class="fas fa-search me-1"></i>Filtrele
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Logs Table -->
-    <div class="card">
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Zaman</th>
-                            <th>Kullanıcı</th>
-                            <th>İşlem</th>
-                            <th>Model</th>
-                            <th>Nesne</th>
-                            <th>IP Adresi</th>
-                            <th>İşlem</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for log in page_obj %}
-                        <tr>
-                            <td>
-                                <small>{{ log.timestamp|date:"d.m.Y H:i" }}</small>
-                            </td>
-                            <td>
-                                {% if log.user %}
-                                    <i class="fas fa-user me-1"></i>{{ log.user.username }}
-                                {% else %}
-                                    <span class="text-muted">Anonim</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if log.action == 'create' %}
-                                    <span class="badge bg-success">{{ log.get_action_display }}</span>
-                                {% elif log.action == 'update' %}
-                                    <span class="badge bg-warning">{{ log.get_action_display }}</span>
-                                {% elif log.action == 'delete' %}
-                                    <span class="badge bg-danger">{{ log.get_action_display }}</span>
-                                {% elif log.action == 'login' %}
-                                    <span class="badge bg-info">{{ log.get_action_display }}</span>
-                                {% elif log.action == 'logout' %}
-                                    <span class="badge bg-secondary">{{ log.get_action_display }}</span>
-                                {% else %}
-                                    <span class="badge bg-primary">{{ log.get_action_display }}</span>
-                                {% endif %}
-                            </td>
-                            <td>{{ log.model_name }}</td>
-                            <td>{{ log.object_repr|default:"-" }}</td>
-                            <td><small>{{ log.ip_address|default:"-" }}</small></td>
-                            <td>
-                                <a href="{% url 'utils:activity_log_detail' log.pk %}" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-eye"></i> Detay
-                                </a>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="7" class="text-center text-muted">
-                                <i class="fas fa-info-circle me-2"></i>Kayıt bulunamadı
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    <div class="row">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h2><i class="fas fa-history me-2"></i>Aktivite Logları</h2>
             </div>
-
-            <!-- Pagination -->
-            {% if page_obj.has_other_pages %}
-            <nav aria-label="Page navigation" class="mt-4">
-                <ul class="pagination justify-content-center">
-                    {% if page_obj.has_previous %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if user_filter %}&user={{ user_filter }}{% endif %}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if model_filter %}&model={{ model_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">
-                                <i class="fas fa-chevron-left"></i>
-                            </a>
-                        </li>
+            
+            <div class="card">
+                <div class="card-body">
+                    {% if logs %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Tarih</th>
+                                        <th>Kullanıcı</th>
+                                        <th>Aktivite</th>
+                                        <th>Detay</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for log in logs %}
+                                    <tr>
+                                        <td>{{ log.created_at|date:"d.m.Y H:i" }}</td>
+                                        <td>{{ log.user.get_full_name|default:log.user.username }}</td>
+                                        <td>{{ log.action }}</td>
+                                        <td>{{ log.description }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        {% if is_paginated %}
+                        <nav aria-label="Sayfa navigasyonu">
+                            <ul class="pagination justify-content-center">
+                                {% if page_obj.has_previous %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page=1">İlk</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Önceki</a>
+                                    </li>
+                                {% endif %}
+                                
+                                <li class="page-item active">
+                                    <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+                                </li>
+                                
+                                {% if page_obj.has_next %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">Sonraki</a>
+                                    </li>
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ page_obj.paginator.num_pages }}">Son</a>
+                                    </li>
+                                {% endif %}
+                            </ul>
+                        </nav>
+                        {% endif %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="fas fa-history fa-3x text-muted mb-3"></i>
+                            <h5 class="text-muted">Henüz aktivite logu bulunmuyor</h5>
+                            <p class="text-muted">Sistem aktiviteleri burada görüntülenecek.</p>
+                        </div>
                     {% endif %}
-
-                    <li class="page-item active">
-                        <span class="page-link">{{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
-                    </li>
-
-                    {% if page_obj.has_next %}
-                        <li class="page-item">
-                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if user_filter %}&user={{ user_filter }}{% endif %}{% if action_filter %}&action={{ action_filter }}{% endif %}{% if model_filter %}&model={{ model_filter }}{% endif %}{% if search_query %}&search={{ search_query }}{% endif %}">
-                                <i class="fas fa-chevron-right"></i>
-                            </a>
-                        </li>
-                    {% endif %}
-                </ul>
-            </nav>
-            {% endif %}
+                </div>
+            </div>
         </div>
     </div>
 </div>
 {% endblock %}
-

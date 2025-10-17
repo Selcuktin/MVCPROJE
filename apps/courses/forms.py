@@ -82,7 +82,7 @@ class AssignmentForm(forms.ModelForm):
     
     class Meta:
         model = Assignment
-        fields = ['group', 'title', 'description', 'file_url', 'due_date_preset', 'due_date', 'max_score']
+        fields = ['group', 'title', 'description', 'file_url', 'due_date', 'max_score']
         widgets = {
             'description': forms.Textarea(attrs={'rows': 4}),
             'due_date': forms.DateTimeInput(attrs={'type': 'datetime-local'}),
@@ -119,9 +119,13 @@ class AssignmentForm(forms.ModelForm):
             except Teacher.DoesNotExist:
                 self.fields['group'].queryset = CourseGroup.objects.none()
         
-        # Due date alanını opsiyonel yap
-        self.fields['due_date'].required = False
-        self.fields['due_date'].help_text = 'Hızlı seçenek kullanmıyorsanız manuel tarih girin'
+        # Due date alanını güncelleme sırasında opsiyonel yap
+        if hasattr(self, 'instance') and self.instance.pk:
+            self.fields['due_date'].required = False
+            self.fields['due_date'].help_text = 'Değiştirmek istemiyorsanız boş bırakabilirsiniz'
+        else:
+            self.fields['due_date'].required = True
+            self.fields['due_date'].help_text = 'Teslim tarihi seçin'
     
     def clean(self):
         cleaned_data = super().clean()
@@ -146,13 +150,19 @@ class AssignmentForm(forms.ModelForm):
             elif due_date_preset == '1_month':
                 cleaned_data['due_date'] = now + timedelta(days=30)
         
-        # Eğer ne preset ne de manuel tarih seçilmişse hata ver
-        elif not due_date:
-            raise forms.ValidationError('Lütfen hızlı seçenek kullanın veya manuel tarih girin.')
+        # Manuel tarih kontrolü (sadece yeni tarih girildiyse ve geçmişte değilse)
+        elif due_date:
+            if due_date <= timezone.now():
+                raise forms.ValidationError('Teslim tarihi gelecekte olmalıdır.')
         
-        # Manuel tarih kontrolü
-        elif due_date and due_date <= timezone.now():
-            raise forms.ValidationError('Teslim tarihi gelecekte olmalıdır.')
+        # Güncelleme sırasında tarih kontrolü - eğer hiçbir tarih yoksa mevcut tarihi koru
+        elif not due_date and hasattr(self, 'instance') and self.instance.pk:
+            # Güncelleme sırasında tarih değiştirilmiyorsa mevcut tarihi koru
+            cleaned_data['due_date'] = self.instance.due_date
+        
+        # Yeni ödev oluştururken tarih zorunlu
+        elif not due_date and (not hasattr(self, 'instance') or not self.instance.pk):
+            raise forms.ValidationError('Lütfen bir teslim tarihi seçin.')
         
         return cleaned_data
 

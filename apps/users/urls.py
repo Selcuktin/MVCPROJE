@@ -5,7 +5,7 @@ API: JWT token-based authentication (geçici olarak devre dışı - paket yükle
 """
 from django.urls import path
 # from rest_framework_simplejwt.views import TokenRefreshView  # Geçici olarak devre dışı
-from .views import HomeView, CustomLoginView, CustomLogoutView, RegisterView
+from .views import HomeView, CustomLoginView, CustomLogoutView, RegisterView, NotificationsView, ControlPanelView, mark_notification_read
 # from . import api_views  # Geçici olarak devre dışı
 
 app_name = 'users'
@@ -16,6 +16,9 @@ urlpatterns = [
     path('login/', CustomLoginView.as_view(), name='login'),
     path('logout/', CustomLogoutView.as_view(), name='logout'),
     path('register/', RegisterView.as_view(), name='register'),
+    path('notifications/', NotificationsView.as_view(), name='notifications'),
+    path('notifications/mark-read/', mark_notification_read, name='mark_notification_read'),
+    path('control-panel/', ControlPanelView.as_view(), name='control_panel'),
     
     # JWT API Endpoints - Geçici olarak devre dışı
     # JWT paketini aktif etmek için:

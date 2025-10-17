@@ -40,23 +40,30 @@
                         </div>
                         <div class="col-md-6">
                             <h6>Durum</h6>
-                            <p>
-                                <span class="badge {% if assignment.status == 'active' %}bg-success{% elif assignment.status == 'expired' %}bg-danger{% else %}bg-warning{% endif %} fs-6">
-                                    {{ assignment.get_status_display }}
+                            <div class="mb-3">
+                                <span class="badge {% if assignment.status == 'active' %}bg-success{% elif assignment.status == 'expired' %}bg-danger{% else %}bg-warning{% endif %} fs-6 p-2">
+                                    {% if assignment.status == 'active' %}Aktif{% elif assignment.status == 'expired' %}Süresi Dolmuş{% else %}{{ assignment.get_status_display }}{% endif %}
                                 </span>
-                            </p>
+                            </div>
                             
-                            {% if can_submit %}
-                            <div class="alert alert-info">
-                                <i class="fas fa-info-circle me-2"></i>
-                                Bu ödevi teslim edebilirsiniz.
+                            <!-- Countdown Timer -->
+                            <div class="card border-0 mb-3" style="background: linear-gradient(135deg, #667eea, #764ba2); color: white;">
+                                <div class="card-body text-center">
+                                    <h6 class="card-title mb-2">
+                                        <i class="fas fa-clock me-1"></i>Kalan Süre
+                                    </h6>
+                                    <div id="countdown-timer" class="fs-4 fw-bold" data-due-date="{{ assignment.due_date|date:'Y-m-d H:i:s' }}">
+                                        Hesaplanıyor...
+                                    </div>
+                                    <div class="progress mt-2" style="height: 6px;">
+                                        <div id="countdown-progress" class="progress-bar bg-warning" style="width: 0%"></div>
+                                    </div>
+                                </div>
                             </div>
-                            {% else %}
-                            <div class="alert alert-warning">
-                                <i class="fas fa-exclamation-triangle me-2"></i>
-                                Teslim süresi dolmuş.
+                            
+                            <div id="submission-status" class="alert border-0">
+                                <!-- Bu JavaScript ile dinamik olarak güncellenecek -->
                             </div>
-                            {% endif %}
                         </div>
                     </div>
                     
@@ -204,10 +211,124 @@
     
     <div class="row mt-4">
         <div class="col-12">
-            <a href="{% url 'courses:group_detail' assignment.group.pk %}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-1"></i>Ders Grubuna Dön
-            </a>
+            <div class="d-flex justify-content-between align-items-center">
+                <a href="{% url 'courses:assignment_list' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Ödev Listesine Dön
+                </a>
+                
+                {% if user.userprofile.user_type == 'teacher' and assignment.group.teacher.user == user %}
+                <div class="btn-group" role="group">
+                    <a href="{% url 'courses:assignment_update' assignment.pk %}" class="btn btn-warning">
+                        <i class="fas fa-edit me-1"></i>Düzenle
+                    </a>
+                    <a href="{% url 'courses:assignment_delete' assignment.pk %}" class="btn btn-danger" 
+                       onclick="return confirm('Bu ödevi silmek istediğinizden emin misiniz?')">
+                        <i class="fas fa-trash me-1"></i>Sil
+                    </a>
+                </div>
+                {% endif %}
+            </div>
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const countdownTimer = document.getElementById('countdown-timer');
+    const countdownProgress = document.getElementById('countdown-progress');
+    const submissionStatus = document.getElementById('submission-status');
+    
+    if (countdownTimer) {
+        const dueDate = new Date(countdownTimer.dataset.dueDate);
+        
+        function updateCountdown() {
+            const now = new Date();
+            const timeDiff = dueDate - now;
+            
+            if (timeDiff <= 0) {
+                // Expired
+                countdownTimer.innerHTML = '<i class="fas fa-times-circle me-1"></i>Süresi Dolmuş';
+                countdownTimer.parentElement.style.background = 'linear-gradient(135deg, #dc3545, #c82333)';
+                countdownProgress.style.width = '100%';
+                countdownProgress.classList.remove('bg-warning');
+                countdownProgress.classList.add('bg-danger');
+                
+                // Update submission status
+                submissionStatus.className = 'alert alert-danger border-0';
+                submissionStatus.style.background = 'rgba(220, 53, 69, 0.1)';
+                submissionStatus.style.borderLeft = '4px solid #dc3545';
+                submissionStatus.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i><strong>Teslim süresi dolmuş.</strong>';
+                return;
+            }
+            
+            // Calculate time remaining
+            const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((timeDiff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((timeDiff % (1000 * 60)) / 1000);
+            
+            let displayText = '';
+            let progressWidth = 0;
+            let bgColor = 'linear-gradient(135deg, #667eea, #764ba2)';
+            let progressColor = 'bg-warning';
+            
+            if (days > 0) {
+                displayText = `${days} gün ${hours} saat`;
+                progressWidth = Math.max(10, Math.min(50, 100 - (days * 10)));
+                
+                // Update submission status - Safe
+                submissionStatus.className = 'alert alert-info border-0';
+                submissionStatus.style.background = 'rgba(13, 202, 240, 0.1)';
+                submissionStatus.style.borderLeft = '4px solid #0dcaf0';
+                submissionStatus.innerHTML = '<i class="fas fa-info-circle me-2"></i><strong>Bu ödevi teslim edebilirsiniz.</strong>';
+                
+            } else if (hours > 6) {
+                displayText = `${hours} saat ${minutes} dakika`;
+                progressWidth = 60;
+                
+                // Update submission status - Warning
+                submissionStatus.className = 'alert alert-warning border-0';
+                submissionStatus.style.background = 'rgba(255, 193, 7, 0.1)';
+                submissionStatus.style.borderLeft = '4px solid #ffc107';
+                submissionStatus.innerHTML = '<i class="fas fa-clock me-2"></i><strong>Teslim süreniz yaklaşıyor!</strong>';
+                
+            } else if (hours > 0) {
+                displayText = `${hours}s ${minutes}d ${seconds}s`;
+                progressWidth = 80;
+                bgColor = 'linear-gradient(135deg, #ffa502, #ff9500)';
+                progressColor = 'bg-warning';
+                
+                // Update submission status - Urgent
+                submissionStatus.className = 'alert alert-warning border-0';
+                submissionStatus.style.background = 'rgba(255, 165, 2, 0.1)';
+                submissionStatus.style.borderLeft = '4px solid #ffa502';
+                submissionStatus.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i><strong>Son saatler! Hemen teslim edin.</strong>';
+                
+            } else {
+                displayText = `${minutes}d ${seconds}s`;
+                progressWidth = 95;
+                bgColor = 'linear-gradient(135deg, #ff4757, #ff3742)';
+                progressColor = 'bg-danger';
+                
+                // Update submission status - Critical
+                submissionStatus.className = 'alert alert-danger border-0';
+                submissionStatus.style.background = 'rgba(255, 71, 87, 0.1)';
+                submissionStatus.style.borderLeft = '4px solid #ff4757';
+                submissionStatus.innerHTML = '<i class="fas fa-fire me-2"></i><strong>Son dakikalar! Acilen teslim edin!</strong>';
+            }
+            
+            countdownTimer.innerHTML = `<i class="fas fa-clock me-1"></i>${displayText}`;
+            countdownTimer.parentElement.style.background = bgColor;
+            countdownProgress.style.width = `${progressWidth}%`;
+            countdownProgress.className = `progress-bar ${progressColor}`;
+        }
+        
+        // Update immediately and then every second
+        updateCountdown();
+        setInterval(updateCountdown, 1000);
+    }
+});
+</script>
 {% endblock %}

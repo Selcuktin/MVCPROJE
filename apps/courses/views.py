@@ -106,6 +106,10 @@ class CourseUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     
     def test_func(self):
         return self.request.user.is_staff or hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type in ['admin', 'teacher']
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Ders başarıyla güncellendi.')
+        return super().form_valid(form)
 
 class CourseDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Course
@@ -170,6 +174,10 @@ class CourseGroupCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView)
     
     def test_func(self):
         return self.request.user.is_staff or hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type in ['admin', 'teacher']
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Ders grubu başarıyla oluşturuldu.')
+        return super().form_valid(form)
 
 class CourseGroupUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = CourseGroup
@@ -179,6 +187,10 @@ class CourseGroupUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView)
     
     def test_func(self):
         return self.request.user.is_staff or hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type in ['admin', 'teacher']
+    
+    def form_valid(self, form):
+        messages.success(self.request, 'Ders grubu başarıyla güncellendi.')
+        return super().form_valid(form)
 
 # Enrollment Views
 class EnrollmentCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
@@ -242,14 +254,21 @@ class AssignmentListView(LoginRequiredMixin, ListView):
             return Assignment.objects.filter(
                 group__enrollments__student=student,
                 status='active'
-            ).select_related('group__course')
+            ).select_related('group__course').prefetch_related('submissions', 'group__enrollments')
         elif hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type == 'teacher':
             teacher = Teacher.objects.get(user=self.request.user)
             return Assignment.objects.filter(
                 group__teacher=teacher
-            ).select_related('group__course')
+            ).select_related('group__course').prefetch_related('submissions', 'group__enrollments')
         else:
-            return Assignment.objects.select_related('group__course', 'group__teacher')
+            return Assignment.objects.select_related('group__course', 'group__teacher').prefetch_related('submissions', 'group__enrollments')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Assignments are already prefetched with submissions and enrollments
+        # The template will use the property methods directly
+        return context
 
 class AssignmentDetailView(LoginRequiredMixin, DetailView):
     model = Assignment
@@ -286,8 +305,12 @@ class AssignmentCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         kwargs['user'] = self.request.user
         return kwargs
     
+    def form_valid(self, form):
+        messages.success(self.request, 'Ödev başarıyla oluşturuldu.')
+        return super().form_valid(form)
+    
     def get_success_url(self):
-        return reverse_lazy('courses:assignment_detail', kwargs={'pk': self.object.pk})
+        return reverse_lazy('courses:assignment_list')
 
 class AssignmentUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Assignment
@@ -307,7 +330,29 @@ class AssignmentUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     
     def form_valid(self, form):
         messages.success(self.request, 'Ödev başarıyla güncellendi.')
-        return redirect('courses:assignment_detail', pk=self.object.pk)
+        # Formu kaydet ve success_url'e yönlendir
+        return super().form_valid(form)
+    
+    def get_success_url(self):
+        return reverse_lazy('courses:assignment_list')
+    
+    def form_invalid(self, form):
+        # Detaylı hata mesajları için form hatalarını logla
+        error_messages = []
+        for field, errors in form.errors.items():
+            for error in errors:
+                if field == '__all__':
+                    error_messages.append(f"Genel hata: {error}")
+                else:
+                    field_label = form.fields.get(field, {}).get('label', field)
+                    error_messages.append(f"{field_label}: {error}")
+        
+        if error_messages:
+            messages.error(self.request, f"Ödev güncellenirken hatalar oluştu: {'; '.join(error_messages)}")
+        else:
+            messages.error(self.request, 'Ödev güncellenirken hata oluştu. Lütfen formu kontrol edin.')
+        
+        return super().form_invalid(form)
 
 class AssignmentDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Assignment
@@ -358,7 +403,7 @@ class SubmissionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
         submission.save()
         
         messages.success(self.request, 'Ödev başarıyla teslim edildi.')
-        return redirect('courses:assignment_detail', pk=assignment.pk)
+        return redirect('courses:assignment_list')
 
 # Announcement Views
 class AnnouncementListView(LoginRequiredMixin, ListView):
@@ -422,7 +467,7 @@ class AnnouncementCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView
         announcement.save()
         
         messages.success(self.request, 'Duyuru başarıyla oluşturuldu.')
-        return redirect('courses:announcement_detail', pk=announcement.pk)
+        return redirect('courses:announcement_list')
 
 class AnnouncementUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     model = Announcement
@@ -442,7 +487,7 @@ class AnnouncementUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView
     
     def form_valid(self, form):
         messages.success(self.request, 'Duyuru başarıyla güncellendi.')
-        return redirect('courses:announcement_detail', pk=self.object.pk)
+        return redirect('courses:announcement_list')
 
 class AnnouncementDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
     model = Announcement
