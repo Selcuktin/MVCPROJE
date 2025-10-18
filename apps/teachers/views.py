@@ -1,63 +1,35 @@
 """
-Teachers app views
+View Layer: Renders templates and handles HTTP responses.
+Bu dosya öğretmen işlemleri için template render işlemlerini yapar.
 """
-from django.shortcuts import render, get_object_or_404, redirect
+from django.shortcuts import render, redirect
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
+from django.views.generic import TemplateView
 from django.urls import reverse_lazy
-from django.contrib import messages
-from django.db.models import Q, Count
-from django.utils import timezone
 
 from .models import Teacher
 from .forms import TeacherForm
+from .controllers import TeacherController
 
-class TeacherListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
-    model = Teacher
+class TeacherListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'teachers/list.html'
-    context_object_name = 'teachers'
-    paginate_by = 20
     
     def test_func(self):
         return self.request.user.is_staff or hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type in ['teacher', 'admin']
     
-    def get_queryset(self):
-        queryset = Teacher.objects.select_related().prefetch_related('course_groups__course')
-        search = self.request.GET.get('search')
-        department = self.request.GET.get('department')
-        status = self.request.GET.get('status')
-        
-        if search:
-            queryset = queryset.filter(
-                Q(first_name__icontains=search) |
-                Q(last_name__icontains=search) |
-                Q(tc_no__icontains=search) |
-                Q(email__icontains=search) |
-                Q(department__icontains=search)
-            )
-        
-        if department:
-            queryset = queryset.filter(department__icontains=department)
-            
-        if status:
-            queryset = queryset.filter(status=status)
-            
-        return queryset.order_by('department', 'first_name', 'last_name')
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        controller = TeacherController()
+        context.update(controller.get_teacher_list_context(self.request))
+        return context
 
-class TeacherDetailView(LoginRequiredMixin, DetailView):
-    model = Teacher
+class TeacherDetailView(LoginRequiredMixin, TemplateView):
     template_name = 'teachers/detail.html'
-    context_object_name = 'teacher'
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        teacher = self.get_object()
-        
-        # Get teacher's course groups
-        from apps.courses.models import CourseGroup
-        course_groups = CourseGroup.objects.filter(teacher=teacher).select_related('course').prefetch_related('enrollments')
-        context['course_groups'] = course_groups
-        
+        controller = TeacherController()
+        context.update(controller.get_teacher_detail_context(self.request, self.kwargs['pk']))
         return context
 
 class TeacherDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -68,37 +40,8 @@ class TeacherDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        try:
-            teacher = Teacher.objects.get(user=self.request.user)
-            context['teacher'] = teacher
-            
-            # Get teacher's course groups
-            from apps.courses.models import CourseGroup
-            teacher_course_groups = CourseGroup.objects.filter(teacher=teacher, status='active')
-            context['teacher_courses'] = teacher_course_groups
-            
-            # Calculate total students
-            total_students = 0
-            for group in teacher_course_groups:
-                total_students += group.enrollments.filter(status='enrolled').count()
-            context['total_students'] = total_students
-            
-            # Get recent assignments and announcements
-            from apps.courses.models import Assignment, Announcement
-            context['recent_assignments'] = Assignment.objects.filter(
-                group__in=teacher_course_groups
-            ).select_related('group__course').order_by('-create_date')[:5]
-            
-            context['recent_announcements'] = Announcement.objects.filter(
-                group__in=teacher_course_groups
-            ).select_related('group__course').order_by('-create_date')[:5]
-            
-            context['course_groups'] = teacher_course_groups
-            context['now'] = timezone.now()
-            
-        except Teacher.DoesNotExist:
-            messages.error(self.request, 'Öğretmen profili bulunamadı.')
-        
+        controller = TeacherController()
+        context.update(controller.get_teacher_dashboard_context(self.request))
         return context
 
 class TeacherCoursesView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -109,15 +52,8 @@ class TeacherCoursesView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        try:
-            teacher = Teacher.objects.get(user=self.request.user)
-            from apps.courses.models import CourseGroup
-            context['teacher'] = teacher
-            context['course_groups'] = CourseGroup.objects.filter(teacher=teacher, status='active').select_related('course').order_by('course__code')
-            
-        except Teacher.DoesNotExist:
-            messages.error(self.request, 'Öğretmen profili bulunamadı.')
-        
+        controller = TeacherController()
+        context.update(controller.get_teacher_courses_context(self.request))
         return context
 
 class TeacherStudentsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -128,24 +64,8 @@ class TeacherStudentsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView)
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        try:
-            teacher = Teacher.objects.get(user=self.request.user)
-            context['teacher'] = teacher
-            
-            # Get students from teacher's course groups
-            from apps.courses.models import CourseGroup, Enrollment
-            teacher_groups = CourseGroup.objects.filter(teacher=teacher, status='active')
-            students = []
-            for group in teacher_groups:
-                group_students = Enrollment.objects.filter(group=group, status='enrolled').select_related('student')
-                for enrollment in group_students:
-                    if enrollment.student not in students:
-                        students.append(enrollment.student)
-            context['students'] = students
-            
-        except Teacher.DoesNotExist:
-            messages.error(self.request, 'Öğretmen profili bulunamadı.')
-        
+        controller = TeacherController()
+        context.update(controller.get_teacher_students_context(self.request))
         return context
 
 class TeacherAssignmentsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -156,19 +76,8 @@ class TeacherAssignmentsView(LoginRequiredMixin, UserPassesTestMixin, TemplateVi
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        try:
-            teacher = Teacher.objects.get(user=self.request.user)
-            context['teacher'] = teacher
-            
-            # Get assignments from teacher's course groups
-            from apps.courses.models import CourseGroup, Assignment
-            teacher_groups = CourseGroup.objects.filter(teacher=teacher, status='active')
-            assignments = Assignment.objects.filter(group__in=teacher_groups).order_by('-create_date')
-            context['assignments'] = assignments
-            
-        except Teacher.DoesNotExist:
-            messages.error(self.request, 'Öğretmen profili bulunamadı.')
-        
+        controller = TeacherController()
+        context.update(controller.get_teacher_assignments_context(self.request))
         return context
 
 class TeacherAnnouncementsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
@@ -179,57 +88,77 @@ class TeacherAnnouncementsView(LoginRequiredMixin, UserPassesTestMixin, Template
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        try:
-            teacher = Teacher.objects.get(user=self.request.user)
-            context['teacher'] = teacher
-            
-            # Get announcements from teacher
-            from apps.courses.models import Announcement
-            announcements = Announcement.objects.filter(teacher=teacher).order_by('-create_date')
-            context['announcements'] = announcements
-            
-        except Teacher.DoesNotExist:
-            messages.error(self.request, 'Öğretmen profili bulunamadı.')
-        
+        controller = TeacherController()
+        context.update(controller.get_teacher_announcements_context(self.request))
         return context
 
-class TeacherCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
-    """Yeni öğretmen oluşturma"""
-    model = Teacher
-    form_class = TeacherForm
+class TeacherCreateView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'teachers/form.html'
-    success_url = reverse_lazy('teachers:list')
     
     def test_func(self):
         return self.request.user.is_staff or hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type == 'admin'
     
-    def form_valid(self, form):
-        messages.success(self.request, 'Öğretmen başarıyla oluşturuldu.')
-        return super().form_valid(form)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        controller = TeacherController()
+        context.update(controller.create_teacher_context(self.request))
+        context['form'] = TeacherForm()
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        form = TeacherForm(request.POST)
+        if form.is_valid():
+            controller = TeacherController()
+            result = controller.create_teacher_context(request, form.cleaned_data)
+            if result.get('success'):
+                return redirect('teachers:list')
+        
+        context = self.get_context_data(**kwargs)
+        context['form'] = form
+        return render(request, self.template_name, context)
 
-class TeacherUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
-    """Öğretmen bilgilerini güncelleme"""
-    model = Teacher
-    form_class = TeacherForm
+class TeacherUpdateView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'teachers/form.html'
-    success_url = reverse_lazy('teachers:list')
     
     def test_func(self):
         return self.request.user.is_staff or hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type == 'admin'
     
-    def form_valid(self, form):
-        messages.success(self.request, 'Öğretmen bilgileri başarıyla güncellendi.')
-        return super().form_valid(form)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        controller = TeacherController()
+        context.update(controller.update_teacher_context(self.request, self.kwargs['pk']))
+        if 'teacher' in context:
+            context['form'] = TeacherForm(instance=context['teacher'])
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        teacher_id = self.kwargs['pk']
+        form = TeacherForm(request.POST)
+        if form.is_valid():
+            controller = TeacherController()
+            result = controller.update_teacher_context(request, teacher_id, form.cleaned_data)
+            if result.get('success'):
+                return redirect('teachers:list')
+        
+        context = self.get_context_data(**kwargs)
+        context['form'] = form
+        return render(request, self.template_name, context)
 
-class TeacherDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
-    """Öğretmen silme"""
-    model = Teacher
+class TeacherDeleteView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'teachers/delete.html'
-    success_url = reverse_lazy('teachers:list')
     
     def test_func(self):
         return self.request.user.is_staff or hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type == 'admin'
     
-    def delete(self, request, *args, **kwargs):
-        messages.success(self.request, 'Öğretmen başarıyla silindi.')
-        return super().delete(request, *args, **kwargs)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        controller = TeacherController()
+        context.update(controller.delete_teacher_context(self.request, self.kwargs['pk']))
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        controller = TeacherController()
+        result = controller.delete_teacher_context(request, self.kwargs['pk'])
+        if result.get('success'):
+            return redirect('teachers:list')
+        return render(request, self.template_name, self.get_context_data(**kwargs))

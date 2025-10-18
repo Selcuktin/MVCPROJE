@@ -36,9 +36,12 @@ urlpatterns = [
     path('announcements/<int:pk>/edit/', views.AnnouncementUpdateView.as_view(), name='announcement_update'),
     path('announcements/<int:pk>/delete/', views.AnnouncementDeleteView.as_view(), name='announcement_delete'),
     
-    # Reports
+    # Reports - MVC Pattern ile genişletildi
     path('reports/students/', views.StudentReportView.as_view(), name='student_report'),
     path('reports/courses/', views.CourseReportView.as_view(), name='course_report'),
+    path('reports/students/export/<str:format>/', views.export_student_report, name='export_student_report'),
+    path('reports/course/<int:course_id>/export/<str:format>/', views.export_course_report, name='export_course_report'),
+    path('reports/assignment/<int:assignment_id>/export/<str:format>/', views.export_assignment_report, name='export_assignment_report'),
     
     # AJAX
     path('ajax/update-grade/', views.update_grade_ajax, name='update_grade_ajax'),

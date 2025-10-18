@@ -275,6 +275,24 @@
                 <a href="{% url 'courses:update' course.pk %}" class="btn btn-warning">
                     <i class="fas fa-edit me-1"></i>Dersi Düzenle
                 </a>
+                
+                <!-- MVC Pattern - Export Buttons -->
+                <div class="dropdown mt-2">
+                    <button class="btn btn-info dropdown-toggle w-100" type="button" data-bs-toggle="dropdown">
+                        <i class="fas fa-download me-1"></i>Rapor İndir
+                    </button>
+                    <ul class="dropdown-menu w-100">
+                        <li><a class="dropdown-item" href="{% url 'courses:export_course_report' course.pk 'pdf' %}">
+                            <i class="fas fa-file-pdf me-1 text-danger"></i>PDF İndir
+                        </a></li>
+                        <li><a class="dropdown-item" href="{% url 'courses:export_course_report' course.pk 'excel' %}">
+                            <i class="fas fa-file-excel me-1 text-success"></i>Excel İndir
+                        </a></li>
+                        <li><a class="dropdown-item" href="{% url 'courses:export_course_report' course.pk 'csv' %}">
+                            <i class="fas fa-file-csv me-1 text-info"></i>CSV İndir
+                        </a></li>
+                    </ul>
+                </div>
                 {% endif %}
             </div>
         </div>

@@ -225,6 +225,24 @@
                        onclick="return confirm('Bu ödevi silmek istediğinizden emin misiniz?')">
                         <i class="fas fa-trash me-1"></i>Sil
                     </a>
+                    
+                    <!-- MVC Pattern - Export Buttons -->
+                    <div class="btn-group" role="group">
+                        <button type="button" class="btn btn-info dropdown-toggle" data-bs-toggle="dropdown">
+                            <i class="fas fa-download me-1"></i>Rapor İndir
+                        </button>
+                        <ul class="dropdown-menu">
+                            <li><a class="dropdown-item" href="{% url 'courses:export_assignment_report' assignment.pk 'pdf' %}">
+                                <i class="fas fa-file-pdf me-1 text-danger"></i>PDF İndir
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'courses:export_assignment_report' assignment.pk 'excel' %}">
+                                <i class="fas fa-file-excel me-1 text-success"></i>Excel İndir
+                            </a></li>
+                            <li><a class="dropdown-item" href="{% url 'courses:export_assignment_report' assignment.pk 'csv' %}">
+                                <i class="fas fa-file-csv me-1 text-info"></i>CSV İndir
+                            </a></li>
+                        </ul>
+                    </div>
                 </div>
                 {% endif %}
             </div>

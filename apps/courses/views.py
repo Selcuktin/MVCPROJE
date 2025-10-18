@@ -1,49 +1,39 @@
+"""
+View Layer: Renders templates and handles HTTP responses.
+Bu dosya ders işlemleri için template render işlemlerini yapar.
+"""
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
+from django.views.generic import TemplateView
 from django.urls import reverse_lazy
 from django.contrib import messages
-from django.db.models import Q, Count
 from django.http import HttpResponse, JsonResponse
-from django.utils import timezone
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 import json
-from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import letter
-import openpyxl
+
 from .models import Course, CourseGroup, Enrollment, Assignment, Submission, Announcement
-from apps.students.models import Student
-from apps.teachers.models import Teacher
 from .forms import CourseForm, CourseGroupForm, AssignmentForm, SubmissionForm, AnnouncementForm, EnrollmentForm, GradeForm
+from .controllers import CourseController, AssignmentController, ReportController
 
 # Course Views
-class CourseListView(LoginRequiredMixin, ListView):
-    model = Course
+class CourseListView(LoginRequiredMixin, TemplateView):
     template_name = 'courses/list.html'
-    context_object_name = 'courses'
-    paginate_by = 20
     
-    def get_queryset(self):
-        queryset = Course.objects.filter(status='active')
-        search = self.request.GET.get('search')
-        department = self.request.GET.get('department')
-        semester = self.request.GET.get('semester')
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        controller = CourseController()
         
-        if search:
-            queryset = queryset.filter(
-                Q(code__icontains=search) |
-                Q(name__icontains=search) |
-                Q(department__icontains=search)
-            )
+        # Get filters from request
+        filters = {
+            'search': self.request.GET.get('search'),
+            'department': self.request.GET.get('department'),
+            'semester': self.request.GET.get('semester')
+        }
         
-        if department:
-            queryset = queryset.filter(department__icontains=department)
-            
-        if semester:
-            queryset = queryset.filter(semester=semester)
-            
-        return queryset.order_by('code')
+        courses = controller.get_course_list(self.request, filters)
+        context['courses'] = courses
+        return context
 
 class CourseDetailView(LoginRequiredMixin, DetailView):
     model = Course
@@ -524,6 +514,7 @@ class GradeUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
         return super().form_valid(form)
 
 # Report Views
+# MVC Pattern - Views using Controllers
 class StudentReportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'courses/student_report.html'
     
@@ -532,112 +523,77 @@ class StudentReportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
+        # MVC: Controller kullanarak business logic'i çalıştır
+        course_controller = CourseController()
         context['enrollments'] = Enrollment.objects.select_related('student', 'group__course').order_by('student__first_name')
         return context
+
+
+# MVC Pattern - Export Functions using Controllers
+@login_required
+def export_student_report(request, format):
+    """Export student report in specified format - MVC Pattern"""
+    # Permission check
+    if not (request.user.is_staff or hasattr(request.user, 'userprofile') and request.user.userprofile.user_type in ['admin', 'teacher']):
+        messages.error(request, 'Bu işlem için yetkiniz bulunmuyor.')
+        return redirect('courses:student_report')
     
-    def get(self, request, *args, **kwargs):
-        if request.GET.get('export') == 'excel':
-            return self.export_excel()
-        elif request.GET.get('export') == 'pdf':
-            return self.export_pdf()
-        return super().get(request, *args, **kwargs)
+    # MVC: Controller kullanarak rapor oluştur
+    report_controller = ReportController()
     
-    def export_excel(self):
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = "Öğrenci Raporu"
-        
-        headers = ['Öğrenci', 'Ders', 'Öğretmen', 'Not', 'Devam', 'Durum']
-        for col, header in enumerate(headers, 1):
-            ws.cell(row=1, column=col, value=header)
-        
-        enrollments = Enrollment.objects.select_related('student', 'group__course', 'group__teacher')
-        for row, enrollment in enumerate(enrollments, 2):
-            ws.cell(row=row, column=1, value=enrollment.student.full_name)
-            ws.cell(row=row, column=2, value=enrollment.group.course.name)
-            ws.cell(row=row, column=3, value=enrollment.group.teacher.full_name)
-            ws.cell(row=row, column=4, value=enrollment.grade)
-            ws.cell(row=row, column=5, value=f"{enrollment.attendance}%")
-            ws.cell(row=row, column=6, value=enrollment.get_status_display())
-        
-        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = 'attachment; filename=ogrenci_raporu.xlsx'
-        wb.save(response)
-        return response
+    try:
+        if format in ['pdf', 'excel', 'csv']:
+            return report_controller.generate_student_report(request, format)
+        else:
+            messages.error(request, 'Geçersiz format türü.')
+            return redirect('courses:student_report')
+    except Exception as e:
+        messages.error(request, f'Rapor oluşturulurken hata oluştu: {str(e)}')
+        return redirect('courses:student_report')
+
+
+@login_required
+def export_course_report(request, course_id, format):
+    """Export course report in specified format - MVC Pattern"""
+    # Permission check
+    if not (request.user.is_staff or hasattr(request.user, 'userprofile') and request.user.userprofile.user_type in ['admin', 'teacher']):
+        messages.error(request, 'Bu işlem için yetkiniz bulunmuyor.')
+        return redirect('courses:list')
     
-    def export_pdf(self):
-        """PDF export for student report"""
-        from reportlab.lib.pagesizes import A4, letter
-        from reportlab.lib import colors
-        from reportlab.lib.units import cm
-        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
-        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-        from reportlab.pdfbase import pdfmetrics
-        from reportlab.pdfbase.ttfonts import TTFont
-        from io import BytesIO
-        
-        buffer = BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=A4)
-        elements = []
-        
-        # Styles
-        styles = getSampleStyleSheet()
-        title_style = ParagraphStyle(
-            'CustomTitle',
-            parent=styles['Heading1'],
-            fontSize=24,
-            textColor=colors.HexColor('#2c3e50'),
-            spaceAfter=30,
-            alignment=1  # Center
-        )
-        
-        # Başlık
-        title = Paragraph("Öğrenci Raporu", title_style)
-        elements.append(title)
-        elements.append(Spacer(1, 0.5*cm))
-        
-        # Tablo verileri
-        data = [['Öğrenci', 'Ders', 'Öğretmen', 'Not', 'Devam', 'Durum']]
-        
-        enrollments = Enrollment.objects.select_related('student', 'group__course', 'group__teacher')
-        for enrollment in enrollments:
-            data.append([
-                enrollment.student.full_name,
-                enrollment.group.course.name,
-                enrollment.group.teacher.full_name,
-                enrollment.grade,
-                f"{enrollment.attendance}%",
-                enrollment.get_status_display()
-            ])
-        
-        # Tablo oluştur
-        table = Table(data, colWidths=[4*cm, 5*cm, 4*cm, 2*cm, 2*cm, 3*cm])
-        
-        # Tablo stili
-        table.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3498db')),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('FONTSIZE', (0, 0), (-1, 0), 12),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('TEXTCOLOR', (0, 1), (-1, -1), colors.black),
-            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
-            ('FONTSIZE', (0, 1), (-1, -1), 9),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.lightgrey]),
-        ]))
-        
-        elements.append(table)
-        
-        # PDF'i oluştur
-        doc.build(elements)
-        buffer.seek(0)
-        
-        response = HttpResponse(buffer, content_type='application/pdf')
-        response['Content-Disposition'] = 'attachment; filename=ogrenci_raporu.pdf'
-        return response
+    # MVC: Controller kullanarak rapor oluştur
+    report_controller = ReportController()
+    
+    try:
+        if format in ['pdf', 'excel', 'csv']:
+            return report_controller.generate_course_report(request, course_id, format)
+        else:
+            messages.error(request, 'Geçersiz format türü.')
+            return redirect('courses:detail', pk=course_id)
+    except Exception as e:
+        messages.error(request, f'Rapor oluşturulurken hata oluştu: {str(e)}')
+        return redirect('courses:detail', pk=course_id)
+
+
+@login_required
+def export_assignment_report(request, assignment_id, format):
+    """Export assignment report in specified format - MVC Pattern"""
+    # Permission check
+    if not (request.user.is_staff or hasattr(request.user, 'userprofile') and request.user.userprofile.user_type in ['admin', 'teacher']):
+        messages.error(request, 'Bu işlem için yetkiniz bulunmuyor.')
+        return redirect('courses:assignment_list')
+    
+    # MVC: Controller kullanarak rapor oluştur
+    report_controller = ReportController()
+    
+    try:
+        if format in ['pdf', 'excel', 'csv']:
+            return report_controller.generate_assignment_report(request, assignment_id, format)
+        else:
+            messages.error(request, 'Geçersiz format türü.')
+            return redirect('courses:assignment_detail', pk=assignment_id)
+    except Exception as e:
+        messages.error(request, f'Rapor oluşturulurken hata oluştu: {str(e)}')
+        return redirect('courses:assignment_detail', pk=assignment_id)
 
 class CourseReportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'courses/course_report.html'
