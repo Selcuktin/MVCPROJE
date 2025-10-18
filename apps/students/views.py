@@ -15,7 +15,17 @@ class StudentListView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'students/list.html'
     
     def test_func(self):
-        return self.request.user.is_staff or hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type in ['teacher', 'admin']
+        # Sadece öğretmen ve admin'ler öğrenci listesini görebilir
+        return (self.request.user.is_staff or 
+                (hasattr(self.request.user, 'userprofile') and 
+                 self.request.user.userprofile.user_type in ['teacher', 'admin']))
+    
+    def handle_no_permission(self):
+        # Öğrenci ise kendi dashboard'una yönlendir
+        if (hasattr(self.request.user, 'userprofile') and 
+            self.request.user.userprofile.user_type == 'student'):
+            return redirect('students:dashboard')
+        return super().handle_no_permission()
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)

@@ -4,17 +4,21 @@ Bu dosya ders işlemleri için template render işlemlerini yapar.
 """
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
-from django.views.generic import TemplateView
+from django.views.generic import ListView, DetailView, CreateView, UpdateView, DeleteView, TemplateView
 from django.urls import reverse_lazy
 from django.contrib import messages
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
+from django.utils import timezone
+from django.db.models import Count
 import json
 
 from .models import Course, CourseGroup, Enrollment, Assignment, Submission, Announcement
 from .forms import CourseForm, CourseGroupForm, AssignmentForm, SubmissionForm, AnnouncementForm, EnrollmentForm, GradeForm
 from .controllers import CourseController, AssignmentController, ReportController
+from apps.students.models import Student
+from apps.teachers.models import Teacher
 
 # Course Views
 class CourseListView(LoginRequiredMixin, TemplateView):
