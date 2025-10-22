@@ -51,7 +51,7 @@ Modern ve kullanıcı dostu bir kurs yönetim sistemi. Django framework'ü kulla
 1. **Projeyi klonlayın**
 ```bash
 git clone <repo-url>
-cd MVCPROJE
+cd OKULPROJE
 ```
 
 2. **Sanal ortam oluşturun**
@@ -106,7 +106,7 @@ http://127.0.0.1:8000
 ## 📁 Proje Yapısı
 
 ```
-MVCPROJE/
+OKULPROJE/
 ├── apps/                       # Django uygulamaları
 │   ├── courses/               # Ders yönetimi
 │   ├── students/              # Öğrenci yönetimi
