@@ -34,11 +34,67 @@ Modern ve kullanıcı dostu bir kurs yönetim sistemi. Django framework'ü kulla
 
 ## 🛠️ Teknolojiler
 
-- **Backend:** Django 4.2.7
-- **Frontend:** Bootstrap 5, Font Awesome
-- **Database:** SQLite3 (Geliştirme)
-- **Authentication:** Django Auth System
-- **Forms:** Django Forms + Crispy Forms
+### Backend Framework
+- **Django 4.2.7** - Python tabanlı web framework
+  - MVC (Model-View-Controller) mimarisi
+  - ORM (Object-Relational Mapping) desteği
+  - Admin paneli entegrasyonu
+  - Güvenlik özellikleri (CSRF, XSS koruması)
+  - URL routing sistemi
+  - Middleware desteği
+
+### Frontend Teknolojileri
+- **Bootstrap 5.3** - Responsive CSS framework
+  - Grid sistemi ile esnek layout
+  - Hazır UI bileşenleri (navbar, cards, modals)
+  - Mobile-first yaklaşım
+  - Dark/Light tema desteği
+- **Font Awesome 6** - İkon kütüphanesi
+  - 2000+ ücretsiz ikon
+  - Scalable vector iconlar
+  - CSS ve JavaScript entegrasyonu
+- **Custom CSS** - Özel stil dosyaları
+  - Tema özelleştirmeleri
+  - Responsive tasarım iyileştirmeleri
+
+### Veritabanı
+- **SQLite3** - Hafif dosya tabanlı veritabanı
+  - Geliştirme ortamı için ideal
+  - Kurulum gerektirmez
+  - ACID uyumlu
+  - Production için PostgreSQL/MySQL'e kolayca geçiş
+  - Yaklaşık 50+ tablo ile tam ilişkisel yapı
+
+### Kimlik Doğrulama & Güvenlik
+- **Django Authentication System** - Yerleşik auth sistemi
+  - User modeli ve session yönetimi
+  - Password hashing (PBKDF2)
+  - Permission ve group sistemi
+  - Login/Logout işlemleri
+  - @login_required decorator'ları
+- **Custom Permissions** - Rol tabanlı erişim
+  - Öğrenci, Öğretmen, Admin rolleri
+  - View-level permission kontrolü
+  - Template-level yetki filtreleme
+
+### Form İşleme
+- **Django Forms** - Server-side form validation
+  - Model forms ile otomatik form oluşturma
+  - Field validation ve error handling
+  - CSRF token koruması
+- **Django Crispy Forms** - Gelişmiş form rendering
+  - Bootstrap entegrasyonu
+  - Form layout kontrolü
+  - Custom form styling
+  - Helper sınıfları ile form düzenleme
+
+### Ek Kütüphaneler & Araçlar
+- **Python 3.8+** - Programlama dili
+- **pip** - Paket yöneticisi
+- **Virtual Environment** - İzole geliştirme ortamı
+- **Django Management Commands** - Özel yönetim komutları
+- **Logging System** - Hata ve işlem kayıtları
+- **Static Files Handling** - CSS, JS, resim yönetimi
 
 ## 📦 Kurulum
 
