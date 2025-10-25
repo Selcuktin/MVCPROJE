@@ -1,21 +1,3 @@
 venv\Scripts\activate.bat && python manage.py runserver
 
-OKULPROJE/
-├── apps/
-│   ├── courses/
-│   │   ├── models.py
-│   │   ├── views.py
-│   │   ├── urls.py
-│   │   ├── forms.py
-│   │   └── templates/
-│   ├── students/
-│   ├── teachers/
-│   ├── notes/
-│   └── users/
-├── config/
-│   ├── settings.py
-│   ├── urls.py
-│   └── wsgi.py
-├── templates/
-├── static/
-└── utils/
+maile şimdilik gerke yokta öğretmen ve öğrencilerin bir birlerine site içerisinde mesaj gönderebilceği bir şey yapılabilir şimdlik dursun
