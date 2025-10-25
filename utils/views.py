@@ -4,6 +4,46 @@ from django.contrib.admin.views.decorators import staff_member_required
 from django.utils.decorators import method_decorator
 from django.views.generic import ListView
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.http import HttpResponse
+from django.views.generic import View
+import logging
+
+logger = logging.getLogger(__name__)
+
+def handle_exception(request, exception, template_name='errors/error.html'):
+    """
+    Özel exception handler
+    """
+    logger.error(f"Exception: {str(exception)}", exc_info=True)
+    context = {
+        'error_message': str(exception),
+        'error_code': 500
+    }
+    return render(request, template_name, context, status=500)
+
+def handle_404(request, exception):
+    """404 sayfa bulunamadı hatası"""
+    context = {
+        'error_message': 'Sayfa bulunamadı',
+        'error_code': 404
+    }
+    return render(request, 'errors/404.html', context, status=404)
+
+def handle_403(request, exception):
+    """403 erişim reddedildi hatası"""
+    context = {
+        'error_message': 'Bu sayfaya erişim izniniz yok',
+        'error_code': 403
+    }
+    return render(request, 'errors/403.html', context, status=403)
+
+def handle_500(request):
+    """500 sunucu hatası"""
+    context = {
+        'error_message': 'Sunucu hatası oluştu',
+        'error_code': 500
+    }
+    return render(request, 'errors/500.html', context, status=500)
 
 
 @method_decorator(staff_member_required, name='dispatch')

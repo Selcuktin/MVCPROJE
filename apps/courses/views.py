@@ -13,6 +13,9 @@ from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from django.db.models import Count
 import json
+import logging
+
+logger = logging.getLogger(__name__)
 
 from .models import Course, CourseGroup, Enrollment, Assignment, Submission, Announcement
 from .forms import CourseForm, CourseGroupForm, AssignmentForm, SubmissionForm, AnnouncementForm, EnrollmentForm, GradeForm
@@ -45,39 +48,44 @@ class CourseDetailView(LoginRequiredMixin, DetailView):
     context_object_name = 'course'
     
     def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        course = self.get_object()
-        
-        # Derse kayıtlı öğrencileri getir (tüm gruplardan)
-        enrollments = Enrollment.objects.filter(
-            group__course=course,
-            status='enrolled'
-        ).select_related('student', 'group').order_by('student__first_name')
-        
-        context['enrollments'] = enrollments
-        context['enrolled_count'] = enrollments.count()
-        
-        # Kayıtlı olmayan öğrencileri getir
-        enrolled_student_ids = enrollments.values_list('student_id', flat=True)
-        available_students = Student.objects.filter(
-            status='active'
-        ).exclude(id__in=enrolled_student_ids).order_by('first_name')
-        context['available_students'] = available_students
-        
-        # Dersin öğretmenini getir (ilk gruptan)
-        first_group = course.groups.filter(status='active').first()
-        if first_group:
-            context['teacher'] = first_group.teacher
-        
-        # Ders içeriklerini getir
-        from .models import CourseContent
-        contents = CourseContent.objects.filter(
-            course=course,
-            is_active=True
-        ).order_by('week_number', 'upload_date')
-        context['contents'] = contents
-        
-        return context
+        try:
+            context = super().get_context_data(**kwargs)
+            course = self.get_object()
+            
+            # Derse kayıtlı öğrencileri getir (tüm gruplardan)
+            enrollments = Enrollment.objects.filter(
+                group__course=course,
+                status='enrolled'
+            ).select_related('student', 'group').order_by('student__first_name')
+            
+            context['enrollments'] = enrollments
+            context['enrolled_count'] = enrollments.count()
+            
+            # Kayıtlı olmayan öğrencileri getir
+            enrolled_student_ids = enrollments.values_list('student_id', flat=True)
+            available_students = Student.objects.filter(
+                status='active'
+            ).exclude(id__in=enrolled_student_ids).order_by('first_name')
+            context['available_students'] = available_students
+            
+            # Dersin öğretmenini getir (ilk gruptan)
+            first_group = course.groups.filter(status='active').first()
+            if first_group:
+                context['teacher'] = first_group.teacher
+            
+            # Ders içeriklerini getir
+            from .models import CourseContent
+            contents = CourseContent.objects.filter(
+                course=course,
+                is_active=True
+            ).order_by('week_number', 'upload_date')
+            context['contents'] = contents
+            
+            return context
+        except Exception as e:
+            logger.error(f"Ders detayı yüklenirken hata: {str(e)}", exc_info=True)
+            messages.error(self.request, "Ders bilgileri yüklenirken bir hata oluştu")
+            return super().get_context_data(**kwargs)
 
 class CourseCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     model = Course

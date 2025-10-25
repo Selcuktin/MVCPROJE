@@ -24,7 +24,7 @@ class Command(BaseCommand):
                 last_name='User'
             )
             UserProfile.objects.create(user=admin, user_type='admin')
-            self.stdout.write(f'✓ Admin user created: admin/admin123')
+            self.stdout.write(f'[+] Admin user created: admin/admin123')
 
         # Create teachers
         teachers_data = [
@@ -56,7 +56,7 @@ class Command(BaseCommand):
                     department='Bilgisayar Mühendisliği',
                     hire_date=date.today()
                 )
-                self.stdout.write(f'✓ Teacher created: {teacher_data["username"]}/teacher123')
+                self.stdout.write(f'[+] Teacher created: {teacher_data["username"]}/teacher123')
 
         # Create students
         students_data = [
@@ -87,7 +87,7 @@ class Command(BaseCommand):
                     gender='M',
                     address='İstanbul, Türkiye'
                 )
-                self.stdout.write(f'✓ Student created: {student_data["username"]}/student123')
+                self.stdout.write(f'[+] Student created: {student_data["username"]}/student123')
 
         # Create courses
         courses_data = [
@@ -127,7 +127,7 @@ class Command(BaseCommand):
                     schedule='Pazartesi 09:00-12:00'
                 )
                 
-                self.stdout.write(f'✓ Course created: {course_data["code"]} - {course_data["name"]}')
+                self.stdout.write(f'[+] Course created: {course_data["code"]} - {course_data["name"]}')
 
         # Create enrollments
         from apps.courses.models import CourseGroup, Enrollment
@@ -142,7 +142,7 @@ class Command(BaseCommand):
                         group=group,
                         status='enrolled'
                     )
-                    self.stdout.write(f'✓ Enrollment created: {student.full_name} -> {group.course.name}')
+                    self.stdout.write(f'[+] Enrollment created: {student.full_name} -> {group.course.name}')
 
         # Create sample assignments
         from apps.courses.models import Assignment
@@ -181,7 +181,7 @@ class Command(BaseCommand):
                         max_score=assignment_data['max_score'],
                         status='active'
                     )
-                    self.stdout.write(f'✓ Assignment created: {assignment_data["title"]}')
+                    self.stdout.write(f'[+] Assignment created: {assignment_data["title"]}')
 
         # Create sample announcements
         from apps.courses.models import Announcement
@@ -212,7 +212,7 @@ class Command(BaseCommand):
                         content=announcement_data['content'],
                         status='active'
                     )
-                    self.stdout.write(f'✓ Announcement created: {announcement_data["title"]}')
+                    self.stdout.write(f'[+] Announcement created: {announcement_data["title"]}')
 
         # Create sample notes
         import random
@@ -243,7 +243,7 @@ class Command(BaseCommand):
                         score=final_score
                     )
 
-        self.stdout.write(self.style.SUCCESS('✓ Sample data created successfully!'))
+        self.stdout.write(self.style.SUCCESS('[+] Sample data created successfully!'))
         self.stdout.write('')
         self.stdout.write('Login credentials:')
         self.stdout.write('Admin: admin/admin123')

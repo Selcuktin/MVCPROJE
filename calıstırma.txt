@@ -1,1 +1,21 @@
-python manage.py runserver
+venv\Scripts\activate.bat && python manage.py runserver
+
+OKULPROJE/
+├── apps/
+│   ├── courses/
+│   │   ├── models.py
+│   │   ├── views.py
+│   │   ├── urls.py
+│   │   ├── forms.py
+│   │   └── templates/
+│   ├── students/
+│   ├── teachers/
+│   ├── notes/
+│   └── users/
+├── config/
+│   ├── settings.py
+│   ├── urls.py
+│   └── wsgi.py
+├── templates/
+├── static/
+└── utils/
