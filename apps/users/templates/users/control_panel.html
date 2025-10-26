@@ -5,12 +5,31 @@
 
 {% block extra_css %}
 <style>
+    /* Modern Typography */
+    * {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+    
     .control-panel-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        padding: 2rem 0;
+        padding: 2.5rem 0;
         margin-bottom: 2rem;
-        border-radius: 15px;
+        border-radius: 16px;
+        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.25);
+    }
+    
+    .control-panel-header h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        letter-spacing: -0.3px;
+    }
+    
+    .control-panel-header p {
+        font-size: 1.05rem;
+        font-weight: 400;
+        opacity: 0.95;
+        letter-spacing: 0.2px;
     }
     
     .stats-grid {
@@ -51,18 +70,23 @@
         font-weight: 700;
         margin-bottom: 0.5rem;
         display: block;
+        letter-spacing: -0.5px;
     }
     
     .stat-label {
         color: #666;
-        font-size: 0.9rem;
+        font-size: 0.95rem;
         margin-bottom: 0.5rem;
+        font-weight: 500;
+        letter-spacing: 0.2px;
     }
     
     .stat-change {
         font-size: 0.8rem;
-        padding: 0.2rem 0.5rem;
-        border-radius: 10px;
+        padding: 0.3rem 0.6rem;
+        border-radius: 12px;
+        font-weight: 600;
+        letter-spacing: 0.2px;
     }
     
     .stat-change.positive {
@@ -88,6 +112,17 @@
         align-items: center;
         padding: 1rem 0;
         border-bottom: 1px solid #eee;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-radius: 8px;
+        margin: 0 -0.5rem;
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+    
+    .activity-item:hover {
+        background: rgba(102, 126, 234, 0.05);
+        transform: translateX(5px);
     }
     
     .activity-item:last-child {
@@ -112,18 +147,24 @@
     
     .activity-title {
         font-weight: 600;
-        margin-bottom: 0.2rem;
+        font-size: 1rem;
+        color: #1a1a1a;
+        margin-bottom: 0.3rem;
+        letter-spacing: 0.2px;
     }
     
     .activity-description {
-        color: #666;
+        color: #2d3748;
         font-size: 0.9rem;
-        margin-bottom: 0.2rem;
+        font-weight: 400;
+        margin-bottom: 0.3rem;
+        line-height: 1.4;
     }
     
     .activity-time {
-        color: #999;
-        font-size: 0.8rem;
+        color: #718096;
+        font-size: 0.85rem;
+        font-weight: 400;
     }
     
     .quick-actions {
@@ -173,7 +214,7 @@
     
     .calendar-header {
         display: flex;
-        justify-content: between;
+        justify-content: space-between;
         align-items: center;
         margin-bottom: 1rem;
     }
@@ -233,12 +274,27 @@
     .calendar-day-big.has-event {
         background: #fff3cd;
         border-color: #ffa502;
+        cursor: pointer;
+    }
+    
+    .calendar-day-big.has-event:hover {
+        background: #ffe8a1;
+        border-color: #ff8c00;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(255, 165, 2, 0.3);
     }
     
     .calendar-day-big.today.has-event {
         background: #667eea;
         color: white;
         border-color: #667eea;
+        cursor: pointer;
+    }
+    
+    .calendar-day-big.today.has-event:hover {
+        background: #5568d3;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
     }
     
     .event-indicator {
@@ -525,7 +581,11 @@
                     <!-- Takvim günleri -->
                     {% for day in calendar_days %}
                     <div class="calendar-day-big {% if day.is_today %}today{% endif %} {% if day.has_event %}has-event{% endif %}" 
-                         style="min-height: 80px; border: 1px solid #e9ecef; border-radius: 8px; padding: 0.5rem; position: relative;">
+                         style="min-height: 80px; border: 1px solid #e9ecef; border-radius: 8px; padding: 0.5rem; position: relative;"
+                         {% if day.has_event and day.assignment_id %}
+                         data-assignment-id="{{ day.assignment_id }}"
+                         onclick="navigateToAssignment(this)"
+                         {% endif %}>
                         {% if day.number %}
                             <div class="fw-bold mb-1">{{ day.number }}</div>
                             {% if day.has_event %}
@@ -605,14 +665,17 @@
                 </h5>
                 
                 {% for activity in recent_activities %}
-                <div class="activity-item">
-                    <div class="activity-icon" style="background: {{ activity.color }};">
+                <div class="activity-item" data-url="{{ activity.url }}" onclick="navigateToActivity(this)">
+                    <div class="activity-icon" style="background: var(--activity-color, #667eea)" data-bg="{{ activity.color }}">
                         <i class="{{ activity.icon }}"></i>
                     </div>
                     <div class="activity-content">
                         <div class="activity-title">{{ activity.title }}</div>
                         <div class="activity-description">{{ activity.description }}</div>
                         <div class="activity-time">{{ activity.time }}</div>
+                    </div>
+                    <div class="activity-arrow">
+                        <i class="fas fa-chevron-right text-muted"></i>
                     </div>
                 </div>
                 {% empty %}
@@ -717,9 +780,9 @@ function getCookie(name) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize with Django provided date
-    let currentMonth = {{ current_month }} - 1; // JavaScript months are 0-based
-    let currentYear = {{ current_year }};
+    // Initialize with Django provided date (fallbacks for linting)
+    let currentMonth = parseInt('{{ current_month|default:1 }}', 10) - 1; // JavaScript months are 0-based
+    let currentYear = parseInt('{{ current_year|default:1970 }}', 10);
     
     console.log('Initial date from Django:', currentYear, currentMonth + 1);
     
@@ -762,7 +825,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log(`Loading calendar data for ${year}-${month}`);
         const csrftoken = getCookie('csrftoken');
         
-        fetch(`{% url 'users:control_panel' %}?year=${year}&month=${month}`, {
+        fetch(`{{ request.path }}?year=${year}&month=${month}`, {
             method: 'GET',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
@@ -819,20 +882,28 @@ document.addEventListener('DOMContentLoaded', function() {
             dayElement.className = `calendar-day-big ${day.is_today ? 'today' : ''} ${day.has_event ? 'has-event' : ''}`;
             dayElement.style.cssText = 'min-height: 80px; border: 1px solid #e9ecef; border-radius: 8px; padding: 0.5rem; position: relative;';
             
+            // Add click handler for days with events
+            if (day.has_event && day.assignment_id) {
+                dayElement.setAttribute('data-assignment-id', day.assignment_id);
+                dayElement.onclick = function() {
+                    navigateToAssignment(this);
+                };
+            }
+            
             if (day.number) {
-                dayElement.innerHTML = `
-                    <div class="fw-bold mb-1">${day.number}</div>
-                    ${day.has_event ? `
-                        <div class="event-indicator">
-                            <i class="fas fa-tasks text-warning"></i>
-                            <small class="text-muted" style="font-size: 0.65rem; line-height: 1.1;">
-                                ${day.assignment_title ? day.assignment_title.substring(0, 17) + (day.assignment_title.length > 17 ? '...' : '') : 
-                                  day.course_name ? day.course_name.substring(0, 17) + (day.course_name.length > 17 ? '...' : '') : 
-                                  'Ödev var'}
-                            </small>
-                        </div>
-                    ` : ''}
-                `;
+                var textLabel = 'Ödev var';
+                if (day.assignment_title) {
+                    textLabel = day.assignment_title.length > 17 ? day.assignment_title.substring(0, 17) + '...' : day.assignment_title;
+                } else if (day.course_name) {
+                    textLabel = day.course_name.length > 17 ? day.course_name.substring(0, 17) + '...' : day.course_name;
+                }
+                dayElement.innerHTML = '<div class="fw-bold mb-1">' + day.number + '</div>' +
+                    (day.has_event ? (
+                        '<div class="event-indicator">' +
+                        '<i class="fas fa-tasks text-warning"></i>' +
+                        '<small class="text-muted" style="font-size: 0.65rem; line-height: 1.1;">' + textLabel + '</small>' +
+                        '</div>'
+                    ) : '');
             } else {
                 // Empty day (padding)
                 dayElement.innerHTML = '';
@@ -849,5 +920,21 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Stats refreshed');
     }, 30000);
 });
+
+// Navigate to activity function
+function navigateToActivity(element) {
+    const url = element.getAttribute('data-url');
+    if (url && url !== '#') {
+        window.location.href = url;
+    }
+}
+
+// Navigate to assignment from calendar
+function navigateToAssignment(element) {
+    const assignmentId = element.getAttribute('data-assignment-id');
+    if (assignmentId) {
+        window.location.href = `/courses/assignments/${assignmentId}/`;
+    }
+}
 </script>
 {% endblock %}

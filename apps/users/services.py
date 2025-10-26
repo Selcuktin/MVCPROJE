@@ -124,6 +124,7 @@ class UserService:
     
     def _get_student_activities(self, user):
         """Get recent activities for student"""
+        from django.urls import reverse
         activities = []
         
         try:
@@ -148,15 +149,44 @@ class UserService:
                     'description': f'{assignment.group.course.name} - {assignment.title}',
                     'time': time_str,
                     'icon': 'fas fa-tasks',
-                    'color': '#667eea'
+                    'color': '#667eea',
+                    'url': reverse('courses:assignment_detail', kwargs={'pk': assignment.pk})
                 })
+            
+            # Recent announcements
+            announcements = Announcement.objects.filter(
+                group__enrollments__student=student,
+                status='active',
+                create_date__gte=timezone.now() - timedelta(days=7)
+            ).order_by('-create_date')[:3]
+            
+            for announcement in announcements:
+                time_diff = timezone.now() - announcement.create_date
+                if time_diff.days == 0:
+                    time_str = f"{time_diff.seconds // 3600} saat önce"
+                else:
+                    time_str = f"{time_diff.days} gün önce"
+                
+                activities.append({
+                    'title': 'Yeni Duyuru',
+                    'description': f'{announcement.group.course.name} - {announcement.title}',
+                    'time': time_str,
+                    'icon': 'fas fa-bullhorn',
+                    'color': '#2ed573',
+                    'url': reverse('courses:announcement_detail', kwargs={'pk': announcement.pk})
+                })
+                
         except Student.DoesNotExist:
             pass
         
-        return activities
+        # Sort activities by time (most recent first)
+        activities.sort(key=lambda x: x['time'], reverse=False)
+        
+        return activities[:5]  # Return only 5 most recent
     
     def _get_teacher_activities(self, user):
         """Get recent activities for teacher"""
+        from django.urls import reverse
         activities = []
         
         try:
@@ -180,12 +210,39 @@ class UserService:
                     'description': f'{assignment.group.course.name} - {assignment.title}',
                     'time': time_str,
                     'icon': 'fas fa-plus-circle',
-                    'color': '#2ed573'
+                    'color': '#2ed573',
+                    'url': reverse('courses:assignment_detail', kwargs={'pk': assignment.pk})
                 })
+            
+            # Recent announcements created
+            announcements = Announcement.objects.filter(
+                group__teacher=teacher,
+                create_date__gte=timezone.now() - timedelta(days=7)
+            ).order_by('-create_date')[:3]
+            
+            for announcement in announcements:
+                time_diff = timezone.now() - announcement.create_date
+                if time_diff.days == 0:
+                    time_str = f"{time_diff.seconds // 3600} saat önce"
+                else:
+                    time_str = f"{time_diff.days} gün önce"
+                
+                activities.append({
+                    'title': 'Duyuru Yayınlandı',
+                    'description': f'{announcement.group.course.name} - {announcement.title}',
+                    'time': time_str,
+                    'icon': 'fas fa-bullhorn',
+                    'color': '#ffa502',
+                    'url': reverse('courses:announcement_detail', kwargs={'pk': announcement.pk})
+                })
+                
         except Teacher.DoesNotExist:
             pass
         
-        return activities
+        # Sort activities by time (most recent first)
+        activities.sort(key=lambda x: x['time'], reverse=False)
+        
+        return activities[:5]  # Return only 5 most recent
     
     def get_calendar_data(self, user, year, month):
         """Get calendar data for specific month"""
@@ -228,18 +285,21 @@ class UserService:
                         assignment_title = ''
                         course_name = ''
                         
+                        assignment_id = None
                         if has_event and assignments_in_month[day]:
                             # Get first assignment for this day
                             first_assignment = assignments_in_month[day][0]
                             assignment_title = first_assignment['title']
                             course_name = first_assignment['course']
+                            assignment_id = first_assignment['id']
                         
                         calendar_days.append({
                             'number': day,
                             'is_today': is_today,
                             'has_event': has_event,
                             'assignment_title': assignment_title,
-                            'course_name': course_name
+                            'course_name': course_name,
+                            'assignment_id': assignment_id
                         })
             
             return {'calendar_days': calendar_days}
@@ -265,6 +325,7 @@ class UserService:
                 if day not in assignments_in_month:
                     assignments_in_month[day] = []
                 assignments_in_month[day].append({
+                    'id': assignment.id,
                     'title': assignment.title,
                     'course': assignment.group.course.name
                 })
@@ -291,6 +352,7 @@ class UserService:
                 if day not in assignments_in_month:
                     assignments_in_month[day] = []
                 assignments_in_month[day].append({
+                    'id': assignment.id,
                     'title': assignment.title,
                     'course': assignment.group.course.name
                 })

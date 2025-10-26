@@ -26,6 +26,8 @@
             box-shadow: 0 2px 20px rgba(0,0,0,0.1);
             border: none;
             padding: 1rem 0;
+            z-index: 1050;
+            position: relative;
         }
         
         .navbar-brand {
@@ -106,7 +108,12 @@
             border-radius: 12px;
             padding: 0.5rem 0;
             margin-top: 0.5rem;
-            z-index: 9999 !important;
+            z-index: 10000 !important;
+        }
+        
+        .dropdown {
+            position: relative;
+            z-index: 1051;
         }
         
         .dropdown-item {
@@ -127,9 +134,13 @@
             width: 350px;
             max-height: 400px;
             overflow-y: auto;
+            z-index: 10001 !important;
         }
         
+        /* Ensure notification items are clickable */
         .notification-item {
+            position: relative;
+            z-index: 10002;
             padding: 1rem;
             border-bottom: 1px solid #f1f3f4;
             transition: all 0.3s ease;

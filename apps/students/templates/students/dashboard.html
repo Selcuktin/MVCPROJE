@@ -4,31 +4,55 @@
 
 {% block extra_css %}
 <style>
+    /* Modern Typography */
+    * {
+        font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    }
+    
     .dashboard-card {
-        transition: all 0.3s ease;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         border: none;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        border-radius: 10px;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        border-radius: 12px;
     }
     
     .dashboard-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
     }
     
     .stat-card {
         background: linear-gradient(135deg, var(--bg-color-1), var(--bg-color-2));
         border: none;
-        border-radius: 15px;
+        border-radius: 16px;
         color: white;
-        transition: all 0.3s ease;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         cursor: pointer;
         text-decoration: none;
+        overflow: hidden;
+        position: relative;
+        z-index: 1;
+    }
+    
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, rgba(255,255,255,0.1), rgba(255,255,255,0));
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+    
+    .stat-card:hover::before {
+        opacity: 1;
     }
     
     .stat-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+        transform: translateY(-4px);
+        box-shadow: 0 12px 32px rgba(0,0,0,0.15);
         color: white;
         text-decoration: none;
     }
@@ -53,106 +77,180 @@
         --bg-color-2: #38f9d7;
     }
     
+    .stat-card h3 {
+        font-size: 2.25rem;
+        font-weight: 700;
+        letter-spacing: -0.5px;
+    }
+    
+    .stat-card p {
+        font-size: 0.95rem;
+        font-weight: 500;
+        opacity: 0.95;
+        letter-spacing: 0.2px;
+    }
+    
     .content-card {
         border: none;
-        border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        transition: all 0.3s ease;
+        border-radius: 16px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow: hidden;
+        position: relative;
+        z-index: 1;
     }
     
     .content-card:hover {
         transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.12);
     }
     
     .content-card .card-header {
         background: linear-gradient(135deg, #667eea, #764ba2);
         color: white;
-        border-radius: 15px 15px 0 0 !important;
+        border-radius: 0 !important;
         border: none;
-        padding: 1rem 1.5rem;
+        padding: 1.25rem 1.5rem;
+        font-weight: 600;
+        font-size: 1.05rem;
+        letter-spacing: 0.3px;
+    }
+    
+    .content-card .card-body {
+        padding: 1.5rem;
+        background: white;
     }
     
     .item-card {
-        background: #f8f9fa;
-        border-radius: 10px;
-        padding: 1rem;
+        background: #f8fafb;
+        border-radius: 12px;
+        padding: 1.25rem;
         margin-bottom: 1rem;
-        transition: all 0.3s ease;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         cursor: pointer;
         border: 2px solid transparent;
+        position: relative;
     }
     
     .item-card:hover {
         background: white;
         border-color: #667eea;
-        transform: translateX(5px);
-        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        transform: translateX(8px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
     }
     
     .item-card:last-child {
         margin-bottom: 0;
     }
     
+    .item-card strong {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #1a1a1a;
+        letter-spacing: 0.2px;
+        display: block;
+        margin-bottom: 0.25rem;
+    }
+    
+    .item-card p {
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: #2d3748;
+        margin-bottom: 0.5rem;
+        line-height: 1.4;
+    }
+    
+    .item-card small {
+        font-size: 0.85rem;
+        font-weight: 400;
+        color: #718096;
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+    
     .welcome-section {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        padding: 2rem;
-        border-radius: 15px;
+        padding: 2.5rem;
+        border-radius: 16px;
         margin-bottom: 2rem;
         text-align: center;
+        box-shadow: 0 8px 24px rgba(102, 126, 234, 0.25);
     }
     
     .welcome-section h2 {
-        margin-bottom: 0.5rem;
-        font-weight: 300;
+        margin-bottom: 0.75rem;
+        font-weight: 600;
+        font-size: 1.75rem;
+        letter-spacing: -0.3px;
     }
     
     .welcome-section .lead {
-        opacity: 0.9;
+        opacity: 0.95;
         margin-bottom: 0;
+        font-size: 1.15rem;
+        font-weight: 400;
+        letter-spacing: 0.2px;
     }
     
     .badge-modern {
         padding: 0.5rem 1rem;
-        border-radius: 20px;
-        font-weight: 500;
-        font-size: 0.8rem;
+        border-radius: 24px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        letter-spacing: 0.3px;
     }
     
     .btn-modern {
-        border-radius: 20px;
-        padding: 0.5rem 1.5rem;
-        font-weight: 500;
-        transition: all 0.3s ease;
+        border-radius: 24px;
+        padding: 0.65rem 1.75rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        letter-spacing: 0.3px;
     }
     
     .btn-modern:hover {
         transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
     }
     
     .countdown-badge {
-        font-size: 0.75rem;
-        min-width: 80px;
+        font-size: 0.8rem;
+        min-width: 85px;
         text-align: center;
+        font-weight: 600;
+        letter-spacing: 0.2px;
     }
     
     .countdown-badge.bg-success {
-        background-color: #28a745 !important;
+        background: linear-gradient(135deg, #28a745, #20c997) !important;
     }
     
     .countdown-badge.bg-warning {
-        background-color: #ffc107 !important;
-        color: #212529 !important;
+        background: linear-gradient(135deg, #ffc107, #ff9800) !important;
+        color: #1a1a1a !important;
+        font-weight: 700;
     }
     
     .countdown-badge.bg-danger {
-        background-color: #dc3545 !important;
+        background: linear-gradient(135deg, #dc3545, #e74c3c) !important;
     }
     
     .countdown-badge.bg-secondary {
-        background-color: #6c757d !important;
+        background: linear-gradient(135deg, #6c757d, #495057) !important;
+    }
+    
+    /* Icon improvements */
+    .stat-card i {
+        font-size: 2.5rem;
+        opacity: 0.9;
+    }
+    
+    .item-card i {
+        font-size: 0.9rem;
+        opacity: 0.8;
     }
 </style>
 {% endblock %}
@@ -240,9 +338,11 @@
                                     <i class="fas fa-user me-1"></i>{{ enrollment.group.teacher.full_name }}
                                 </small>
                             </div>
+                            {% if enrollment.grade and enrollment.grade != 'NA' %}
                             <span class="badge badge-modern bg-{% if enrollment.grade == 'AA' or enrollment.grade == 'BA' %}success{% elif enrollment.grade == 'FF' %}danger{% else %}secondary{% endif %}">
-                                {{ enrollment.grade|default:"--" }}
+                                {{ enrollment.grade }}
                             </span>
+                            {% endif %}
                         </div>
                     </div>
                 </a>

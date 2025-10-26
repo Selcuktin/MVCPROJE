@@ -148,7 +148,7 @@
                         </td>
                         <td>{{ enrollment.group.teacher.full_name }}</td>
                         <td>
-                            {% if enrollment.grade %}
+                            {% if enrollment.grade and enrollment.grade != 'NA' %}
                                 <span class="badge bg-{% if enrollment.grade == 'AA' or enrollment.grade == 'BA' %}success{% elif enrollment.grade == 'BB' or enrollment.grade == 'CB' %}warning{% else %}danger{% endif %}">
                                     {{ enrollment.grade }}
                                 </span>
