@@ -1,0 +1,22 @@
+"Öğretmen-ders atama paneli
+Toplu ders atama/çıkarma
+Filtreleme ve arama
+Mevcut atamaların listesi
+Atama geçmişi/log
+""Ders-öğretmen uyumluluk kontrolü
+Öğretmenin uygunluk durumu
+Çakışma kontrolü
+Geri bildirim üretimi (template-based)
+İntihal tespiti (basit benzerlik)
+
+Öğretmen-öğrenci uyumluluk
+
+Soru-cevap chatbotu (FAQ)
+Sanal asistan (duyuru, ödev tarihleri, not sorgulama,öğretmen bilgileri öğrenme ,pratiklik)
+
+ÖĞRENCİLER İÇİN ÖRNEK SORU ÇÖZÜM ALANI OLUŞTURLACAK ÖĞRENCİLER SORULARI YAPAYZEKAYLA ÇÖZ BUTONU OLUCAK VE YAPAYZEKAYA ÇÖZDÜRECEĞİZ GEMİNİ APİ FALAN KULLANILABİLİR ÖĞRETMENLERDEDE BU ALAN GOZUKECEK VE DERS İLE İLGİLİ ÖRNEK ÇÖZÜMLER OLUCAK
+Site içirisinde öğrenciler ve öğretmenler arasında özel mesajlaşma ve Ayrı olarak insanların soru sorup cevapladığı bir forum olucak
+3. Lazy loading
+
+Grup Sohbetleri: Sınıf bazlı grup chatleri
+Bildirim Sistemi: Email sistemi eklenebilir

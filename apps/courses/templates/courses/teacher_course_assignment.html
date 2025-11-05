@@ -1,0 +1,986 @@
+{% extends 'base.html' %}
+
+{% block title %}Ders Yönetimi - Kurs Yönetim Sistemi{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Modern ve pratik tasarım */
+    .assignment-panel {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+        margin-bottom: 2rem;
+    }
+    
+    .section-header {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 12px;
+        margin-bottom: 1.5rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .section-header h3 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+    }
+    
+    .btn-edit {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-edit:hover {
+        background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
+    }
+    
+    .btn-remove {
+        background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-remove:hover {
+        background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+    }
+    
+    .btn-student-assign {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-student-assign:hover {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+    }
+    
+    .btn-student-remove {
+        background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.875rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-student-remove:hover {
+        background: linear-gradient(135deg, #ea580c 0%, #c2410c 100%);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(249, 115, 22, 0.3);
+    }
+    
+    /* Atama Kartları - Grid yapısı */
+    .assignments-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+    
+    .assignment-item {
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-left: 4px solid #3b82f6;
+        border-radius: 12px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    .assignment-item:hover {
+        border-left-color: #2563eb;
+        border-color: #2563eb;
+        transform: translateY(-4px);
+        box-shadow: 0 8px 24px rgba(59, 130, 246, 0.2);
+    }
+    
+    .assignment-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: start;
+        margin-bottom: 1rem;
+    }
+    
+    .assignment-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 0.25rem;
+    }
+    
+    .assignment-subtitle {
+        font-size: 0.9rem;
+        color: #6b7280;
+        font-weight: 500;
+    }
+    
+    .assignment-info {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+        margin-bottom: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e5e7eb;
+    }
+    
+    .info-row {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.875rem;
+        color: #4b5563;
+    }
+    
+    .info-row i {
+        color: #3b82f6;
+        width: 20px;
+    }
+    
+    .assignment-actions {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.5rem;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e5e7eb;
+    }
+    
+    .modal-overlay {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0,0,0,0.5);
+        z-index: 1000;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    .modal-overlay.active {
+        display: flex;
+    }
+    
+    .modal-content {
+        background: white;
+        border-radius: 16px;
+        padding: 2rem;
+        max-width: 600px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    
+    .modal-header {
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #e5e7eb;
+    }
+    
+    .modal-header h4 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1a1a1a;
+    }
+    
+    .modal-form-group {
+        margin-bottom: 1rem;
+    }
+    
+    .modal-form-group label {
+        display: block;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .modal-form-group select {
+        width: 100%;
+        padding: 0.75rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+    
+    .modal-form-group select:focus {
+        outline: none;
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+    }
+    
+    .modal-actions {
+        display: flex;
+        gap: 1rem;
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+        border-top: 2px solid #e5e7eb;
+    }
+    
+    .student-list {
+        max-height: 300px;
+        overflow-y: auto;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        padding: 0.5rem;
+        margin-top: 0.5rem;
+    }
+    
+    .student-item-checkbox {
+        padding: 0.75rem;
+        border-bottom: 1px solid #f3f4f6;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .student-item-checkbox:hover {
+        background: #f9fafb;
+    }
+    
+    .student-item-checkbox:last-child {
+        border-bottom: none;
+    }
+    
+    .student-item-checkbox input[type="checkbox"] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+    
+    .student-item-checkbox label {
+        cursor: pointer;
+        flex: 1;
+        margin: 0;
+        font-size: 0.9rem;
+        color: #374151;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 3rem;
+        color: #9ca3af;
+    }
+    
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #d1d5db;
+    }
+    
+    /* Filtre alanı - Minimal */
+    .filter-bar {
+        background: white;
+        border-radius: 12px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    
+    .filter-bar input,
+    .filter-bar select {
+        padding: 0.5rem 1rem;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        flex: 1;
+        min-width: 200px;
+    }
+    
+    .filter-bar button {
+        padding: 0.5rem 1.5rem;
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        border: none;
+        border-radius: 8px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .filter-bar button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+    
+    /* Başarı mesajları */
+    .alert-success {
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        border: 1px solid #10b981;
+        color: #065f46;
+        border-radius: 12px;
+        padding: 1rem 1.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    @media (max-width: 768px) {
+        .assignments-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .form-row-compact {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4" style="margin-top: 0; padding-top: 0;">
+    <div class="assignment-panel">
+        <!-- Başlık -->
+        <div class="section-header">
+            <div>
+                <h3><i class="fas fa-list me-2"></i>Ders Yönetimi</h3>
+                <small style="opacity: 0.9;">Öğretmen atama, düzenleme ve öğrenci yönetimi</small>
+            </div>
+        </div>
+        
+        <!-- Yeni Öğretmen Atama Formu -->
+        <div class="quick-assign-form" style="background: #f9fafb; border-radius: 12px; padding: 1.5rem; margin-bottom: 2rem; border: 2px dashed #e5e7eb;">
+            <h5 class="mb-3" style="color: #1a1a1a; font-weight: 600;">
+                <i class="fas fa-plus-circle me-2" style="color: #10b981;"></i>Yeni Öğretmen-Ders Atama
+            </h5>
+            <form id="quickAssignForm">
+                {% csrf_token %}
+                <div class="form-row-compact" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                    <div class="form-group-compact" style="display: flex; flex-direction: column;">
+                        <label style="font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem;"><i class="fas fa-chalkboard-teacher me-1"></i>Öğretmen</label>
+                        <select name="teacher_id" id="teacherSelect" required style="padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem; transition: all 0.2s ease;">
+                            <option value="">Öğretmen Seçin</option>
+                            {% for teacher in teachers %}
+                            <option value="{{ teacher.id }}">{{ teacher.full_name }} ({{ teacher.department }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group-compact" style="display: flex; flex-direction: column;">
+                        <label style="font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem;"><i class="fas fa-book me-1"></i>Ders</label>
+                        <select name="course_id" id="courseSelect" required style="padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem; transition: all 0.2s ease;">
+                            <option value="">Ders Seçin</option>
+                            {% for course in courses %}
+                            <option value="{{ course.id }}">{{ course.code }} - {{ course.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group-compact" style="display: flex; flex-direction: column;">
+                        <label style="font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem;"><i class="fas fa-calendar me-1"></i>Dönem</label>
+                        <select name="semester" id="semesterSelect" required style="padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem; transition: all 0.2s ease;">
+                            <option value="">Dönem Seçin</option>
+                            <option value="2024-2025 Güz">2024-2025 Güz</option>
+                            <option value="2024-2025 Bahar">2024-2025 Bahar</option>
+                            <option value="2023-2024 Güz">2023-2024 Güz</option>
+                            <option value="2023-2024 Bahar">2023-2024 Bahar</option>
+                            <option value="2025-2026 Güz">2025-2026 Güz</option>
+                            <option value="2025-2026 Bahar">2025-2026 Bahar</option>
+                        </select>
+                    </div>
+                    <div class="form-group-compact" style="display: flex; flex-direction: column;">
+                        <label style="font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem;"><i class="fas fa-door-open me-1"></i>Sınıf</label>
+                        <select name="classroom" id="classroomSelect" style="padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem; transition: all 0.2s ease;">
+                            <option value="">Sınıf Seçin</option>
+                            <option value="A-101">A-101</option>
+                            <option value="A-102">A-102</option>
+                            <option value="A-103">A-103</option>
+                            <option value="B-201">B-201</option>
+                            <option value="B-202">B-202</option>
+                            <option value="B-203">B-203</option>
+                            <option value="C-301">C-301</option>
+                            <option value="C-302">C-302</option>
+                            <option value="Lab-1">Lab-1</option>
+                            <option value="Lab-2">Lab-2</option>
+                        </select>
+                    </div>
+                    <div class="form-group-compact" style="display: flex; flex-direction: column;">
+                        <label style="font-size: 0.875rem; font-weight: 600; color: #374151; margin-bottom: 0.5rem;"><i class="fas fa-clock me-1"></i>Program</label>
+                        <select name="schedule" id="scheduleSelect" style="padding: 0.75rem; border: 2px solid #e5e7eb; border-radius: 8px; font-size: 0.9rem; transition: all 0.2s ease;">
+                            <option value="">Program Seçin</option>
+                            <option value="Pazartesi 09:00-12:00">Pazartesi 09:00-12:00</option>
+                            <option value="Pazartesi 13:00-16:00">Pazartesi 13:00-16:00</option>
+                            <option value="Salı 09:00-12:00">Salı 09:00-12:00</option>
+                            <option value="Salı 13:00-16:00">Salı 13:00-16:00</option>
+                            <option value="Çarşamba 09:00-12:00">Çarşamba 09:00-12:00</option>
+                            <option value="Çarşamba 13:00-16:00">Çarşamba 13:00-16:00</option>
+                            <option value="Perşembe 09:00-12:00">Perşembe 09:00-12:00</option>
+                            <option value="Perşembe 13:00-16:00">Perşembe 13:00-16:00</option>
+                            <option value="Cuma 09:00-12:00">Cuma 09:00-12:00</option>
+                            <option value="Cuma 13:00-16:00">Cuma 13:00-16:00</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                    <button type="submit" class="btn-assign" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; border: none; padding: 0.75rem 2rem; border-radius: 8px; font-weight: 600; font-size: 0.95rem; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);">
+                        <i class="fas fa-check me-1"></i>Ders Ata
+                    </button>
+                    <button type="reset" class="btn btn-outline-secondary" style="padding: 0.75rem 1.5rem; border-radius: 8px; font-weight: 600;">
+                        <i class="fas fa-redo me-1"></i>Temizle
+                    </button>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Filtre -->
+        <div class="filter-bar">
+            <input type="text" name="search" placeholder="Öğretmen, ders veya bölüm ara..." value="{{ filters.search|default:'' }}" id="searchInput" style="flex: 2;">
+            <select name="teacher_id" id="filterTeacher">
+                <option value="">Tüm Öğretmenler</option>
+                {% for teacher in teachers %}
+                <option value="{{ teacher.id }}" {% if filters.teacher_id == teacher.id|stringformat:"s" %}selected{% endif %}>{{ teacher.full_name }}</option>
+                {% endfor %}
+            </select>
+            <select name="department" id="filterDepartment">
+                <option value="">Tüm Bölümler</option>
+                {% for dept in departments %}
+                <option value="{{ dept }}" {% if filters.department == dept %}selected{% endif %}>{{ dept }}</option>
+                {% endfor %}
+            </select>
+            <button type="button" onclick="applyFilters()">
+                <i class="fas fa-filter me-1"></i>Filtrele
+            </button>
+        </div>
+        
+        <!-- Mevcut Atamalar -->
+        <div class="section-header" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+            <h3><i class="fas fa-list me-2"></i>Mevcut Ders Atamaları</h3>
+            <span class="badge" style="background: rgba(255,255,255,0.25); padding: 0.5rem 1rem; border-radius: 20px;">{{ current_assignments|length }} atama</span>
+        </div>
+        
+        {% if current_assignments %}
+        <div class="assignments-grid">
+            {% for assignment in current_assignments %}
+            <div class="assignment-item">
+                <div class="assignment-header">
+                    <div>
+                        <div class="assignment-title">{{ assignment.course.code }} - {{ assignment.course.name }}</div>
+                        <div class="assignment-subtitle">{{ assignment.teacher.full_name }}</div>
+                    </div>
+                </div>
+                <div class="assignment-info">
+                    <div class="info-row">
+                        <i class="fas fa-building"></i>
+                        <span>{{ assignment.course.department }}</span>
+                    </div>
+                    <div class="info-row">
+                        <i class="fas fa-calendar"></i>
+                        <span>{{ assignment.semester }}</span>
+                    </div>
+                    {% if assignment.classroom %}
+                    <div class="info-row">
+                        <i class="fas fa-door-open"></i>
+                        <span>{{ assignment.classroom }}</span>
+                    </div>
+                    {% endif %}
+                    {% if assignment.schedule %}
+                    <div class="info-row">
+                        <i class="fas fa-clock"></i>
+                        <span>{{ assignment.schedule }}</span>
+                    </div>
+                    {% endif %}
+                    <div class="info-row">
+                        <i class="fas fa-users"></i>
+                        <span>{{ assignment.enrollments.count }} öğrenci kayıtlı</span>
+                    </div>
+                </div>
+                <div class="assignment-actions">
+                    <button class="btn-edit" onclick="openEditModal({{ assignment.id }}, '{{ assignment.semester }}', '{{ assignment.classroom|default:'' }}', '{{ assignment.schedule|default:'' }}')" style="flex: 1;">
+                        <i class="fas fa-edit me-1"></i>Düzenle
+                    </button>
+                    <button class="btn-remove" onclick="removeAssignment({{ assignment.id }})" style="flex: 1;">
+                        <i class="fas fa-trash me-1"></i>Kaldır
+                    </button>
+                    <button class="btn-student-assign" onclick="openStudentAssignModal({{ assignment.id }})" style="flex: 1;">
+                        <i class="fas fa-user-plus me-1"></i>Öğrenci Ata
+                    </button>
+                    <button class="btn-student-remove" onclick="openStudentRemoveModal({{ assignment.id }})" style="flex: 1;">
+                        <i class="fas fa-user-minus me-1"></i>Öğrenci Çıkar
+                    </button>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <i class="fas fa-inbox"></i>
+            <h5>Henüz atama bulunmuyor</h5>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Düzenleme Modal -->
+<div id="editModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h4><i class="fas fa-edit me-2"></i>Ders Atamasını Düzenle</h4>
+        </div>
+        <form id="editForm">
+            {% csrf_token %}
+            <input type="hidden" id="editAssignmentId" name="assignment_id">
+            <div class="modal-form-group">
+                <label><i class="fas fa-calendar me-1"></i>Dönem</label>
+                <select name="semester" id="editSemester" required>
+                    <option value="2024-2025 Güz">2024-2025 Güz</option>
+                    <option value="2024-2025 Bahar">2024-2025 Bahar</option>
+                    <option value="2023-2024 Güz">2023-2024 Güz</option>
+                    <option value="2023-2024 Bahar">2023-2024 Bahar</option>
+                    <option value="2025-2026 Güz">2025-2026 Güz</option>
+                    <option value="2025-2026 Bahar">2025-2026 Bahar</option>
+                </select>
+            </div>
+            <div class="modal-form-group">
+                <label><i class="fas fa-door-open me-1"></i>Sınıf</label>
+                <select name="classroom" id="editClassroom">
+                    <option value="">Sınıf Seçin</option>
+                    <option value="A-101">A-101</option>
+                    <option value="A-102">A-102</option>
+                    <option value="A-103">A-103</option>
+                    <option value="B-201">B-201</option>
+                    <option value="B-202">B-202</option>
+                    <option value="B-203">B-203</option>
+                    <option value="C-301">C-301</option>
+                    <option value="C-302">C-302</option>
+                    <option value="Lab-1">Lab-1</option>
+                    <option value="Lab-2">Lab-2</option>
+                </select>
+            </div>
+            <div class="modal-form-group">
+                <label><i class="fas fa-clock me-1"></i>Program</label>
+                <select name="schedule" id="editSchedule">
+                    <option value="">Program Seçin</option>
+                    <option value="Pazartesi 09:00-12:00">Pazartesi 09:00-12:00</option>
+                    <option value="Pazartesi 13:00-16:00">Pazartesi 13:00-16:00</option>
+                    <option value="Salı 09:00-12:00">Salı 09:00-12:00</option>
+                    <option value="Salı 13:00-16:00">Salı 13:00-16:00</option>
+                    <option value="Çarşamba 09:00-12:00">Çarşamba 09:00-12:00</option>
+                    <option value="Çarşamba 13:00-16:00">Çarşamba 13:00-16:00</option>
+                    <option value="Perşembe 09:00-12:00">Perşembe 09:00-12:00</option>
+                    <option value="Perşembe 13:00-16:00">Perşembe 13:00-16:00</option>
+                    <option value="Cuma 09:00-12:00">Cuma 09:00-12:00</option>
+                    <option value="Cuma 13:00-16:00">Cuma 13:00-16:00</option>
+                </select>
+            </div>
+            <div class="modal-actions">
+                <button type="submit" class="btn-edit" style="flex: 1; padding: 0.75rem;">
+                    <i class="fas fa-save me-1"></i>Kaydet
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closeEditModal()" style="flex: 1; padding: 0.75rem; border-radius: 8px; font-weight: 600;">
+                    <i class="fas fa-times me-1"></i>İptal
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Öğrenci Atama Modal -->
+<div id="studentAssignModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h4><i class="fas fa-user-plus me-2"></i>Öğrenci Ata</h4>
+        </div>
+        <form id="studentAssignForm">
+            {% csrf_token %}
+            <input type="hidden" id="assignGroupId" name="group_id">
+            <div class="modal-form-group">
+                <label><i class="fas fa-user-graduate me-1"></i>Öğrenciler (Çoklu Seçim)</label>
+                <div class="student-list" id="assignStudentList">
+                    {% for student in students %}
+                    <div class="student-item-checkbox">
+                        <input type="checkbox" name="student_ids" value="{{ student.id }}" id="assign_student_{{ student.id }}">
+                        <label for="assign_student_{{ student.id }}">{{ student.full_name }} ({{ student.school_number }})</label>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="submit" class="btn-student-assign" style="flex: 1; padding: 0.75rem;">
+                    <i class="fas fa-check me-1"></i>Öğrenci Ata
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closeStudentAssignModal()" style="flex: 1; padding: 0.75rem; border-radius: 8px; font-weight: 600;">
+                    <i class="fas fa-times me-1"></i>İptal
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Öğrenci Çıkarma Modal -->
+<div id="studentRemoveModal" class="modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h4><i class="fas fa-user-minus me-2"></i>Öğrenci Çıkar</h4>
+        </div>
+        <form id="studentRemoveForm">
+            {% csrf_token %}
+            <input type="hidden" id="removeGroupId" name="group_id">
+            <div class="modal-form-group">
+                <label><i class="fas fa-user-graduate me-1"></i>Kayıtlı Öğrenciler (Çoklu Seçim)</label>
+                <div class="student-list" id="removeStudentList">
+                    <!-- JavaScript ile doldurulacak -->
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button type="submit" class="btn-student-remove" style="flex: 1; padding: 0.75rem;">
+                    <i class="fas fa-check me-1"></i>Öğrenci Çıkar
+                </button>
+                <button type="button" class="btn btn-secondary" onclick="closeStudentRemoveModal()" style="flex: 1; padding: 0.75rem; border-radius: 8px; font-weight: 600;">
+                    <i class="fas fa-times me-1"></i>İptal
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// CSRF Token
+function getCSRFToken() {
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (csrftoken) {
+        return csrftoken.value;
+    }
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === 'csrftoken=') {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Yeni Öğretmen Atama Formu
+document.getElementById('quickAssignForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(e.target);
+    const teacherId = parseInt(formData.get('teacher_id'));
+    const courseId = parseInt(formData.get('course_id'));
+    const semester = formData.get('semester');
+    
+    if (!teacherId || !courseId || !semester) {
+        alert('Lütfen öğretmen, ders ve dönem seçin.');
+        return;
+    }
+    
+    const data = {
+        course_ids: [courseId],
+        teacher_ids: [teacherId],
+        semester: semester,
+        classroom: formData.get('classroom') || '',
+        schedule: formData.get('schedule') || ''
+    };
+    
+    if (!confirm('Yeni öğretmen-ders ataması yapılacak. Devam etmek istiyor musunuz?')) {
+        return;
+    }
+    
+    fetch('{% url "courses:bulk_assign" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Öğretmen-ders ataması başarıyla yapıldı!');
+            location.reload();
+        } else {
+            alert('Hata: ' + (data.error || 'Bilinmeyen hata'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Bir hata oluştu: ' + error.message);
+    });
+});
+
+// Düzenleme Modal
+function openEditModal(assignmentId, semester, classroom, schedule) {
+    document.getElementById('editAssignmentId').value = assignmentId;
+    document.getElementById('editSemester').value = semester || '';
+    document.getElementById('editClassroom').value = classroom || '';
+    document.getElementById('editSchedule').value = schedule || '';
+    document.getElementById('editModal').classList.add('active');
+}
+
+function closeEditModal() {
+    document.getElementById('editModal').classList.remove('active');
+}
+
+// Modal overlay'lerin dışına tıklanınca kapanması
+document.getElementById('editModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeEditModal();
+    }
+});
+
+document.getElementById('studentAssignModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeStudentAssignModal();
+    }
+});
+
+document.getElementById('studentRemoveModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeStudentRemoveModal();
+    }
+});
+
+// Düzenleme Formu - AJAX ile güncelleme
+document.getElementById('editForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const assignmentId = document.getElementById('editAssignmentId').value;
+    const formData = new FormData(e.target);
+    
+    fetch(`{% url "courses:group_update" 0 %}`.replace('0', assignmentId), {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            alert('Düzenleme başarıyla kaydedildi!');
+            location.reload();
+        } else {
+            alert('Hata: Düzenleme yapılamadı.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Bir hata oluştu: ' + error.message);
+    });
+});
+
+// Atama Kaldırma
+function removeAssignment(assignmentId) {
+    if (!confirm('Bu atamayı kaldırmak istediğinizden emin misiniz?')) {
+        return;
+    }
+    
+    fetch('{% url "courses:bulk_remove" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({course_group_ids: [assignmentId]})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Atama başarıyla kaldırıldı!');
+            location.reload();
+        } else {
+            alert('Hata: ' + (data.error || 'Bilinmeyen hata'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Bir hata oluştu: ' + error.message);
+    });
+}
+
+// Öğrenci Atama Modal
+function openStudentAssignModal(groupId) {
+    document.getElementById('assignGroupId').value = groupId;
+    document.getElementById('studentAssignModal').classList.add('active');
+}
+
+function closeStudentAssignModal() {
+    document.getElementById('studentAssignModal').classList.remove('active');
+}
+
+// Öğrenci Atama Formu
+document.getElementById('studentAssignForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const groupId = document.getElementById('assignGroupId').value;
+    const selectedStudents = Array.from(document.querySelectorAll('#assignStudentList input[type="checkbox"]:checked')).map(cb => parseInt(cb.value));
+    
+    if (selectedStudents.length === 0) {
+        alert('Lütfen en az bir öğrenci seçin.');
+        return;
+    }
+    
+    if (!confirm(`${selectedStudents.length} öğrenci derse eklenecek. Devam etmek istiyor musunuz?`)) {
+        return;
+    }
+    
+    // Bulk enrollment oluştur
+    fetch(`{% url "courses:bulk_assign" %}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({
+            group_id: parseInt(groupId),
+            student_ids: selectedStudents
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`${data.count || selectedStudents.length} öğrenci başarıyla eklendi!`);
+            location.reload();
+        } else {
+            alert('Hata: ' + (data.error || 'Bilinmeyen hata'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Bir hata oluştu: ' + error.message);
+    });
+});
+
+// Öğrenci Çıkarma Modal
+function openStudentRemoveModal(groupId) {
+    document.getElementById('removeGroupId').value = groupId;
+    loadEnrolledStudents(groupId);
+    document.getElementById('studentRemoveModal').classList.add('active');
+}
+
+function loadEnrolledStudents(groupId) {
+    const studentList = document.getElementById('removeStudentList');
+    studentList.innerHTML = '<p style="text-align: center; padding: 2rem; color: #9ca3af;">Yükleniyor...</p>';
+    
+    // Sayfadaki gizli enrollment verilerinden al
+    const enrollmentData = document.querySelector(`[data-group-id="${groupId}"]`);
+    
+    if (enrollmentData) {
+        const enrollments = Array.from(enrollmentData.querySelectorAll('[data-enrollment-id]'));
+        studentList.innerHTML = '';
+        
+        if (enrollments.length > 0) {
+            enrollments.forEach(enrollmentEl => {
+                const enrollmentId = enrollmentEl.getAttribute('data-enrollment-id');
+                const studentName = enrollmentEl.getAttribute('data-student-name') || 'Öğrenci';
+                
+                const div = document.createElement('div');
+                div.className = 'student-item-checkbox';
+                div.innerHTML = `
+                    <input type="checkbox" name="enrollment_ids" value="${enrollmentId}" id="remove_enrollment_${enrollmentId}">
+                    <label for="remove_enrollment_${enrollmentId}">${studentName}</label>
+                `;
+                studentList.appendChild(div);
+            });
+        } else {
+            studentList.innerHTML = '<p style="text-align: center; padding: 2rem; color: #9ca3af;">Kayıtlı öğrenci bulunmuyor.</p>';
+        }
+    } else {
+        studentList.innerHTML = '<p style="text-align: center; padding: 2rem; color: #9ca3af;">Öğrenci bilgileri yüklenemedi.</p>';
+    }
+}
+
+function closeStudentRemoveModal() {
+    document.getElementById('studentRemoveModal').classList.remove('active');
+}
+
+// Öğrenci Çıkarma Formu
+document.getElementById('studentRemoveForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const selectedEnrollments = Array.from(document.querySelectorAll('#removeStudentList input[type="checkbox"]:checked')).map(cb => parseInt(cb.value));
+    
+    if (selectedEnrollments.length === 0) {
+        alert('Lütfen en az bir öğrenci seçin.');
+        return;
+    }
+    
+    if (!confirm(`${selectedEnrollments.length} öğrenci dersten çıkarılacak. Devam etmek istiyor musunuz?`)) {
+        return;
+    }
+    
+    // Bulk enrollment silme
+    fetch(`{% url "courses:bulk_remove" %}`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCSRFToken()
+        },
+        body: JSON.stringify({
+            enrollment_ids: selectedEnrollments
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`${data.count || selectedEnrollments.length} öğrenci başarıyla çıkarıldı!`);
+            location.reload();
+        } else {
+            alert('Hata: ' + (data.error || 'Bilinmeyen hata'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Bir hata oluştu: ' + error.message);
+    });
+});
+
+// Filtre Uygulama
+function applyFilters() {
+    const search = document.getElementById('searchInput').value;
+    const teacherId = document.getElementById('filterTeacher').value;
+    const department = document.getElementById('filterDepartment').value;
+    
+    let url = '{% url "courses:teacher_assignment" %}?';
+    const params = [];
+    
+    if (search) params.push('search=' + encodeURIComponent(search));
+    if (teacherId) params.push('teacher_id=' + teacherId);
+    if (department) params.push('department=' + encodeURIComponent(department));
+    
+    window.location.href = url + params.join('&');
+}
+</script>
+{% endblock %}
+

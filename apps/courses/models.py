@@ -269,3 +269,177 @@ class CourseContent(models.Model):
     
     def __str__(self):
         return f"{self.course.code} - Hafta {self.week_number}: {self.title}"
+
+class AssignmentHistory(models.Model):
+    """
+    Öğretmen-ders atama geçmişi/log
+    """
+    ACTION_CHOICES = [
+        ('assign', 'Atama'),
+        ('remove', 'Çıkarma'),
+        ('update', 'Güncelleme'),
+        ('bulk_assign', 'Toplu Atama'),
+        ('bulk_remove', 'Toplu Çıkarma'),
+    ]
+    
+    course_group = models.ForeignKey(CourseGroup, on_delete=models.CASCADE, related_name='assignment_history', verbose_name='Ders Grubu')
+    teacher = models.ForeignKey('teachers.Teacher', on_delete=models.CASCADE, related_name='assignment_history', verbose_name='Öğretmen')
+    action = models.CharField(max_length=20, choices=ACTION_CHOICES, verbose_name='İşlem')
+    description = models.TextField(verbose_name='Açıklama')
+    performed_by = models.ForeignKey('users.User', on_delete=models.SET_NULL, null=True, related_name='performed_assignments', verbose_name='İşlemi Yapan')
+    timestamp = models.DateTimeField(auto_now_add=True, verbose_name='İşlem Tarihi')
+    
+    class Meta:
+        verbose_name = 'Atama Geçmişi'
+        verbose_name_plural = 'Atama Geçmişleri'
+        ordering = ['-timestamp']
+    
+    def __str__(self):
+        return f"{self.get_action_display()} - {self.teacher.full_name} - {self.course_group.course.code} ({self.timestamp})"
+
+class ExampleQuestion(models.Model):
+    """
+    Öğretmenler tarafından eklenen örnek sorular.
+    Öğrencilere görünür; "quiz" (çoklu soru seti) veya "solution" (tek çözüm anlatımı) tipi destekler.
+    """
+    QUESTION_TYPE_CHOICES = [
+        ('quiz', 'Quiz'),
+        ('solution', 'Çözüm Örneği'),
+    ]
+
+    VISIBILITY_CHOICES = [
+        ('public', 'Kayıtlı Öğrencilere Görünür'),
+        ('hidden', 'Gizli'),
+    ]
+
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='example_questions')
+    created_by = models.ForeignKey('teachers.Teacher', on_delete=models.CASCADE, related_name='example_questions')
+    title = models.CharField(max_length=255)
+    content = models.TextField(help_text='Soru metni veya açıklaması')
+    question_type = models.CharField(max_length=20, choices=QUESTION_TYPE_CHOICES, default='solution')
+    attachment = models.FileField(upload_to='example_questions/', null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    visibility = models.CharField(max_length=20, choices=VISIBILITY_CHOICES, default='public')
+
+    class Meta:
+        verbose_name = 'Örnek Soru'
+        verbose_name_plural = 'Örnek Sorular'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.course.code} - {self.title}"
+
+
+# --- Quiz Modelleri ---
+class Quiz(models.Model):
+    """Ders bazlı quiz/sınav/pratik tanımı."""
+    QUIZ_TYPE_CHOICES = [
+        ('quiz', 'Quiz'),
+        ('exam', 'Sınav'),
+        ('practice', 'Pratik'),
+    ]
+
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='quizzes')
+    created_by = models.ForeignKey('teachers.Teacher', on_delete=models.CASCADE, related_name='quizzes')
+    title = models.CharField(max_length=255)
+    description = models.TextField(blank=True)
+    quiz_type = models.CharField(max_length=16, choices=QUIZ_TYPE_CHOICES, default='quiz')
+    duration_minutes = models.PositiveIntegerField(default=20)
+    start_time = models.DateTimeField(null=True, blank=True)
+    end_time = models.DateTimeField(null=True, blank=True)
+    is_published = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Quiz'
+        verbose_name_plural = 'Quizler'
+        ordering = ['-created_at']
+
+    def __str__(self) -> str:
+        return f"{self.course.code} - {self.title}"
+
+
+class QuizQuestion(models.Model):
+    """Quiz sorusu. Çoktan seçmeli için şıklar ayrı tabloda tutulur."""
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='questions')
+    order = models.PositiveIntegerField(default=1)
+    text = models.TextField()
+    # İsteğe bağlı açıklama/çözüm
+    explanation = models.TextField(blank=True)
+    # Doğru şık opsiyonel (öğretmen sonra işaretleyebilir)
+    correct_choice = models.ForeignKey('QuizChoice', on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+
+    class Meta:
+        verbose_name = 'Quiz Sorusu'
+        verbose_name_plural = 'Quiz Soruları'
+        ordering = ['order', 'id']
+
+    def __str__(self) -> str:
+        return f"Q{self.order}: {self.text[:50]}"
+
+
+class QuizChoice(models.Model):
+    """Çoktan seçmeli şık."""
+    question = models.ForeignKey(QuizQuestion, on_delete=models.CASCADE, related_name='choices')
+    label = models.CharField(max_length=2, default='')  # A, B, C, D, E
+    text = models.TextField()
+
+    class Meta:
+        verbose_name = 'Şık'
+        verbose_name_plural = 'Şıklar'
+        ordering = ['label']
+
+    def __str__(self) -> str:
+        return f"{self.label}) {self.text[:40]}"
+
+
+class QuizAttempt(models.Model):
+    """Öğrencinin quiz denemesi."""
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='attempts')
+    student = models.ForeignKey('students.Student', on_delete=models.CASCADE, related_name='quiz_attempts')
+    started_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    score = models.FloatField(null=True, blank=True)
+    is_submitted = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = 'Quiz Denemesi'
+        verbose_name_plural = 'Quiz Denemeleri'
+        unique_together = ['quiz', 'student', 'started_at']
+
+    def __str__(self) -> str:
+        return f"{self.student.full_name} - {self.quiz.title}"
+
+
+class QuizAnswer(models.Model):
+    """Denemedeki tek bir soruya verilen cevap."""
+    attempt = models.ForeignKey(QuizAttempt, on_delete=models.CASCADE, related_name='answers')
+    question = models.ForeignKey(QuizQuestion, on_delete=models.CASCADE, related_name='answers')
+    selected_choice = models.ForeignKey(QuizChoice, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    is_correct = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = 'Cevap'
+        verbose_name_plural = 'Cevaplar'
+        unique_together = ['attempt', 'question']
+
+
+class PlagiarismReport(models.Model):
+    """
+    Basit intihal raporu: bir teslimin metni ile diğer kaynaklar arasındaki benzerlik.
+    """
+    submission = models.ForeignKey(Submission, on_delete=models.CASCADE, related_name='plagiarism_reports')
+    created_at = models.DateTimeField(auto_now_add=True)
+    method = models.CharField(max_length=50, default='ngram_jaccard')
+    max_similarity = models.FloatField(default=0.0)
+    details = models.JSONField(default=dict)
+
+    class Meta:
+        verbose_name = 'İntihal Raporu'
+        verbose_name_plural = 'İntihal Raporları'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Submission {self.submission_id} - {self.max_similarity:.2f}"

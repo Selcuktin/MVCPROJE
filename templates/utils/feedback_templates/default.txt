@@ -1,0 +1,17 @@
+{{ student_name }} için Geri Bildirim
+Ders: {{ course_code }} - {{ course_name }}
+Ödev: {{ assignment_title }}
+
+Güçlü Yönler:
+- Konu anlatımı ve örneklerle destekleme olumlu.
+
+Geliştirilecek Alanlar:
+- Biçimlendirme ve kaynakça bölümü iyileştirilebilir.
+
+Rubrik (yüzde):
+{% for k, v in rubric.items %}- {{ k }}: {{ v }}
+{% endfor %}
+
+Öneriler:
+- Rubriğe göre eksik kalan maddelere odaklanın, teslimden önce kontrol listesi oluşturun.
+

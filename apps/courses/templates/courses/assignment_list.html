@@ -342,21 +342,23 @@
 
     <!-- Filter Tabs -->
     <div class="filter-tabs">
-        <button class="filter-btn active" data-filter="all">
+        {% with state=request.GET.state|default:'' %}
+        <a class="filter-btn {% if not state %}active{% endif %}" href="?">
             <i class="fas fa-list me-1"></i>Tümü
-        </button>
-        <button class="filter-btn" data-filter="active">
+        </a>
+        <a class="filter-btn {% if state == 'active' %}active{% endif %}" href="?state=active">
             <i class="fas fa-check-circle me-1"></i>Aktif
-        </button>
-        <button class="filter-btn" data-filter="warning">
+        </a>
+        <a class="filter-btn {% if state == 'approaching' %}active{% endif %}" href="?state=approaching">
             <i class="fas fa-exclamation-triangle me-1"></i>Yaklaşan
-        </button>
-        <button class="filter-btn" data-filter="urgent">
+        </a>
+        <a class="filter-btn {% if state == 'urgent' %}active{% endif %}" href="?state=urgent">
             <i class="fas fa-fire me-1"></i>Acil
-        </button>
-        <button class="filter-btn" data-filter="expired">
+        </a>
+        <a class="filter-btn {% if state == 'expired' %}active{% endif %}" href="?state=expired">
             <i class="fas fa-times-circle me-1"></i>Süresi Dolmuş
-        </button>
+        </a>
+        {% endwith %}
     </div>
 
     {% if assignments %}

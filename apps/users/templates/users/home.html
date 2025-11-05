@@ -656,109 +656,181 @@
             window.location.href = "{% url 'teachers:dashboard' %}";
         </script>
     {% else %}
-        <!-- Admin kullanıcılar için dashboard -->
-        <div class="row">
-            <div class="col-md-3">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-book fa-3x text-primary mb-3"></i>
-                        <h5 class="card-title">Dersler</h5>
-                        <p class="card-text">Ders programları ve içeriklerini yönetin</p>
-                        <a href="{% url 'courses:list' %}" class="btn btn-primary">Dersleri Görüntüle</a>
+        <!-- Admin kullanıcılar için dashboard - E-nabız benzeri tasarım -->
+        <style>
+            .admin-dashboard {
+                max-width: 1400px;
+                margin: 0 auto;
+                padding: 1rem;
+            }
+            .admin-header-card {
+                display: none; /* Kaldırıldı - yer kaplamıyor */
+            }
+            .admin-header-card h1 {
+                font-size: 1.5rem;
+                font-weight: 600;
+                margin-bottom: 0.25rem;
+                color: #1a1a1a;
+            }
+            .admin-header-card p {
+                color: #6b7280;
+                margin: 0;
+                font-size: 1rem;
+            }
+            .admin-stats-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+                gap: 0.75rem;
+                margin-bottom: 1.5rem;
+            }
+            .admin-stat-card {
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 8px;
+                padding: 0.75rem;
+                text-align: center;
+                box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+                transition: all 0.2s ease;
+            }
+            .admin-stat-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            }
+            .admin-actions-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 1.5rem;
+                margin-bottom: 2rem;
+            }
+            .admin-action-card {
+                background: white;
+                border: 1px solid #e5e7eb;
+                border-radius: 12px;
+                padding: 1.5rem;
+                text-decoration: none;
+                color: #1a1a1a;
+                transition: all 0.2s ease;
+                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            }
+            .admin-action-card:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                text-decoration: none;
+                color: #1a1a1a;
+            }
+        </style>
+        <div class="container-fluid py-4 admin-dashboard" style="margin-top: 0; padding-top: 0;">
+            <!-- Quick Info Cards -->
+            <div class="admin-stats-grid">
+                <div class="admin-stat-card">
+                    <div style="font-size: 1.25rem; color: #667eea; margin-bottom: 0.25rem;">
+                        <i class="fas fa-book"></i>
                     </div>
+                    <div style="font-size: 1.25rem; font-weight: 700; color: #1a1a1a; margin-bottom: 0.125rem;">{{ total_courses|default:0 }}</div>
+                    <div style="font-size: 0.75rem; color: #6b7280;">Toplam Ders</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div style="font-size: 2rem; color: #667eea; margin-bottom: 0.5rem;">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div style="font-size: 2rem; font-weight: 700; color: #1a1a1a; margin-bottom: 0.25rem;">{{ total_students|default:0 }}</div>
+                    <div style="font-size: 0.9rem; color: #6b7280;">Toplam Öğrenci</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div style="font-size: 2rem; color: #667eea; margin-bottom: 0.5rem;">
+                        <i class="fas fa-chalkboard-teacher"></i>
+                    </div>
+                    <div style="font-size: 2rem; font-weight: 700; color: #1a1a1a; margin-bottom: 0.25rem;">{{ total_teachers|default:0 }}</div>
+                    <div style="font-size: 0.9rem; color: #6b7280;">Toplam Öğretmen</div>
+                </div>
+                <div class="admin-stat-card">
+                    <div style="font-size: 2rem; color: #667eea; margin-bottom: 0.5rem;">
+                        <i class="fas fa-user-plus"></i>
+                    </div>
+                    <div style="font-size: 2rem; font-weight: 700; color: #1a1a1a; margin-bottom: 0.25rem;">{{ total_enrollments|default:0 }}</div>
+                    <div style="font-size: 0.9rem; color: #6b7280;">Toplam Kayıt</div>
                 </div>
             </div>
             
-            <div class="col-md-3">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-users fa-3x text-success mb-3"></i>
-                        <h5 class="card-title">Öğrenciler</h5>
-                        <p class="card-text">Öğrenci bilgilerini ve ilerlemelerini takip edin</p>
-                        <a href="{% url 'students:list' %}" class="btn btn-success">Öğrencileri Görüntüle</a>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-3">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-chalkboard-teacher fa-3x text-info mb-3"></i>
-                        <h5 class="card-title">Öğretmenler</h5>
-                        <p class="card-text">Öğretmen bilgilerini yönetin</p>
-                        <a href="{% url 'teachers:list' %}" class="btn btn-info">Öğretmenleri Görüntüle</a>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="col-md-3">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <i class="fas fa-sticky-note fa-3x text-warning mb-3"></i>
-                        <h5 class="card-title">Notlar</h5>
-                        <p class="card-text">Öğrenci notlarını yönetin</p>
-                        <a href="{% url 'notes:list' %}" class="btn btn-warning">Notları Görüntüle</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Admin Stats -->
-        <div class="row mt-4">
-            <div class="col-12">
-                <h3>Sistem İstatistikleri</h3>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-primary text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4>{{ total_courses }}</h4>
-                                <p>Toplam Ders</p>
-                            </div>
-                            <i class="fas fa-book fa-2x"></i>
+            <!-- Quick Actions Grid -->
+            <div class="admin-actions-grid">
+                <a href="{% url 'courses:list' %}" class="admin-action-card">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="width: 50px; height: 50px; border-radius: 50%; background: #667eea; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                            <i class="fas fa-book"></i>
                         </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-success text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4>{{ total_students }}</h4>
-                                <p>Toplam Öğrenci</p>
-                            </div>
-                            <i class="fas fa-users fa-2x"></i>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.25rem;">Dersler</div>
+                            <div style="font-size: 0.85rem; color: #6b7280;">Ders programları ve içeriklerini yönetin</div>
                         </div>
+                        <i class="fas fa-chevron-right" style="color: #9ca3af;"></i>
                     </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-info text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4>{{ total_teachers }}</h4>
-                                <p>Toplam Öğretmen</p>
-                            </div>
-                            <i class="fas fa-chalkboard-teacher fa-2x"></i>
+                </a>
+                
+                <a href="{% url 'courses:teacher_assignment' %}" class="admin-action-card">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="width: 50px; height: 50px; border-radius: 50%; background: #667eea; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                            <i class="fas fa-user-plus"></i>
                         </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card bg-warning text-white">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between">
-                            <div>
-                                <h4>{{ total_enrollments }}</h4>
-                                <p>Toplam Kayıt</p>
-                            </div>
-                            <i class="fas fa-user-plus fa-2x"></i>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.25rem;">Öğretmen-Ders Atama</div>
+                            <div style="font-size: 0.85rem; color: #6b7280;">Öğretmenlere ders atama işlemleri</div>
                         </div>
+                        <i class="fas fa-chevron-right" style="color: #9ca3af;"></i>
                     </div>
-                </div>
+                </a>
+                
+                <a href="{% url 'students:list' %}" class="admin-action-card">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="width: 50px; height: 50px; border-radius: 50%; background: #667eea; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.25rem;">Öğrenciler</div>
+                            <div style="font-size: 0.85rem; color: #6b7280;">Öğrenci bilgilerini ve ilerlemelerini takip edin</div>
+                        </div>
+                        <i class="fas fa-chevron-right" style="color: #9ca3af;"></i>
+                    </div>
+                </a>
+                
+                <a href="{% url 'teachers:list' %}" class="admin-action-card">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="width: 50px; height: 50px; border-radius: 50%; background: #667eea; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                            <i class="fas fa-chalkboard-teacher"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.25rem;">Öğretmenler</div>
+                            <div style="font-size: 0.85rem; color: #6b7280;">Öğretmen bilgilerini yönetin</div>
+                        </div>
+                        <i class="fas fa-chevron-right" style="color: #9ca3af;"></i>
+                    </div>
+                </a>
+                
+                <a href="{% url 'notes:list' %}" class="admin-action-card">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="width: 50px; height: 50px; border-radius: 50%; background: #667eea; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                            <i class="fas fa-sticky-note"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.25rem;">Notlar</div>
+                            <div style="font-size: 0.85rem; color: #6b7280;">Öğrenci notlarını yönetin</div>
+                        </div>
+                        <i class="fas fa-chevron-right" style="color: #9ca3af;"></i>
+                    </div>
+                </a>
+                
+                <a href="{% url 'users:control_panel' %}" class="admin-action-card">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <div style="width: 50px; height: 50px; border-radius: 50%; background: #667eea; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
+                            <i class="fas fa-tachometer-alt"></i>
+                        </div>
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.25rem;">Kontrol Paneli</div>
+                            <div style="font-size: 0.85rem; color: #6b7280;">Detaylı kontrol paneli</div>
+                        </div>
+                        <i class="fas fa-chevron-right" style="color: #9ca3af;"></i>
+                    </div>
+                </a>
             </div>
         </div>
     {% endif %}

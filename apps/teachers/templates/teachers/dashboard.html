@@ -4,205 +4,373 @@
 
 {% block extra_css %}
 <style>
-    .dashboard-card {
-        transition: all 0.3s ease;
-        border: none;
-        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        border-radius: 10px;
+    /* E-nabız benzeri modern, sade tasarım */
+    body {
+        background-color: #f5f7fa;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
     }
     
-    .dashboard-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 5px 20px rgba(0,0,0,0.15);
+    .container-fluid {
+        padding: 1rem;
+        max-width: 1400px;
+        margin: 0 auto;
+        margin-top: 0; /* Main'den gelen padding-top yeterli */
     }
     
+    /* Basitleştirilmiş header - minimal */
+    .welcome-section {
+        display: none; /* Kaldırıldı - yer kaplamıyor */
+    }
+    
+    /* Sade stat kartları */
     .stat-card {
-        background: linear-gradient(135deg, var(--bg-color-1), var(--bg-color-2));
-        border: none;
-        border-radius: 15px;
-        color: white;
-        transition: all 0.3s ease;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 8px;
+        color: #1a1a1a;
+        transition: all 0.2s ease;
         cursor: pointer;
         text-decoration: none;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        padding: 0.75rem !important; /* Padding küçültüldü */
     }
     
     .stat-card:hover {
-        transform: translateY(-3px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.2);
-        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border-color: #667eea;
+        color: #1a1a1a;
         text-decoration: none;
     }
     
-    .stat-card.courses {
-        --bg-color-1: #667eea;
-        --bg-color-2: #764ba2;
+    .stat-card h3 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #667eea;
+        margin-bottom: 0.25rem;
     }
     
-    .stat-card.students {
-        --bg-color-1: #4facfe;
-        --bg-color-2: #00f2fe;
+    .stat-card p {
+        color: #6b7280;
+        font-size: 0.75rem;
+        margin: 0;
     }
     
-    .stat-card.assignments {
-        --bg-color-1: #f093fb;
-        --bg-color-2: #f5576c;
+    .stat-card i {
+        color: #667eea;
+        opacity: 0.6;
+        font-size: 1.25rem !important; /* İkonları küçült */
     }
     
-    .stat-card.department {
-        --bg-color-1: #43e97b;
-        --bg-color-2: #38f9d7;
-    }
-    
+    /* Renkli content kartları */
     .content-card {
-        border: none;
-        border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-        transition: all 0.3s ease;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        transition: all 0.2s ease;
+        overflow: hidden;
     }
     
     .content-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
     }
     
-    .content-card .card-header {
-        background: linear-gradient(135deg, #667eea, #764ba2);
+    /* Dersler kartı - Mavi tonları */
+    .content-card:has(.fa-book) .card-header {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
         color: white;
-        border-radius: 15px 15px 0 0 !important;
-        border: none;
-        padding: 1rem 1.5rem;
+        border-bottom: none;
     }
     
-    .item-card {
-        background: #f8f9fa;
-        border-radius: 10px;
-        padding: 1rem;
-        margin-bottom: 1rem;
-        transition: all 0.3s ease;
-        cursor: pointer;
-        border: 2px solid transparent;
+    /* Ödevler kartı - Sarı/Turuncu tonları */
+    .content-card:has(.fa-tasks) .card-header {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: white;
+        border-bottom: none;
     }
     
-    .item-card:hover {
+    /* Duyurular kartı - Yeşil tonları */
+    .content-card:has(.fa-bullhorn) .card-header {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        border-bottom: none;
+    }
+    
+    /* Varsayılan header */
+    .content-card .card-header {
         background: white;
-        border-color: #667eea;
-        transform: translateX(5px);
-        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        color: #1a1a1a;
+        border-bottom: 1px solid #e5e7eb;
+        border-radius: 12px 12px 0 0 !important;
+        padding: 1rem 1.5rem;
+        font-weight: 600;
+    }
+    
+    .content-card .card-body {
+        padding: 1.5rem;
+    }
+    
+    /* Renkli item kartları */
+    .item-card {
+        background: #f9fafb;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        border-left: 4px solid transparent;
+        transition: all 0.2s ease;
+        cursor: pointer;
+        border: 1px solid #e5e7eb;
+    }
+    
+    /* Dersler kartındaki item'lar - Mavi border */
+    .content-card:has(.fa-book) .item-card {
+        border-left-color: #3b82f6;
+    }
+    
+    .content-card:has(.fa-book) .item-card:hover {
+        background: #eff6ff;
+        border-left-color: #2563eb;
+        border-color: #2563eb;
+        transform: translateX(3px);
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
+    }
+    
+    /* Ödevler kartındaki item'lar - Sarı border */
+    .content-card:has(.fa-tasks) .item-card {
+        border-left-color: #f59e0b;
+    }
+    
+    .content-card:has(.fa-tasks) .item-card:hover {
+        background: #fffbeb;
+        border-left-color: #d97706;
+        border-color: #d97706;
+        transform: translateX(3px);
+        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
+    }
+    
+    /* Duyurular kartındaki item'lar - Yeşil border */
+    .content-card:has(.fa-bullhorn) .item-card {
+        border-left-color: #10b981;
+    }
+    
+    .content-card:has(.fa-bullhorn) .item-card:hover {
+        background: #ecfdf5;
+        border-left-color: #059669;
+        border-color: #059669;
+        transform: translateX(3px);
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
     }
     
     .item-card:last-child {
         margin-bottom: 0;
     }
     
-    .welcome-section {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 2rem;
-        border-radius: 15px;
-        margin-bottom: 2rem;
-        text-align: center;
+    .item-card strong {
+        color: #1a1a1a;
+        font-weight: 600;
+        font-size: 0.95rem;
     }
     
-    .welcome-section h2 {
-        margin-bottom: 0.5rem;
-        font-weight: 300;
+    .item-card p {
+        color: #4b5563;
+        font-size: 0.85rem;
+        margin: 0.25rem 0;
     }
     
-    .welcome-section .lead {
-        opacity: 0.9;
-        margin-bottom: 0;
-    }
-    
-    .badge-modern {
-        padding: 0.5rem 1rem;
-        border-radius: 20px;
-        font-weight: 500;
+    .item-card small {
+        color: #6b7280;
         font-size: 0.8rem;
     }
     
-    .btn-modern {
-        border-radius: 20px;
-        padding: 0.5rem 1.5rem;
-        font-weight: 500;
-        transition: all 0.3s ease;
-    }
-    
-    .btn-modern:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-    }
-    
-    .quick-action-card {
-        background: linear-gradient(135deg, #667eea, #764ba2);
-        border: none;
-        border-radius: 15px;
-        color: white;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        padding: 2rem;
-        text-align: center;
-        display: block;
-        height: 140px;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
-    }
-    
-    .quick-action-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-        color: white;
-        text-decoration: none;
-    }
-    
-    .quick-action-card.warning {
-        background: linear-gradient(135deg, #f093fb, #f5576c);
-    }
-    
-    .quick-action-card.info {
-        background: linear-gradient(135deg, #4facfe, #00f2fe);
-    }
-    
-    .quick-action-card.secondary {
-        background: linear-gradient(135deg, #667eea, #764ba2);
-    }
-    
-    .countdown-badge {
+    /* Renkli badge'ler */
+    .badge-modern {
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+        font-weight: 600;
         font-size: 0.75rem;
-        min-width: 80px;
-        text-align: center;
+        background: #e5e7eb;
+        color: #4b5563;
+    }
+    
+    .badge-modern.bg-success {
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
+        color: #065f46;
+        border: 1px solid #10b981;
+    }
+    
+    .badge-modern.bg-warning {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        color: #92400e;
+        border: 1px solid #f59e0b;
+    }
+    
+    .badge-modern.bg-danger {
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
+        color: #991b1b;
+        border: 1px solid #ef4444;
+    }
+    
+    .badge-modern.bg-secondary {
+        background: #f3f4f6;
+        color: #6b7280;
+        border: 1px solid #d1d5db;
+    }
+    
+    /* Ödev countdown badge - Sarı tonları */
+    .countdown-badge {
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
+        color: #92400e !important;
+        border: 1px solid #f59e0b !important;
     }
     
     .countdown-badge.bg-success {
-        background-color: #28a745 !important;
+        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%) !important;
+        color: #065f46 !important;
+        border: 1px solid #10b981 !important;
     }
     
     .countdown-badge.bg-warning {
-        background-color: #ffc107 !important;
-        color: #212529 !important;
+        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
+        color: #92400e !important;
+        border: 1px solid #f59e0b !important;
     }
     
     .countdown-badge.bg-danger {
-        background-color: #dc3545 !important;
+        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%) !important;
+        color: #991b1b !important;
+        border: 1px solid #ef4444 !important;
+    }
+    
+    .btn-modern {
+        border-radius: 8px;
+        padding: 0.5rem 1.25rem;
+        font-weight: 600;
+        font-size: 0.875rem;
+        transition: all 0.2s ease;
+        border: 1px solid #e5e7eb;
+        background: white;
+        color: #4b5563;
+    }
+    
+    .btn-modern:hover {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+    }
+    
+    .btn-modern.btn-primary {
+        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+        color: white;
+        border-color: #2563eb;
+        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+    }
+    
+    .btn-modern.btn-primary:hover {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        transform: translateY(-2px);
+    }
+    
+    .btn-modern.btn-light {
+        background: white;
+        color: #4b5563;
+        border-color: #e5e7eb;
+    }
+    
+    .btn-modern.btn-warning {
+        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+        color: white;
+        border-color: #d97706;
+        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    }
+    
+    .btn-modern.btn-warning:hover {
+        background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        transform: translateY(-2px);
+    }
+    
+    .btn-modern.btn-info {
+        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+        color: white;
+        border-color: #059669;
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
+    }
+    
+    .btn-modern.btn-info:hover {
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
+        transform: translateY(-2px);
+    }
+    
+    .quick-action-card {
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        color: #1a1a1a;
+        transition: all 0.2s ease;
+        text-decoration: none;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .quick-action-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        border-color: #667eea;
+        color: #1a1a1a;
+        text-decoration: none;
+    }
+    
+    .quick-action-card i {
+        color: #667eea;
+        margin-bottom: 0.5rem;
+    }
+    
+    .countdown-badge {
+        font-size: 0.7rem;
+        min-width: 70px;
+        text-align: center;
+        font-weight: 600;
+    }
+    
+    .countdown-badge.bg-success {
+        background: #d1fae5 !important;
+        color: #065f46 !important;
+    }
+    
+    .countdown-badge.bg-warning {
+        background: #fef3c7 !important;
+        color: #92400e !important;
+    }
+    
+    .countdown-badge.bg-danger {
+        background: #fee2e2 !important;
+        color: #991b1b !important;
     }
     
     .countdown-badge.bg-secondary {
-        background-color: #6c757d !important;
+        background: #f3f4f6 !important;
+        color: #6b7280 !important;
+    }
+    
+    /* Quick Actions Section - daha sade */
+    .quick-actions-section h4 {
+        color: #6b7280;
+        font-size: 0.9rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
 </style>
 {% endblock %}
 
 {% block content %}
 {% if teacher %}
-<!-- Welcome Section -->
-<div class="welcome-section">
-    <h2><i class="fas fa-tachometer-alt me-2"></i>Öğretmen Paneli</h2>
-    <p class="lead">Hoş geldiniz, {{ teacher.full_name }}!</p>
-</div>
-
-<!-- Stats Cards -->
-<div class="row mb-4">
+<!-- Stats Cards - küçültülmüş -->
+<div class="row mb-3" style="margin-top: 0;">
     <div class="col-md-3 mb-3">
         <a href="{% url 'teachers:courses' %}" class="stat-card courses card text-decoration-none">
             <div class="card-body">
@@ -393,9 +561,9 @@
 </div>
 
 <!-- Quick Actions -->
-<div class="row mt-4">
+<div class="row mt-4 quick-actions-section">
     <div class="col-12 mb-3">
-        <h4 class="text-center text-muted">
+        <h4 class="text-center">
             <i class="fas fa-bolt me-2"></i>Hızlı İşlemler
         </h4>
     </div>

@@ -28,6 +28,9 @@ urlpatterns = [
     path('assignments/<int:pk>/edit/', views.AssignmentUpdateView.as_view(), name='assignment_update'),
     path('assignments/<int:pk>/delete/', views.AssignmentDeleteView.as_view(), name='assignment_delete'),
     path('assignments/<int:pk>/submit/', views.SubmissionCreateView.as_view(), name='submission_create'),
+    # AI Helpers
+    path('submissions/<int:pk>/generate-feedback/', views.generate_feedback_view, name='generate_feedback'),
+    path('submissions/<int:pk>/plagiarism-check/', views.plagiarism_check_view, name='plagiarism_check'),
     
     # Announcements
     path('announcements/', views.AnnouncementListView.as_view(), name='announcement_list'),
@@ -54,4 +57,25 @@ urlpatterns = [
     path('<int:course_pk>/content/create/', views.course_content_create, name='content_create'),
     path('content/<int:pk>/update/', views.course_content_update, name='content_update'),
     path('content/<int:pk>/delete/', views.course_content_delete, name='content_delete'),
+    
+    # Teacher-Course Assignment
+    path('teacher-assignment/', views.TeacherCourseAssignmentView.as_view(), name='teacher_assignment'),
+    path('teacher-assignment/bulk-assign/', views.bulk_assign_view, name='bulk_assign'),
+    path('teacher-assignment/bulk-remove/', views.bulk_remove_view, name='bulk_remove'),
+    path('teacher-assignment/check-compatibility/', views.check_compatibility_view, name='check_compatibility'),
+    path('teacher-assignment/check-conflicts/', views.check_conflicts_view, name='check_conflicts'),
+    path('teacher-assignment/availability/<int:teacher_id>/', views.teacher_availability_view, name='teacher_availability'),
+
+    # Example Questions (devre dışı)
+    # path('questions/', views.ExampleQuestionListView.as_view(), name='question_list'),
+    # path('questions/create/', views.ExampleQuestionCreateView.as_view(), name='question_create'),
+    # path('questions/<int:pk>/', views.ExampleQuestionDetailView.as_view(), name='question_detail'),
+    # path('questions/<int:pk>/edit/', views.ExampleQuestionUpdateView.as_view(), name='question_update'),
+    # path('questions/<int:pk>/delete/', views.ExampleQuestionDeleteView.as_view(), name='question_delete'),
+    # path('questions/<int:pk>/ai-solve/', views.ai_solve_question, name='question_ai_solve'),
+
+    # Quizzes (devre dışı)
+    # path('quizzes/', views.QuizListView.as_view(), name='quiz_list'),
+    # path('quizzes/from-file/', views.QuizCreateFromFileView.as_view(), name='quiz_from_file'),
+    # path('quizzes/<int:pk>/', views.QuizDetailView.as_view(), name='quiz_detail'),
 ]

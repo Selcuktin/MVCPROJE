@@ -1,3 +1,1 @@
-venv\Scripts\activate.bat && python manage.py runserver
-
-maile şimdilik gerke yokta öğretmen ve öğrencilerin bir birlerine site içerisinde mesaj gönderebilceği bir şey yapılabilir şimdlik dursun
+.venv\Scripts\activate.bat && python manage.py runserver

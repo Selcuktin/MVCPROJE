@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Course, CourseGroup, Enrollment, Assignment, Submission, Announcement, CourseContent
+from .models import Course, CourseGroup, Enrollment, Assignment, Submission, Announcement, CourseContent, AssignmentHistory
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
@@ -43,3 +43,11 @@ class CourseContentAdmin(admin.ModelAdmin):
     list_filter = ['content_type', 'is_active', 'week_number', 'course__department']
     search_fields = ['title', 'description', 'course__code', 'course__name']
     ordering = ['course', 'week_number']
+
+@admin.register(AssignmentHistory)
+class AssignmentHistoryAdmin(admin.ModelAdmin):
+    list_display = ['teacher', 'course_group', 'action', 'performed_by', 'timestamp']
+    list_filter = ['action', 'timestamp', 'course_group__course__department']
+    search_fields = ['teacher__first_name', 'teacher__last_name', 'course_group__course__code', 'description']
+    readonly_fields = ['timestamp']
+    ordering = ['-timestamp']

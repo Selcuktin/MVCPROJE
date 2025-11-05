@@ -12,7 +12,7 @@ KULLANIM:
 """
 from django import forms
 from django.utils import timezone
-from .models import Course, CourseGroup, Assignment, Submission, Announcement, Enrollment, CourseContent
+from .models import Course, CourseGroup, Assignment, Submission, Announcement, Enrollment, CourseContent, ExampleQuestion, Quiz
 from apps.teachers.models import Teacher
 
 class CourseForm(forms.ModelForm):
@@ -269,3 +269,44 @@ class CourseContentForm(forms.ModelForm):
             raise forms.ValidationError('Lütfen bir dosya yükleyin veya bir link girin.')
         
         return cleaned_data
+
+class ExampleQuestionForm(forms.ModelForm):
+    class Meta:
+        model = ExampleQuestion
+        fields = ['course', 'title', 'content', 'question_type', 'attachment', 'visibility']
+        widgets = {
+            'title': forms.TextInput(attrs={'class': 'form-control'}),
+            'content': forms.Textarea(attrs={'class': 'form-control', 'rows': 6, 'placeholder': 'Soru metni veya açıklaması'}),
+            'question_type': forms.Select(attrs={'class': 'form-control'}),
+            'attachment': forms.FileInput(attrs={'class': 'form-control'}),
+            'visibility': forms.Select(attrs={'class': 'form-control'}),
+        }
+        labels = {
+            'course': 'Ders',
+            'title': 'Başlık',
+            'content': 'İçerik',
+            'question_type': 'Soru Tipi',
+            'attachment': 'Ek (opsiyonel)',
+            'visibility': 'Görünürlük',
+        }
+
+    def __init__(self, *args, **kwargs):
+        user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        # Öğretmen için sadece kendi verdiği dersleri listele
+        if user and hasattr(user, 'userprofile') and user.userprofile.user_type == 'teacher':
+            try:
+                from apps.teachers.models import Teacher
+                teacher = Teacher.objects.get(user=user)
+                courses = Course.objects.filter(groups__teacher=teacher).distinct()
+                self.fields['course'].queryset = courses
+            except Exception:
+                pass
+
+
+class QuizFromFileForm(forms.Form):
+    course = forms.ModelChoiceField(queryset=Course.objects.all(), label='Ders', widget=forms.Select(attrs={'class': 'form-control'}))
+    title = forms.CharField(max_length=255, label='Başlık', widget=forms.TextInput(attrs={'class': 'form-control'}))
+    quiz_type = forms.ChoiceField(choices=Quiz.QUIZ_TYPE_CHOICES, label='Tür', widget=forms.Select(attrs={'class': 'form-control'}))
+    duration_minutes = forms.IntegerField(min_value=1, initial=20, label='Süre (dk)', widget=forms.NumberInput(attrs={'class': 'form-control'}))
+    file = forms.FileField(label='Dosya (.pdf/.docx/.txt)', widget=forms.FileInput(attrs={'class': 'form-control'}))

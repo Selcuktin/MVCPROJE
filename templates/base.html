@@ -18,16 +18,34 @@
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            margin: 0;
+            padding: 0;
+            overflow-x: hidden;
         }
         
-        /* Modern Navbar Styles */
+        /* Modern Navbar Styles - Sabit ve tutarlı */
         .navbar {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
             box-shadow: 0 2px 20px rgba(0,0,0,0.1);
             border: none;
-            padding: 1rem 0;
+            padding: 1rem 0 !important;
+            min-height: 76px !important;
             z-index: 1050;
-            position: relative;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+        }
+        
+        /* Navbar container - tutarlı genişlik her sayfada */
+        .navbar .container-fluid {
+            max-width: 100% !important;
+            width: 100% !important;
+            padding-left: 1.5rem !important;
+            padding-right: 1.5rem !important;
+            margin: 0 !important;
         }
         
         .navbar-brand {
@@ -184,6 +202,10 @@
         
         main {
             flex: 1;
+            margin-top: 76px; /* Navbar yüksekliği */
+            padding-top: 1.5rem; /* Navbar ile içerik arası boşluk */
+            width: 100%;
+            overflow-x: hidden;
         }
         
         .footer {
@@ -204,6 +226,7 @@
                 font-size: 1.2rem;
             }
         }
+        
     </style>
 </head>
 <body>
@@ -249,6 +272,7 @@
                                     <i class="fas fa-star me-1"></i>Notlarım
                                 </a>
                             </li>
+                            {# Soru/Quiz alanı geçici olarak kaldırıldı #}
                         {% elif user.userprofile.user_type == 'teacher' %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'courses:list' %}">
@@ -270,10 +294,16 @@
                                     <i class="fas fa-star me-1"></i>Notlar
                                 </a>
                             </li>
+                            {# Quizler ve Soru Alanı geçici olarak kaldırıldı #}
                         {% else %}
                             <li class="nav-item">
                                 <a class="nav-link" href="{% url 'courses:list' %}">
                                     <i class="fas fa-book me-1"></i>Dersler
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'courses:teacher_assignment' %}">
+                                    <i class="fas fa-user-plus me-1"></i>Öğretmen-Ders Atama
                                 </a>
                             </li>
                             <li class="nav-item">
@@ -291,6 +321,8 @@
                                     <i class="fas fa-star me-1"></i>Notlar
                                 </a>
                             </li>
+
+                            {# Quizler ve Soru Alanı geçici olarak kaldırıldı #}
 
                         {% endif %}
                     {% endif %}
@@ -389,7 +421,7 @@
     {% endif %}
 
     <!-- Main Content -->
-    <main class="{% if request.resolver_match.url_name == 'home' %}p-0{% else %}py-4{% endif %}">
+    <main style="width: 100%; overflow-x: hidden;">
         {% block content %}{% endblock %}
     </main>
 
@@ -441,23 +473,8 @@
                 }
             });
             
-            // Smooth navbar animations
-            const navbar = document.querySelector('.navbar');
-            let lastScrollTop = 0;
-            
-            window.addEventListener('scroll', function() {
-                let scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-                
-                if (scrollTop > lastScrollTop && scrollTop > 100) {
-                    // Scrolling down
-                    navbar.style.transform = 'translateY(-100%)';
-                } else {
-                    // Scrolling up
-                    navbar.style.transform = 'translateY(0)';
-                }
-                
-                lastScrollTop = scrollTop;
-            });
+            // Navbar scroll animasyonu kaldırıldı - sabit kalacak
+            // Navbar artık her zaman görünür olacak
             
             // Add notification sound effect (optional)
             function playNotificationSound() {
@@ -510,6 +527,71 @@
         // setInterval(updateNotifications, 30000);
     </script>
     
+    <!-- Floating Chatbot Widget -->
+    <style>
+        #chatbot-toggle { position: fixed; right: 20px; bottom: 20px; z-index: 1100; }
+        #chatbot-panel { position: fixed; right: 20px; bottom: 80px; width: 320px; height: 420px; background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: none; overflow: hidden; z-index: 1100; }
+        #chatbot-header { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; padding: 10px 12px; font-weight: 600; }
+        #chatbot-messages { height: 250px; padding: 10px; overflow-y: auto; }
+        #chatbot-input { display: flex; gap: 6px; padding: 10px; border-top: 1px solid #eee; }
+        #chatbot-input input { flex: 1; }
+        .bot-msg { background:#f1f3f4; border-radius:8px; padding:8px 10px; margin-bottom:8px; }
+        .user-msg { background:#e7f1ff; border-radius:8px; padding:8px 10px; margin-bottom:8px; text-align:right; }
+    </style>
+    <button id="chatbot-toggle" class="btn btn-primary"><i class="fas fa-comments"></i></button>
+    <div id="chatbot-panel">
+        <div id="chatbot-header">Asistan</div>
+        <div id="chatbot-messages"></div>
+        <div id="chatbot-suggestions" class="px-2 pb-2" style="border-top:1px solid #eee; display:flex; flex-wrap:wrap; gap:6px;">
+            <button class="btn btn-sm btn-outline-secondary chatbot-suggestion" data-q="hangi ödevler var?">Hangi ödevler var?</button>
+            <button class="btn btn-sm btn-outline-secondary chatbot-suggestion" data-q="son duyurular nedir?">Son duyurular?</button>
+            <button class="btn btn-sm btn-outline-secondary chatbot-suggestion" data-q="notlarım">Notlarım</button>
+            <button class="btn btn-sm btn-outline-secondary chatbot-suggestion" data-q="ders programı">Ders programı</button>
+        </div>
+        <div id="chatbot-input" class="p-2">
+            <input id="chatbot-text" class="form-control" type="text" placeholder="Sorunuzu yazın..." />
+            <button id="chatbot-send" class="btn btn-primary"><i class="fas fa-paper-plane"></i></button>
+        </div>
+    </div>
+    <script>
+        (function(){
+            const toggle = document.getElementById('chatbot-toggle');
+            const panel = document.getElementById('chatbot-panel');
+            const sendBtn = document.getElementById('chatbot-send');
+            const input = document.getElementById('chatbot-text');
+            const box = document.getElementById('chatbot-messages');
+            const sugg = document.getElementById('chatbot-suggestions');
+            function csrf(){
+                const m = document.cookie.match(/csrftoken=([^;]+)/);
+                return m?m[1]:'';
+            }
+            toggle.addEventListener('click',()=>{ panel.style.display = (panel.style.display==='block'?'none':'block'); });
+            function append(type, text){
+                const div = document.createElement('div');
+                div.className = type==='user'?'user-msg':'bot-msg';
+                div.textContent = text;
+                box.appendChild(div); box.scrollTop = box.scrollHeight;
+            }
+            async function ask(){
+                const q = input.value.trim(); if(!q) return; input.value=''; append('user', q);
+                try{
+                    const res = await fetch('/api/assistant/ask/', {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken': csrf()}, body: JSON.stringify({query:q})});
+                    const data = await res.json();
+                    append('bot', data.answer || data.error || 'Yanıt alınamadı');
+                }catch(e){ append('bot','Hata oluştu'); }
+            }
+            sendBtn.addEventListener('click', ask);
+            input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') ask(); });
+            // Clickable suggestions
+            sugg.addEventListener('click', (e)=>{
+                const t = e.target.closest('.chatbot-suggestion');
+                if(!t) return;
+                input.value = t.getAttribute('data-q') || '';
+                ask();
+            });
+        })();
+    </script>
+
     {% block extra_js %}{% endblock %}
 </body>
 </html>

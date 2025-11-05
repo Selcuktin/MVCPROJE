@@ -15,7 +15,7 @@ from django.contrib.auth.decorators import login_required
 import json
 
 from .models import Course, CourseGroup, Enrollment, Assignment, Submission, Announcement
-from .services import CourseService, AssignmentService, ReportService
+from .services import CourseService, AssignmentService, ReportService, TeacherCourseAssignmentService
 from .forms import CourseForm, CourseGroupForm, AssignmentForm, SubmissionForm, AnnouncementForm
 
 
@@ -98,3 +98,45 @@ class ReportController:
         """Generate assignment report in specified format"""
         assignment = get_object_or_404(Assignment, pk=assignment_id)
         return self.report_service.generate_assignment_report(assignment, format_type)
+
+
+class TeacherCourseAssignmentController:
+    """Teacher-Course Assignment controller"""
+    
+    def __init__(self):
+        self.assignment_service = TeacherCourseAssignmentService()
+    
+    def get_assignment_panel_data(self, request, filters=None):
+        """Get data for assignment panel"""
+        current_assignments = self.assignment_service.get_current_assignments(filters)
+        assignment_history = self.assignment_service.get_assignment_history(filters, limit=20)
+        
+        # Get all teachers and courses for filters
+        from apps.teachers.models import Teacher
+        teachers = Teacher.objects.filter(status='active').order_by('first_name', 'last_name')
+        courses = Course.objects.filter(status='active').order_by('code')
+        
+        return {
+            'current_assignments': current_assignments,
+            'assignment_history': assignment_history,
+            'teachers': teachers,
+            'courses': courses,
+            'filters': filters or {}
+        }
+    
+    def check_compatibility(self, request, teacher_id, course_id):
+        """Check compatibility between teacher and course"""
+        teacher = get_object_or_404(Teacher, pk=teacher_id)
+        course = get_object_or_404(Course, pk=course_id)
+        return self.assignment_service.check_compatibility(teacher, course)
+    
+    def check_conflicts(self, request, teacher_id, course_id, semester, schedule):
+        """Check schedule conflicts"""
+        teacher = get_object_or_404(Teacher, pk=teacher_id)
+        course = get_object_or_404(Course, pk=course_id)
+        return self.assignment_service.check_schedule_conflicts(teacher, course, semester, schedule)
+    
+    def get_teacher_availability(self, request, teacher_id):
+        """Get teacher availability status"""
+        teacher = get_object_or_404(Teacher, pk=teacher_id)
+        return self.assignment_service.get_teacher_availability(teacher)

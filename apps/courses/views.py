@@ -17,9 +17,9 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-from .models import Course, CourseGroup, Enrollment, Assignment, Submission, Announcement
-from .forms import CourseForm, CourseGroupForm, AssignmentForm, SubmissionForm, AnnouncementForm, EnrollmentForm, GradeForm
-from .controllers import CourseController, AssignmentController, ReportController
+from .models import Course, CourseGroup, Enrollment, Assignment, Submission, Announcement, ExampleQuestion, Quiz, QuizQuestion, QuizChoice
+from .forms import CourseForm, CourseGroupForm, AssignmentForm, SubmissionForm, AnnouncementForm, EnrollmentForm, GradeForm, ExampleQuestionForm, QuizFromFileForm
+from .controllers import CourseController, AssignmentController, ReportController, TeacherCourseAssignmentController
 from apps.students.models import Student
 from apps.teachers.models import Teacher
 
@@ -41,6 +41,66 @@ class CourseListView(LoginRequiredMixin, TemplateView):
         courses = controller.get_course_list(self.request, filters)
         context['courses'] = courses
         return context
+
+# Quiz Views
+class QuizListView(LoginRequiredMixin, ListView):
+    model = Quiz
+    template_name = 'courses/quiz_list.html'
+    context_object_name = 'quizzes'
+
+    def get_queryset(self):
+        qs = Quiz.objects.select_related('course', 'created_by')
+        if hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type == 'teacher':
+            teacher = Teacher.objects.get(user=self.request.user)
+            qs = qs.filter(created_by=teacher)
+        elif hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type == 'student':
+            # öğrenciye kayıtlı olduğu dersler
+            student = Student.objects.get(user=self.request.user)
+            qs = qs.filter(course__groups__enrollments__student=student, is_published=True).distinct()
+        return qs.order_by('-created_at')
+
+
+class QuizCreateFromFileView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    template_name = 'courses/quiz_from_file.html'
+
+    def test_func(self):
+        return hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type == 'teacher'
+
+    def get(self, request):
+        form = QuizFromFileForm()
+        return render(request, self.template_name, {'form': form})
+
+    def post(self, request):
+        form = QuizFromFileForm(request.POST, request.FILES)
+        if form.is_valid():
+            course = form.cleaned_data['course']
+            title = form.cleaned_data['title']
+            quiz_type = form.cleaned_data['quiz_type']
+            duration = form.cleaned_data['duration_minutes']
+            f = request.FILES['file']
+            from .services import parse_quiz_from_text, parse_quiz_from_docx, parse_quiz_from_pdf, create_quiz_from_items
+            name = (f.name or '').lower()
+            if name.endswith('.txt'):
+                text = f.read().decode('utf-8', errors='ignore')
+                items = parse_quiz_from_text(text)
+            elif name.endswith('.docx'):
+                items = parse_quiz_from_docx(f)
+            elif name.endswith('.pdf'):
+                items = parse_quiz_from_pdf(f)
+            else:
+                messages.error(request, 'Desteklenmeyen dosya türü.')
+                return render(request, self.template_name, {'form': form})
+            teacher = Teacher.objects.get(user=request.user)
+            quiz = create_quiz_from_items(course, teacher, title, quiz_type, items, duration_minutes=duration)
+            messages.success(request, f"Quiz oluşturuldu: {quiz.title} ({len(items)} soru)")
+            return redirect('courses:quiz_list')
+        return render(request, self.template_name, {'form': form})
+
+
+class QuizDetailView(LoginRequiredMixin, DetailView):
+    model = Quiz
+    template_name = 'courses/quiz_detail.html'
+    context_object_name = 'quiz'
 
 class CourseDetailView(LoginRequiredMixin, DetailView):
     model = Course
@@ -251,19 +311,37 @@ class AssignmentListView(LoginRequiredMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
+        state = (self.request.GET.get('state') or '').lower()
+        now = timezone.now()
+        qs_base = Assignment.objects.select_related('group__course', 'group__teacher').prefetch_related('submissions', 'group__enrollments')
         if hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type == 'student':
             student = Student.objects.get(user=self.request.user)
-            return Assignment.objects.filter(
-                group__enrollments__student=student,
-                status='active'
-            ).select_related('group__course').prefetch_related('submissions', 'group__enrollments')
+            qs_base = qs_base.filter(group__enrollments__student=student)
         elif hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type == 'teacher':
             teacher = Teacher.objects.get(user=self.request.user)
-            return Assignment.objects.filter(
-                group__teacher=teacher
-            ).select_related('group__course').prefetch_related('submissions', 'group__enrollments')
+            qs_base = qs_base.filter(group__teacher=teacher)
+
+        if state == 'approaching':
+            # teslim tarihi yakında olanlar: 7 gün içinde ve gelecekte
+            qs = qs_base.filter(due_date__gte=now, due_date__lte=now + timezone.timedelta(days=7)).order_by('due_date')
+        elif state == 'active':
+            qs = qs_base.filter(due_date__gte=now).order_by('due_date')
+        elif state == 'expired':
+            qs = qs_base.filter(due_date__lt=now).order_by('-due_date')
+        elif state == 'urgent':
+            qs = qs_base.filter(due_date__gte=now, due_date__lte=now + timezone.timedelta(hours=24)).order_by('due_date')
         else:
-            return Assignment.objects.select_related('group__course', 'group__teacher').prefetch_related('submissions', 'group__enrollments')
+            # varsayılan: aktifler due_date ASC, ardından expired due_date DESC
+            from django.db.models import Case, When, IntegerField
+            qs = qs_base.annotate(
+                exp=Case(
+                    When(due_date__lt=now, then=1),
+                    default=0,
+                    output_field=IntegerField()
+                )
+            ).order_by('exp', 'due_date').order_by('exp', 'due_date')
+            # ikinci order_by yazımı bazı sürümlerde stabilite için bırakıldı
+        return qs
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -620,6 +698,135 @@ class CourseReportView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
         ).order_by('code')
         return context
 
+# Example Questions Views
+class ExampleQuestionListView(LoginRequiredMixin, ListView):
+    model = ExampleQuestion
+    template_name = 'courses/question_list.html'
+    context_object_name = 'questions'
+    paginate_by = 20
+
+    def get_queryset(self):
+        qs = ExampleQuestion.objects.select_related('course', 'created_by')
+        # Öğrenciler: kayıtlı oldukları derslerin public soruları
+        if hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type == 'student':
+            try:
+                student = Student.objects.get(user=self.request.user)
+                course_ids = Enrollment.objects.filter(student=student, status='enrolled').values_list('group__course_id', flat=True)
+                return qs.filter(course_id__in=course_ids, visibility='public')
+            except Student.DoesNotExist:
+                return qs.none()
+        # Öğretmenler: kendi derslerindeki tüm sorular
+        if hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type == 'teacher':
+            teacher = Teacher.objects.get(user=self.request.user)
+            course_ids = CourseGroup.objects.filter(teacher=teacher).values_list('course_id', flat=True)
+            return qs.filter(course_id__in=course_ids)
+        # Admin/staff: tümü
+        return qs
+
+class ExampleQuestionDetailView(LoginRequiredMixin, DetailView):
+    model = ExampleQuestion
+    template_name = 'courses/question_detail.html'
+    context_object_name = 'question'
+
+class ExampleQuestionCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
+    model = ExampleQuestion
+    form_class = ExampleQuestionForm
+    template_name = 'courses/question_form.html'
+
+    def test_func(self):
+        return hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type == 'teacher'
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        teacher = Teacher.objects.get(user=self.request.user)
+        obj = form.save(commit=False)
+        obj.created_by = teacher
+        # Eğer ekli dosya varsa ve çoklu soru içeriyorsa, text/docx'ten ayrıştır ve toplu oluştur
+        attachment = self.request.FILES.get('attachment')
+        created_many = 0
+        if attachment and not obj.content:
+            from .services import parse_questions_from_text, parse_questions_from_docx
+            filename = attachment.name.lower()
+            if filename.endswith('.txt'):
+                try:
+                    text = attachment.read().decode('utf-8', errors='ignore')
+                    items = parse_questions_from_text(text)
+                except Exception:
+                    items = []
+            elif filename.endswith('.docx'):
+                items = parse_questions_from_docx(attachment)
+            else:
+                items = []
+            if items:
+                bulk = []
+                for it in items:
+                    bulk.append(ExampleQuestion(
+                        course=obj.course,
+                        created_by=teacher,
+                        title=it['title'],
+                        content=it['content'],
+                        question_type=it['type'],
+                        visibility=obj.visibility
+                    ))
+                ExampleQuestion.objects.bulk_create(bulk)
+                created_many = len(bulk)
+        if created_many:
+            messages.success(self.request, f'{created_many} soru dosyadan içe aktarıldı.')
+        else:
+            obj.save()
+            messages.success(self.request, 'Örnek soru eklendi.')
+        return redirect('courses:question_list')
+
+class ExampleQuestionUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
+    model = ExampleQuestion
+    form_class = ExampleQuestionForm
+    template_name = 'courses/question_form.html'
+
+    def test_func(self):
+        obj = self.get_object()
+        return (hasattr(self.request.user, 'userprofile') and 
+                self.request.user.userprofile.user_type == 'teacher' and
+                obj.created_by.user == self.request.user) or self.request.user.is_staff
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['user'] = self.request.user
+        return kwargs
+
+    def form_valid(self, form):
+        messages.success(self.request, 'Örnek soru güncellendi.')
+        return redirect('courses:question_list')
+
+class ExampleQuestionDeleteView(LoginRequiredMixin, UserPassesTestMixin, DeleteView):
+    model = ExampleQuestion
+    template_name = 'courses/question_delete.html'
+    success_url = reverse_lazy('courses:question_list')
+
+    def test_func(self):
+        obj = self.get_object()
+        return (hasattr(self.request.user, 'userprofile') and 
+                self.request.user.userprofile.user_type == 'teacher' and
+                obj.created_by.user == self.request.user) or self.request.user.is_staff
+
+@login_required
+@csrf_exempt
+def ai_solve_question(request, pk):
+    """Basit AI çözüm stub: ileride Gemini/OpenAI ile değiştirilecek."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Only POST allowed'}, status=405)
+    question = get_object_or_404(ExampleQuestion, pk=pk)
+    try:
+        from .services import solve_question_with_ai
+        solution = solve_question_with_ai(question)
+        return JsonResponse({'success': True, 'solution': solution})
+    except Exception as e:
+        logger.error(f"AI solve error: {e}")
+        return JsonResponse({'success': False, 'error': 'Çözüm üretilemedi'}, status=500)
+
 # AJAX Views
 @login_required
 @csrf_exempt
@@ -889,3 +1096,250 @@ def course_content_delete(request, pk):
         'content': content,
         'course': content.course
     })
+
+
+# Teacher-Course Assignment Views
+class TeacherCourseAssignmentView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    """Öğretmen-Ders Atama Paneli"""
+    template_name = 'courses/teacher_course_assignment.html'
+    
+    def test_func(self):
+        return self.request.user.is_staff or (
+            hasattr(self.request.user, 'userprofile') and 
+            self.request.user.userprofile.user_type in ['admin', 'staff']
+        )
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        controller = TeacherCourseAssignmentController()
+        
+        # Get filters from request
+        filters = {
+            'search': self.request.GET.get('search'),
+            'teacher_id': self.request.GET.get('teacher_id'),
+            'course_id': self.request.GET.get('course_id'),
+            'department': self.request.GET.get('department'),
+            'semester': self.request.GET.get('semester'),
+            'action': self.request.GET.get('action'),
+        }
+        
+        # Remove None values
+        filters = {k: v for k, v in filters.items() if v}
+        
+        data = controller.get_assignment_panel_data(self.request, filters)
+        context.update(data)
+        
+        # Get departments for filter
+        context['departments'] = Course.objects.values_list('department', flat=True).distinct().order_by('department')
+        
+        # Get all students for student assignment
+        from apps.students.models import Student
+        context['students'] = Student.objects.filter(status='active').order_by('first_name', 'last_name')
+        
+        return context
+
+
+@login_required
+def bulk_assign_view(request):
+    """Toplu ders atama"""
+    if not (request.user.is_staff or 
+            hasattr(request.user, 'userprofile') and 
+            request.user.userprofile.user_type in ['admin', 'staff']):
+        return JsonResponse({'success': False, 'error': 'Yetkiniz yok'}, status=403)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            course_ids = data.get('course_ids', [])
+            teacher_ids = data.get('teacher_ids', [])
+            semester = data.get('semester', '')
+            classroom = data.get('classroom', '')
+            schedule = data.get('schedule', '')
+            
+            if not course_ids or not teacher_ids:
+                return JsonResponse({'success': False, 'error': 'Ders ve öğretmen seçilmelidir'})
+            
+            controller = TeacherCourseAssignmentController()
+            service = controller.assignment_service
+            
+            results = service.bulk_assign(
+                course_ids, teacher_ids, semester, classroom, schedule, request.user
+            )
+            
+            success_count = sum(1 for r in results if r.get('success'))
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'{success_count} atama başarıyla yapıldı',
+                'results': [
+                    {
+                        'course': r['course_group'].course.code,
+                        'teacher': r['course_group'].teacher.full_name,
+                        'compatibility': r.get('compatibility', {}).get('score', 0),
+                        'conflicts': len(r.get('conflicts', []))
+                    }
+                    for r in results if r.get('success')
+                ]
+            })
+        except Exception as e:
+            logger.error(f"Toplu atama hatası: {str(e)}", exc_info=True)
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    
+    return JsonResponse({'success': False, 'error': 'POST isteği gerekli'}, status=400)
+
+
+@login_required
+def bulk_remove_view(request):
+    """Toplu ders çıkarma"""
+    if not (request.user.is_staff or 
+            hasattr(request.user, 'userprofile') and 
+            request.user.userprofile.user_type in ['admin', 'staff']):
+        return JsonResponse({'success': False, 'error': 'Yetkiniz yok'}, status=403)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            course_group_ids = data.get('course_group_ids', [])
+            
+            if not course_group_ids:
+                return JsonResponse({'success': False, 'error': 'Atama seçilmelidir'})
+            
+            controller = TeacherCourseAssignmentController()
+            service = controller.assignment_service
+            
+            results = service.bulk_remove(course_group_ids, request.user)
+            success_count = sum(1 for r in results if r.get('success'))
+            
+            return JsonResponse({
+                'success': True,
+                'message': f'{success_count} atama başarıyla kaldırıldı'
+            })
+        except Exception as e:
+            logger.error(f"Toplu çıkarma hatası: {str(e)}", exc_info=True)
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    
+    return JsonResponse({'success': False, 'error': 'POST isteği gerekli'}, status=400)
+
+
+@login_required
+def check_compatibility_view(request):
+    """Uyumluluk kontrolü"""
+    if request.method == 'GET':
+        teacher_id = request.GET.get('teacher_id')
+        course_id = request.GET.get('course_id')
+        
+        if not teacher_id or not course_id:
+            return JsonResponse({'success': False, 'error': 'Öğretmen ve ders seçilmelidir'})
+        
+        controller = TeacherCourseAssignmentController()
+        compatibility = controller.check_compatibility(request, teacher_id, course_id)
+        
+        return JsonResponse({
+            'success': True,
+            'compatibility': compatibility
+        })
+    
+    return JsonResponse({'success': False, 'error': 'GET isteği gerekli'}, status=400)
+
+
+@login_required
+def check_conflicts_view(request):
+    """Çakışma kontrolü"""
+    if request.method == 'GET':
+        teacher_id = request.GET.get('teacher_id')
+        course_id = request.GET.get('course_id')
+        semester = request.GET.get('semester', '')
+        schedule = request.GET.get('schedule', '')
+        
+        if not teacher_id or not course_id:
+            return JsonResponse({'success': False, 'error': 'Öğretmen ve ders seçilmelidir'})
+        
+        controller = TeacherCourseAssignmentController()
+        conflicts = controller.check_conflicts(request, teacher_id, course_id, semester, schedule)
+        
+        return JsonResponse({
+            'success': True,
+            'conflicts': [
+                {
+                    'group': c['group'].course.code,
+                    'conflict_type': c['conflict_type'],
+                    'message': c['message']
+                }
+                for c in conflicts
+            ],
+            'has_conflicts': len(conflicts) > 0
+        })
+    
+    return JsonResponse({'success': False, 'error': 'GET isteği gerekli'}, status=400)
+
+
+@login_required
+def teacher_availability_view(request, teacher_id):
+    """Öğretmen uygunluk durumu"""
+    controller = TeacherCourseAssignmentController()
+    availability = controller.get_teacher_availability(request, teacher_id)
+    
+    return JsonResponse({
+        'success': True,
+        'availability': availability
+    })
+
+
+# ---- Feedback & Plagiarism endpoints ----
+@login_required
+@csrf_exempt
+def generate_feedback_view(request, pk):
+    """Öğretmenin bir teslim için hızlı geri bildirim metni üretmesi."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Only POST allowed'}, status=405)
+    if not (hasattr(request.user, 'userprofile') and request.user.userprofile.user_type == 'teacher'):
+        return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
+    try:
+        submission = get_object_or_404(Submission, pk=pk)
+        from .services import generate_feedback
+        feedback_text = generate_feedback(submission.student, submission.assignment)
+        submission.feedback = feedback_text
+        submission.save(update_fields=['feedback'])
+        return JsonResponse({'success': True, 'feedback': feedback_text})
+    except Exception as e:
+        logger.error(f"feedback error: {e}")
+        return JsonResponse({'success': False, 'error': 'Geri bildirim oluşturulamadı'}, status=500)
+
+
+@login_required
+@csrf_exempt
+def plagiarism_check_view(request, pk):
+    """Teslim metnini diğer teslimlere karşı basit benzerlik ile kontrol eder."""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Only POST allowed'}, status=405)
+    if not (hasattr(request.user, 'userprofile') and request.user.userprofile.user_type in ['teacher', 'admin']):
+        return JsonResponse({'success': False, 'error': 'Permission denied'}, status=403)
+    try:
+        submission = get_object_or_404(Submission, pk=pk)
+        from .services import extract_text_from_upload
+        text = extract_text_from_upload(submission.file_url)
+        others = submission.assignment.submissions.exclude(pk=submission.pk)
+        corpus = []
+        for s in others:
+            try:
+                if s.file_url:
+                    corpus.append(extract_text_from_upload(s.file_url))
+            except Exception:
+                continue
+        from .services import check_plagiarism
+        result = check_plagiarism(text, corpus)
+        try:
+            from .models import PlagiarismReport
+            report = PlagiarismReport.objects.create(
+                submission=submission,
+                method='ngram_jaccard',
+                max_similarity=result.get('max_similarity') or 0.0,
+                details=result
+            )
+            result['report_id'] = report.id
+        except Exception:
+            pass
+        return JsonResponse({'success': True, 'result': result})
+    except Exception as e:
+        logger.error(f"plagiarism error: {e}")
+        return JsonResponse({'success': False, 'error': 'İntihal kontrolü yapılamadı'}, status=500)
