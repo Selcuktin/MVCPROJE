@@ -17,7 +17,7 @@ import re
 import difflib
 from typing import List, Dict, Any, Optional
 
-from .models import Course, CourseGroup, Enrollment, Assignment, Submission, Announcement, AssignmentHistory, ExampleQuestion, Quiz, QuizQuestion, QuizChoice
+from .models import Course, CourseGroup, Enrollment, AssignmentHistory, ExampleQuestion, Quiz, QuizQuestion, QuizChoice
 from apps.students.models import Student
 from apps.teachers.models import Teacher
 
@@ -88,96 +88,6 @@ class CourseService:
         return True
 
 
-class AssignmentService:
-    """Assignment business logic service"""
-    
-    def get_user_assignments(self, user, user_type, filters):
-        """Get assignments based on user type and filters"""
-        if user_type == 'student':
-            try:
-                student = Student.objects.get(user=user)
-                queryset = Assignment.objects.filter(
-                    group__enrollments__student=student,
-                    status='active'
-                ).select_related('group__course').prefetch_related('submissions', 'group__enrollments')
-            except Student.DoesNotExist:
-                queryset = Assignment.objects.none()
-                
-        elif user_type == 'teacher':
-            try:
-                teacher = Teacher.objects.get(user=user)
-                queryset = Assignment.objects.filter(
-                    group__teacher=teacher
-                ).select_related('group__course').prefetch_related('submissions', 'group__enrollments')
-            except Teacher.DoesNotExist:
-                queryset = Assignment.objects.none()
-        else:
-            queryset = Assignment.objects.select_related('group__course', 'group__teacher').prefetch_related('submissions', 'group__enrollments')
-        
-        # Apply filters
-        if filters.get('course'):
-            queryset = queryset.filter(group__course_id=filters['course'])
-        
-        if filters.get('status'):
-            queryset = queryset.filter(status=filters['status'])
-            
-        return queryset.order_by('-create_date')
-    
-    def get_assignment_with_details(self, assignment, user):
-        """Get assignment with submissions and user-specific data"""
-        data = {'assignment': assignment}
-        
-        # Get submissions for teachers
-        if hasattr(user, 'userprofile') and user.userprofile.user_type == 'teacher':
-            data['submissions'] = assignment.submissions.select_related('student')
-        
-        # Get user's submission for students
-        if hasattr(user, 'userprofile') and user.userprofile.user_type == 'student':
-            try:
-                student = Student.objects.get(user=user)
-                data['submission'] = Submission.objects.filter(
-                    assignment=assignment, student=student
-                ).first()
-                data['can_submit'] = timezone.now() <= assignment.due_date
-            except Student.DoesNotExist:
-                data['submission'] = None
-                data['can_submit'] = False
-        
-        return data
-    
-    def create_assignment(self, form_data, user):
-        """Create new assignment"""
-        try:
-            teacher = Teacher.objects.get(user=user)
-            assignment = Assignment.objects.create(**form_data)
-            return assignment
-        except Teacher.DoesNotExist:
-            raise ValueError("Only teachers can create assignments")
-    
-    def submit_assignment(self, assignment, user, submission_data):
-        """Submit assignment"""
-        try:
-            student = Student.objects.get(user=user)
-            
-            # Check if already submitted
-            if Submission.objects.filter(assignment=assignment, student=student).exists():
-                raise ValueError("Assignment already submitted")
-            
-            # Check deadline
-            if timezone.now() > assignment.due_date:
-                raise ValueError("Assignment deadline has passed")
-            
-            submission = Submission.objects.create(
-                assignment=assignment,
-                student=student,
-                **submission_data
-            )
-            return submission
-            
-        except Student.DoesNotExist:
-            raise ValueError("Only students can submit assignments")
-
-
 class ReportService:
     """Report generation service"""
     
@@ -204,17 +114,6 @@ class ReportService:
             return self._generate_excel_report(enrollments, f'course_report_{course.code}')
         elif format_type == 'csv':
             return self._generate_csv_report(enrollments, f'course_report_{course.code}')
-    
-    def generate_assignment_report(self, assignment, format_type='pdf'):
-        """Generate assignment report"""
-        submissions = Submission.objects.filter(assignment=assignment).select_related('student')
-        
-        if format_type == 'pdf':
-            return self._generate_assignment_pdf_report(submissions, assignment)
-        elif format_type == 'excel':
-            return self._generate_assignment_excel_report(submissions, assignment)
-        elif format_type == 'csv':
-            return self._generate_assignment_csv_report(submissions, assignment)
     
     def _generate_pdf_report(self, data, filename):
         """Generate PDF report"""
@@ -284,92 +183,6 @@ class ReportService:
                     getattr(item, 'grade', 'N/A'),
                     item.get_status_display()
                 ])
-        
-        return response
-    
-    def _generate_assignment_pdf_report(self, submissions, assignment):
-        """Generate assignment-specific PDF report"""
-        buffer = BytesIO()
-        p = canvas.Canvas(buffer, pagesize=letter)
-        
-        y = 750
-        p.drawString(100, y, f"Assignment Report: {assignment.title}")
-        y -= 30
-        p.drawString(100, y, f"Course: {assignment.group.course.name}")
-        y -= 30
-        p.drawString(100, y, f"Due Date: {assignment.due_date.strftime('%d.%m.%Y %H:%M')}")
-        y -= 50
-        
-        p.drawString(100, y, "Submissions:")
-        y -= 30
-        
-        for submission in submissions:
-            text = f"{submission.student.full_name} - Score: {submission.score or 'Not graded'}"
-            p.drawString(120, y, text)
-            y -= 20
-            if y < 100:
-                p.showPage()
-                y = 750
-        
-        p.save()
-        buffer.seek(0)
-        
-        response = HttpResponse(buffer, content_type='application/pdf')
-        response['Content-Disposition'] = f'attachment; filename="assignment_{assignment.id}_report.pdf"'
-        return response
-    
-    def _generate_assignment_excel_report(self, submissions, assignment):
-        """Generate assignment-specific Excel report"""
-        wb = openpyxl.Workbook()
-        ws = wb.active
-        ws.title = f"Assignment {assignment.id}"
-        
-        # Assignment info
-        ws.cell(row=1, column=1, value="Assignment:")
-        ws.cell(row=1, column=2, value=assignment.title)
-        ws.cell(row=2, column=1, value="Course:")
-        ws.cell(row=2, column=2, value=assignment.group.course.name)
-        ws.cell(row=3, column=1, value="Due Date:")
-        ws.cell(row=3, column=2, value=assignment.due_date.strftime('%d.%m.%Y %H:%M'))
-        
-        # Headers
-        headers = ['Student', 'Submission Date', 'Score', 'Status', 'Feedback']
-        for col, header in enumerate(headers, 1):
-            ws.cell(row=5, column=col, value=header)
-        
-        # Data
-        for row, submission in enumerate(submissions, 6):
-            ws.cell(row=row, column=1, value=submission.student.full_name)
-            ws.cell(row=row, column=2, value=submission.submission_date.strftime('%d.%m.%Y %H:%M'))
-            ws.cell(row=row, column=3, value=submission.score or 'Not graded')
-            ws.cell(row=row, column=4, value=submission.get_status_display())
-            ws.cell(row=row, column=5, value=submission.feedback or '')
-        
-        response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-        response['Content-Disposition'] = f'attachment; filename="assignment_{assignment.id}_report.xlsx"'
-        wb.save(response)
-        return response
-    
-    def _generate_assignment_csv_report(self, submissions, assignment):
-        """Generate assignment-specific CSV report"""
-        response = HttpResponse(content_type='text/csv')
-        response['Content-Disposition'] = f'attachment; filename="assignment_{assignment.id}_report.csv"'
-        
-        writer = csv.writer(response)
-        writer.writerow([f'Assignment: {assignment.title}'])
-        writer.writerow([f'Course: {assignment.group.course.name}'])
-        writer.writerow([f'Due Date: {assignment.due_date.strftime("%d.%m.%Y %H:%M")}'])
-        writer.writerow([])  # Empty row
-        writer.writerow(['Student', 'Submission Date', 'Score', 'Status', 'Feedback'])
-        
-        for submission in submissions:
-            writer.writerow([
-                submission.student.full_name,
-                submission.submission_date.strftime('%d.%m.%Y %H:%M'),
-                submission.score or 'Not graded',
-                submission.get_status_display(),
-                submission.feedback or ''
-            ])
         
         return response
 
@@ -798,7 +611,7 @@ def create_quiz_from_items(course: Course, teacher, title: str, quiz_type: str, 
 
 
 # --------- FEEDBACK GENERATION ---------
-def generate_feedback(student, assignment: Assignment, rubric: Dict[str, int] | None = None) -> str:
+def generate_feedback(student, assignment, rubric: Dict[str, int] | None = None) -> str:
     """Template tabanlı basit geri bildirim üretimi.
     - templates/utils/feedback_templates/default.txt dosyasını kullanır.
     - rubric: {'içerik': 40, 'biçim': 20, 'özgünlük': 40} gibi dağılım.
@@ -910,3 +723,652 @@ def extract_text_from_upload(file_field) -> str:
                 return ''
     except Exception:
         return ''
+
+
+# ============================================================================
+# UDEMY PLATFORM SERVICES - Online Kurs Sistemi İş Mantığı
+# ============================================================================
+
+class LessonProgressService:
+    """Ders ilerleme takibi iş mantığı"""
+    
+    @staticmethod
+    def update_video_progress(student, lesson, watched_duration):
+        """
+        Video izleme ilerlemesini güncelle
+        %80 izlenmişse tamamlandı say
+        """
+        from .models import LessonProgress, CourseEnrollment
+        
+        enrollment = CourseEnrollment.objects.get(
+            student=student, 
+            course=lesson.module.course
+        )
+        
+        progress, created = LessonProgress.objects.get_or_create(
+            student=student,
+            lesson=lesson,
+            enrollment=enrollment
+        )
+        
+        progress.watched_duration = watched_duration
+        
+        # Tamamlanma yüzdesini hesapla
+        if lesson.video_duration > 0:
+            progress.completion_percentage = min(
+                (watched_duration / lesson.video_duration) * 100, 
+                100
+            )
+        else:
+            progress.completion_percentage = 0
+        
+        # %80 izlenmişse tamamlandı say
+        if progress.completion_percentage >= 80:
+            progress.status = 'completed'
+            if not progress.completed_at:
+                progress.completed_at = timezone.now()
+        else:
+            progress.status = 'in_progress'
+        
+        if not progress.started_at:
+            progress.started_at = timezone.now()
+        
+        progress.save()
+        
+        # Kurs genel ilerlemesini güncelle
+        LessonProgressService.update_course_progress(student, lesson.module.course)
+        
+        return progress
+    
+    @staticmethod
+    def mark_pdf_completed(student, lesson):
+        """PDF okundu olarak işaretle"""
+        from .models import LessonProgress, CourseEnrollment
+        
+        enrollment = CourseEnrollment.objects.get(
+            student=student, 
+            course=lesson.module.course
+        )
+        
+        progress, created = LessonProgress.objects.get_or_create(
+            student=student,
+            lesson=lesson,
+            enrollment=enrollment
+        )
+        
+        progress.status = 'completed'
+        progress.completion_percentage = 100
+        
+        if not progress.completed_at:
+            progress.completed_at = timezone.now()
+        if not progress.started_at:
+            progress.started_at = timezone.now()
+        
+        progress.save()
+        
+        LessonProgressService.update_course_progress(student, lesson.module.course)
+        return progress
+    
+    @staticmethod
+    def mark_text_completed(student, lesson):
+        """Metin içerik okundu olarak işaretle"""
+        return LessonProgressService.mark_pdf_completed(student, lesson)
+    
+    @staticmethod
+    def update_quiz_progress(student, lesson, quiz_attempt):
+        """
+        Quiz sonucunu lesson progress'e kaydet
+        Quiz geçilmişse tamamlandı say
+        """
+        from .models import LessonProgress, CourseEnrollment
+        
+        enrollment = CourseEnrollment.objects.get(
+            student=student, 
+            course=lesson.module.course
+        )
+        
+        progress, created = LessonProgress.objects.get_or_create(
+            student=student,
+            lesson=lesson,
+            enrollment=enrollment
+        )
+        
+        progress.quiz_attempt = quiz_attempt
+        progress.quiz_score = quiz_attempt.score or 0
+        
+        # Quiz geçme notu %60
+        passing_score = 60
+        progress.quiz_passed = progress.quiz_score >= passing_score
+        
+        if progress.quiz_passed:
+            progress.status = 'completed'
+            progress.completion_percentage = 100
+            if not progress.completed_at:
+                progress.completed_at = timezone.now()
+        else:
+            progress.status = 'in_progress'
+            progress.completion_percentage = 50
+        
+        if not progress.started_at:
+            progress.started_at = timezone.now()
+        
+        progress.save()
+        
+        if progress.quiz_passed:
+            LessonProgressService.update_course_progress(student, lesson.module.course)
+        
+        return progress
+    
+    @staticmethod
+    def submit_optional_assignment(student, lesson, file, notes=''):
+        """
+        Opsiyonel ödev gönder
+        Ödev opsiyonel olduğu için not verilmez, sadece işaretlenir
+        """
+        from .models import LessonProgress, CourseEnrollment
+        
+        enrollment = CourseEnrollment.objects.get(
+            student=student, 
+            course=lesson.module.course
+        )
+        
+        progress, created = LessonProgress.objects.get_or_create(
+            student=student,
+            lesson=lesson,
+            enrollment=enrollment
+        )
+        
+        progress.assignment_submitted = True
+        progress.assignment_file = file
+        progress.assignment_notes = notes
+        progress.assignment_submitted_at = timezone.now()
+        
+        # Ödev gönderilince tamamlandı say
+        progress.status = 'completed'
+        progress.completion_percentage = 100
+        
+        if not progress.completed_at:
+            progress.completed_at = timezone.now()
+        if not progress.started_at:
+            progress.started_at = timezone.now()
+        
+        progress.save()
+        
+        # Ödev opsiyonel olsa da kurs ilerlemesini etkiler
+        LessonProgressService.update_course_progress(student, lesson.module.course)
+        
+        return progress
+    
+    @staticmethod
+    def update_course_progress(student, course):
+        """
+        Kurs genel ilerlemesini güncelle
+        Tüm zorunlu dersler tamamlandıysa sınav erişimi aç
+        """
+        from .models import LessonProgress, CourseEnrollment, Lesson
+        from django.db.models import Q, Count
+        
+        enrollment = CourseEnrollment.objects.get(student=student, course=course)
+        
+        # Toplam zorunlu ders sayısı
+        total_mandatory_lessons = Lesson.objects.filter(
+            module__course=course,
+            is_mandatory=True
+        ).count()
+        
+        # Tamamlanan zorunlu dersler
+        completed_mandatory_lessons = LessonProgress.objects.filter(
+            student=student,
+            lesson__module__course=course,
+            lesson__is_mandatory=True,
+            status='completed'
+        ).count()
+        
+        enrollment.total_lessons_count = total_mandatory_lessons
+        enrollment.completed_lessons_count = completed_mandatory_lessons
+        
+        # İlerleme yüzdesini hesapla
+        if total_mandatory_lessons > 0:
+            enrollment.progress_percentage = (
+                completed_mandatory_lessons / total_mandatory_lessons
+            ) * 100
+        else:
+            enrollment.progress_percentage = 0
+        
+        # Tüm zorunlu dersler tamamlandıysa sınav erişimi aç
+        if enrollment.progress_percentage >= 100:
+            if not enrollment.is_eligible_for_exam:
+                enrollment.is_eligible_for_exam = True
+                enrollment.exam_access_date = timezone.now()
+        
+        enrollment.save()
+        return enrollment
+    
+    @staticmethod
+    def get_next_lesson(student, course):
+        """
+        Öğrencinin bir sonraki tamamlaması gereken dersi bul
+        """
+        from .models import LessonProgress, Lesson, CourseModule
+        
+        # Son erişilen ders
+        last_progress = LessonProgress.objects.filter(
+            student=student,
+            lesson__module__course=course
+        ).order_by('-last_accessed').first()
+        
+        if not last_progress:
+            # Hiç ders başlanmamışsa ilk modülün ilk dersi
+            first_module = CourseModule.objects.filter(
+                course=course,
+                is_active=True
+            ).order_by('order').first()
+            
+            if first_module:
+                return first_module.lessons.filter(is_mandatory=True).order_by('order').first()
+            return None
+        
+        # Aynı modülde sonraki ders
+        next_lesson = Lesson.objects.filter(
+            module=last_progress.lesson.module,
+            order__gt=last_progress.lesson.order,
+            is_mandatory=True
+        ).order_by('order').first()
+        
+        if next_lesson:
+            return next_lesson
+        
+        # Sonraki modülün ilk dersi
+        next_module = CourseModule.objects.filter(
+            course=course,
+            order__gt=last_progress.lesson.module.order,
+            is_active=True
+        ).order_by('order').first()
+        
+        if next_module:
+            return next_module.lessons.filter(is_mandatory=True).order_by('order').first()
+        
+        return None
+
+
+class ExamService:
+    """Sınav yönetimi iş mantığı"""
+    
+    @staticmethod
+    def can_take_exam(student, course):
+        """Öğrenci sınava girebilir mi kontrol et"""
+        from .models import CourseEnrollment
+        
+        try:
+            enrollment = CourseEnrollment.objects.get(
+                student=student, 
+                course=course
+            )
+            return enrollment.can_take_exam
+        except CourseEnrollment.DoesNotExist:
+            return False
+    
+    @staticmethod
+    def get_remaining_attempts(student, course):
+        """Kalan deneme hakkını hesapla"""
+        from .models import CourseEnrollment, CourseExam, ExamAttempt
+        
+        try:
+            enrollment = CourseEnrollment.objects.get(student=student, course=course)
+            exam = course.final_exam
+            
+            used_attempts = ExamAttempt.objects.filter(
+                enrollment=enrollment,
+                exam=exam
+            ).count()
+            
+            return max(0, exam.max_attempts - used_attempts)
+        except Exception:
+            return 0
+    
+    @staticmethod
+    def start_exam(student, course):
+        """
+        Sınavı başlat
+        - Deneme hakkı kontrolü
+        - QuizAttempt ve ExamAttempt oluştur
+        """
+        from .models import (
+            CourseEnrollment, CourseExam, ExamAttempt, 
+            QuizAttempt
+        )
+        from django.core.exceptions import ValidationError
+        
+        # Enrollment kontrolü
+        try:
+            enrollment = CourseEnrollment.objects.get(student=student, course=course)
+        except CourseEnrollment.DoesNotExist:
+            raise ValidationError('Bu kursa kayıtlı değilsiniz')
+        
+        # Sınava uygun mu?
+        if not enrollment.can_take_exam:
+            raise ValidationError('Henüz sınava girebilmek için tüm içeriği tamamlamadınız')
+        
+        # Exam kontrolü
+        try:
+            exam = course.final_exam
+        except Exception:
+            raise ValidationError('Bu kursun sınavı bulunmuyor')
+        
+        # Deneme hakkı kontrolü
+        attempts_count = ExamAttempt.objects.filter(
+            enrollment=enrollment,
+            exam=exam
+        ).count()
+        
+        if attempts_count >= exam.max_attempts:
+            raise ValidationError(f'Maksimum deneme sayısına ({exam.max_attempts}) ulaştınız')
+        
+        # QuizAttempt oluştur
+        quiz_attempt = QuizAttempt.objects.create(
+            quiz=exam.quiz,
+            student=student
+        )
+        
+        # ExamAttempt oluştur
+        exam_attempt = ExamAttempt.objects.create(
+            enrollment=enrollment,
+            exam=exam,
+            student=student,
+            attempt_number=attempts_count + 1,
+            quiz_attempt=quiz_attempt
+        )
+        
+        return exam_attempt
+    
+    @staticmethod
+    def complete_exam(exam_attempt):
+        """
+        Sınavı tamamla ve değerlendir
+        - Cevapları kontrol et
+        - Geçti/kaldı durumunu belirle
+        - Geçtiyse sertifika oluştur
+        """
+        from .models import QuizAnswer
+        
+        quiz_attempt = exam_attempt.quiz_attempt
+        quiz_attempt.is_submitted = True
+        quiz_attempt.completed_at = timezone.now()
+        
+        # Cevapları değerlendir
+        total_questions = quiz_attempt.quiz.questions.count()
+        
+        if total_questions == 0:
+            raise ValueError('Sınavda soru bulunmuyor')
+        
+        # Doğru cevapları say
+        correct_answers = QuizAnswer.objects.filter(
+            attempt=quiz_attempt,
+            is_correct=True
+        ).count()
+        
+        # Puanı hesapla
+        score = (correct_answers / total_questions) * 100
+        quiz_attempt.score = score
+        quiz_attempt.save()
+        
+        exam_attempt.score = score
+        exam_attempt.completed_at = timezone.now()
+        
+        # Geçti mi?
+        if score >= exam_attempt.exam.passing_score:
+            exam_attempt.status = 'passed'
+            
+            # Enrollment'ı tamamla
+            enrollment = exam_attempt.enrollment
+            enrollment.status = 'completed'
+            enrollment.completed_at = timezone.now()
+            enrollment.save()
+            
+            # Sertifika oluştur
+            CertificateService.generate_certificate(exam_attempt)
+        else:
+            exam_attempt.status = 'failed'
+        
+        exam_attempt.save()
+        return exam_attempt
+
+
+class CertificateService:
+    """Sertifika oluşturma ve yönetimi"""
+    
+    @staticmethod
+    def generate_certificate(exam_attempt):
+        """
+        Otomatik PDF sertifika oluştur
+        - Benzersiz sertifika ID
+        - PDF dosyası oluştur (ReportLab ile)
+        - Doğrulama URL'i
+        """
+        from .models import Certificate
+        from django.conf import settings
+        from reportlab.pdfgen import canvas
+        from reportlab.lib.pagesizes import A4, landscape
+        from reportlab.lib.units import cm
+        from reportlab.pdfbase import pdfmetrics
+        from reportlab.pdfbase.ttfonts import TTFont
+        import uuid
+        import os
+        
+        enrollment = exam_attempt.enrollment
+        student = enrollment.student
+        course = enrollment.course
+        
+        # Benzersiz sertifika ID oluştur
+        cert_id = f"CERT-{course.code}-{student.school_number}-{uuid.uuid4().hex[:8].upper()}"
+        
+        # Certificate kaydı oluştur
+        certificate = Certificate.objects.create(
+            enrollment=enrollment,
+            student=student,
+            course=course,
+            certificate_id=cert_id,
+            exam_score=exam_attempt.score,
+            completion_date=exam_attempt.completed_at,
+            verification_url=f"{settings.SITE_URL}/verify-certificate/{cert_id}/"
+        )
+        
+        # PDF dosyası oluştur
+        pdf_filename = f'{cert_id}.pdf'
+        pdf_path = os.path.join('certificates', pdf_filename)
+        full_path = os.path.join(settings.MEDIA_ROOT, pdf_path)
+        
+        # Dizini oluştur
+        os.makedirs(os.path.dirname(full_path), exist_ok=True)
+        
+        # Canvas oluştur (landscape A4)
+        c = canvas.Canvas(full_path, pagesize=landscape(A4))
+        width, height = landscape(A4)
+        
+        # Arka plan rengi
+        c.setFillColorRGB(0.95, 0.95, 0.98)
+        c.rect(0, 0, width, height, fill=1, stroke=0)
+        
+        # Çerçeve
+        c.setStrokeColorRGB(0.2, 0.4, 0.8)
+        c.setLineWidth(3)
+        c.rect(2*cm, 2*cm, width-4*cm, height-4*cm, fill=0, stroke=1)
+        
+        # Başlık
+        c.setFillColorRGB(0.1, 0.2, 0.6)
+        c.setFont("Helvetica-Bold", 48)
+        c.drawCentredString(width/2, height - 5*cm, "SERTİFİKA")
+        
+        # Alt başlık
+        c.setFillColorRGB(0, 0, 0)
+        c.setFont("Helvetica", 18)
+        c.drawCentredString(width/2, height - 7*cm, "Bu belge ile")
+        
+        # Öğrenci adı
+        c.setFont("Helvetica-Bold", 32)
+        c.setFillColorRGB(0.1, 0.3, 0.7)
+        c.drawCentredString(width/2, height - 9.5*cm, student.full_name)
+        
+        # Kurs bilgisi
+        c.setFillColorRGB(0, 0, 0)
+        c.setFont("Helvetica", 20)
+        c.drawCentredString(width/2, height - 11.5*cm, course.name)
+        c.setFont("Helvetica", 16)
+        c.drawCentredString(width/2, height - 12.8*cm, f"({course.code})")
+        
+        # Açıklama
+        c.setFont("Helvetica", 16)
+        c.drawCentredString(width/2, height - 14.5*cm, "kursunu başarıyla tamamladığını onaylar.")
+        
+        # Detaylar
+        c.setFont("Helvetica", 13)
+        c.drawCentredString(width/2, height - 16.5*cm, 
+                          f"Sınav Puanı: {exam_attempt.score:.1f}/100")
+        c.drawCentredString(width/2, height - 17.5*cm, 
+                          f"Tamamlanma Tarihi: {enrollment.completed_at.strftime('%d.%m.%Y')}")
+        
+        # Sertifika numarası ve doğrulama
+        c.setFont("Helvetica", 10)
+        c.setFillColorRGB(0.4, 0.4, 0.4)
+        c.drawCentredString(width/2, height - 19*cm, 
+                          f"Sertifika No: {cert_id}")
+        c.drawCentredString(width/2, height - 19.7*cm, 
+                          f"Doğrulama: {certificate.verification_url}")
+        
+        # Kaydet
+        c.save()
+        
+        # Certificate'e PDF dosyasını ekle
+        certificate.certificate_file = pdf_path
+        certificate.save()
+        
+        # Enrollment'ı güncelle
+        enrollment.certificate_issued = True
+        enrollment.certificate_issued_at = timezone.now()
+        enrollment.save()
+        
+        return certificate
+    
+    @staticmethod
+    def verify_certificate(certificate_id):
+        """Sertifika doğrula"""
+        from .models import Certificate
+        
+        try:
+            certificate = Certificate.objects.get(
+                certificate_id=certificate_id,
+                is_valid=True
+            )
+            return {
+                'valid': True,
+                'student': certificate.student.full_name,
+                'course': certificate.course.name,
+                'issue_date': certificate.issue_date,
+                'score': certificate.exam_score
+            }
+        except Certificate.DoesNotExist:
+            return {'valid': False, 'message': 'Sertifika bulunamadı'}
+    
+    @staticmethod
+    def revoke_certificate(certificate, reason=''):
+        """Sertifikayı iptal et"""
+        certificate.is_valid = False
+        certificate.revoked_at = timezone.now()
+        certificate.revoked_reason = reason
+        certificate.save()
+        return certificate
+
+
+class CourseEnrollmentService:
+    """Kurs kayıt işlemleri"""
+    
+    @staticmethod
+    def enroll_student(student, course):
+        """
+        Öğrenciyi kursa kaydet
+        - Zaten kayıtlı mı kontrol et
+        - Toplam ders sayısını hesapla
+        """
+        from .models import CourseEnrollment, Lesson
+        from django.core.exceptions import ValidationError
+        
+        # Zaten kayıtlı mı?
+        if CourseEnrollment.objects.filter(student=student, course=course).exists():
+            raise ValidationError('Bu kursa zaten kayıtlısınız')
+        
+        # Kurs aktif mi?
+        if course.status != 'active':
+            raise ValidationError('Bu kurs şu anda aktif değil')
+        
+        # Online kurs mu?
+        if course.course_type != 'online':
+            raise ValidationError('Sadece online kurslara kaydolabilirsiniz')
+        
+        # Toplam zorunlu ders sayısı
+        total_lessons = Lesson.objects.filter(
+            module__course=course,
+            is_mandatory=True
+        ).count()
+        
+        # Kayıt oluştur
+        enrollment = CourseEnrollment.objects.create(
+            student=student,
+            course=course,
+            total_lessons_count=total_lessons
+        )
+        
+        return enrollment
+    
+    @staticmethod
+    def get_student_dashboard(student):
+        """
+        Öğrenci dashboard verilerini hazırla
+        - Aktif kurslar
+        - İlerleme durumları
+        - Sertifikalar
+        """
+        from .models import CourseEnrollment
+        from django.db.models import Prefetch
+        
+        # Aktif kurslar
+        active_enrollments = CourseEnrollment.objects.filter(
+            student=student,
+            status='active'
+        ).select_related('course').prefetch_related(
+            'lesson_progress',
+            'exam_attempts'
+        )
+        
+        dashboard_data = []
+        for enrollment in active_enrollments:
+            # Son erişilen ders
+            last_lesson_progress = enrollment.lesson_progress.order_by(
+                '-last_accessed'
+            ).first()
+            
+            # Sonraki ders
+            next_lesson = LessonProgressService.get_next_lesson(
+                student, 
+                enrollment.course
+            )
+            
+            dashboard_data.append({
+                'enrollment': enrollment,
+                'last_lesson': last_lesson_progress.lesson if last_lesson_progress else None,
+                'next_lesson': next_lesson,
+                'exam_attempts_count': enrollment.exam_attempts.count(),
+            })
+        
+        # Tamamlanan kurslar
+        completed_enrollments = CourseEnrollment.objects.filter(
+            student=student,
+            status='completed',
+            certificate_issued=True
+        ).select_related('course', 'certificate')
+        
+        return {
+            'active_courses': dashboard_data,
+            'completed_courses': completed_enrollments,
+            'total_active': active_enrollments.count(),
+            'total_completed': completed_enrollments.count(),
+        }

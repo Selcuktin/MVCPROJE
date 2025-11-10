@@ -5,17 +5,12 @@ KULLANIM:
 - Course: Ders tanımları (kod, isim, kredi, kapasite)
 - CourseGroup: Ders grupları (öğretmen ataması, sınıf, program)
 - Enrollment: Öğrenci-ders kayıtları (notlar, devam, durum)
-- Assignment: Ödevler (teslim tarihi, puan)
-- Submission: Ödev teslimleri (dosya, puan, geri bildirim)
-- Announcement: Duyurular (başlık, içerik, son kullanma)
 - CourseContent: Ders materyalleri (hafta bazlı dökümanlar)
 
 İLİŞKİLER:
 - Course → CourseGroup (1-N)
 - CourseGroup → Enrollment (1-N)
-- CourseGroup → Assignment (1-N)
 - Student → Enrollment (1-N)
-- Student → Submission (1-N)
 """
 from django.db import models
 from django.core.validators import MinValueValidator, MaxValueValidator
@@ -33,6 +28,18 @@ class Course(models.Model):
         ('summer', 'Yaz'),
     ]
     
+    COURSE_TYPE_CHOICES = [
+        ('university', 'Üniversite Dersi'),
+        ('online', 'Online Kurs'),
+    ]
+    
+    LEVEL_CHOICES = [
+        ('beginner', 'Başlangıç'),
+        ('intermediate', 'Orta'),
+        ('advanced', 'İleri'),
+        ('expert', 'Uzman'),
+    ]
+    
     code = models.CharField(max_length=20, unique=True)
     name = models.CharField(max_length=200)
     credits = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(10)])
@@ -43,6 +50,18 @@ class Course(models.Model):
     is_elective = models.BooleanField(default=False)
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     
+    # Yeni alanlar - Udemy platformu için
+    course_type = models.CharField(max_length=20, choices=COURSE_TYPE_CHOICES, 
+                                   default='university', verbose_name='Kurs Tipi')
+    is_self_paced = models.BooleanField(default=False, verbose_name='Kendi Hızında',
+                                        help_text='Öğrenci kendi hızında mı ilerleyecek?')
+    estimated_duration_hours = models.PositiveIntegerField(default=0, 
+                                                           verbose_name='Tahmini Süre (Saat)')
+    level = models.CharField(max_length=20, choices=LEVEL_CHOICES, blank=True,
+                            verbose_name='Seviye')
+    thumbnail = models.ImageField(upload_to='course_thumbnails/', blank=True, null=True,
+                                 verbose_name='Kurs Görseli')
+    
     class Meta:
         verbose_name = 'Ders'
         verbose_name_plural = 'Dersler'
@@ -50,6 +69,11 @@ class Course(models.Model):
     
     def __str__(self):
         return f"{self.code} - {self.name}"
+    
+    @property
+    def is_online_course(self):
+        """Online kurs mu?"""
+        return self.course_type == 'online'
 
 class CourseGroup(models.Model):
     STATUS_CHOICES = [
@@ -116,131 +140,6 @@ class Enrollment(models.Model):
     
     def __str__(self):
         return f"{self.student.full_name} - {self.group.course.name}"
-
-class Assignment(models.Model):
-    STATUS_CHOICES = [
-        ('active', 'Aktif'),
-        ('inactive', 'Pasif'),
-        ('expired', 'Süresi Dolmuş'),
-    ]
-    
-    group = models.ForeignKey(CourseGroup, on_delete=models.CASCADE, related_name='assignments')
-    title = models.CharField(max_length=200)
-    description = models.TextField()
-    file_url = models.FileField(upload_to='assignments/', blank=True, null=True)
-    create_date = models.DateTimeField(auto_now_add=True)
-    due_date = models.DateTimeField()
-    max_score = models.IntegerField(validators=[MinValueValidator(1)])
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
-    
-    class Meta:
-        verbose_name = 'Ödev'
-        verbose_name_plural = 'Ödevler'
-        ordering = ['-create_date']
-    
-    def __str__(self):
-        return f"{self.group.course.code} - {self.title}"
-    
-    @property
-    def is_expired(self):
-        """Check if assignment is expired"""
-        from django.utils import timezone
-        return timezone.now() > self.due_date
-    
-    @property
-    def time_remaining(self):
-        """Get time remaining until due date"""
-        from django.utils import timezone
-        if self.is_expired:
-            return None
-        
-        time_diff = self.due_date - timezone.now()
-        days = time_diff.days
-        hours = time_diff.seconds // 3600
-        minutes = (time_diff.seconds % 3600) // 60
-        
-        return {
-            'days': days,
-            'hours': hours,
-            'minutes': minutes,
-            'total_seconds': time_diff.total_seconds()
-        }
-    
-    @property
-    def urgency_level(self):
-        """Get urgency level of assignment"""
-        if self.is_expired:
-            return 'expired'
-        
-        remaining = self.time_remaining
-        if remaining:
-            total_hours = remaining['total_seconds'] / 3600
-            if total_hours <= 6:
-                return 'urgent'
-            elif total_hours <= 24:
-                return 'warning'
-            else:
-                return 'safe'
-        return 'expired'
-    
-    @property
-    def submission_count(self):
-        """Get number of submissions"""
-        return self.submissions.count()
-    
-    @property
-    def submission_percentage(self):
-        """Get submission percentage"""
-        total_students = self.group.enrollments.count()
-        if total_students == 0:
-            return 0
-        return (self.submission_count / total_students) * 100
-
-class Submission(models.Model):
-    STATUS_CHOICES = [
-        ('submitted', 'Teslim Edildi'),
-        ('graded', 'Notlandırıldı'),
-        ('late', 'Geç Teslim'),
-    ]
-    
-    assignment = models.ForeignKey(Assignment, on_delete=models.CASCADE, related_name='submissions')
-    student = models.ForeignKey('students.Student', on_delete=models.CASCADE, related_name='submissions')
-    submission_date = models.DateTimeField(auto_now_add=True)
-    file_url = models.FileField(upload_to='submissions/')
-    score = models.IntegerField(null=True, blank=True, validators=[MinValueValidator(0)])
-    feedback = models.TextField(blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='submitted')
-    
-    class Meta:
-        verbose_name = 'Teslim'
-        verbose_name_plural = 'Teslimler'
-        unique_together = ['assignment', 'student']
-    
-    def __str__(self):
-        return f"{self.student.full_name} - {self.assignment.title}"
-
-class Announcement(models.Model):
-    STATUS_CHOICES = [
-        ('active', 'Aktif'),
-        ('inactive', 'Pasif'),
-        ('expired', 'Süresi Dolmuş'),
-    ]
-    
-    group = models.ForeignKey(CourseGroup, on_delete=models.CASCADE, related_name='announcements')
-    teacher = models.ForeignKey('teachers.Teacher', on_delete=models.CASCADE, related_name='announcements')
-    title = models.CharField(max_length=200)
-    content = models.TextField()
-    create_date = models.DateTimeField(auto_now_add=True)
-    expire_date = models.DateTimeField(null=True, blank=True)
-    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
-    
-    class Meta:
-        verbose_name = 'Duyuru'
-        verbose_name_plural = 'Duyurular'
-        ordering = ['-create_date']
-    
-    def __str__(self):
-        return f"{self.group.course.code} - {self.title}"
 
 class CourseContent(models.Model):
     CONTENT_TYPE_CHOICES = [
@@ -426,20 +325,354 @@ class QuizAnswer(models.Model):
         unique_together = ['attempt', 'question']
 
 
-class PlagiarismReport(models.Model):
+# ============================================================================
+# UDEMY PLATFORM MODELS - Online Kurs Sistemi
+# ============================================================================
+
+class CourseModule(models.Model):
     """
-    Basit intihal raporu: bir teslimin metni ile diğer kaynaklar arasındaki benzerlik.
+    Kursun ana bölümleri/modülleri (Sections)
+    Örnek: "1. Giriş", "2. Temel Kavramlar", "3. İleri Seviye"
     """
-    submission = models.ForeignKey(Submission, on_delete=models.CASCADE, related_name='plagiarism_reports')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='modules')
+    title = models.CharField(max_length=200, verbose_name='Başlık')
+    description = models.TextField(blank=True, verbose_name='Açıklama')
+    order = models.PositiveIntegerField(default=1, verbose_name='Sıra')
+    is_active = models.BooleanField(default=True, verbose_name='Aktif')
     created_at = models.DateTimeField(auto_now_add=True)
-    method = models.CharField(max_length=50, default='ngram_jaccard')
-    max_similarity = models.FloatField(default=0.0)
-    details = models.JSONField(default=dict)
-
+    updated_at = models.DateTimeField(auto_now=True)
+    
     class Meta:
-        verbose_name = 'İntihal Raporu'
-        verbose_name_plural = 'İntihal Raporları'
-        ordering = ['-created_at']
-
+        verbose_name = 'Kurs Modülü'
+        verbose_name_plural = 'Kurs Modülleri'
+        ordering = ['course', 'order']
+        unique_together = ['course', 'order']
+    
     def __str__(self):
-        return f"Submission {self.submission_id} - {self.max_similarity:.2f}"
+        return f"{self.course.code} - {self.title}"
+    
+    @property
+    def lessons_count(self):
+        """Modüldeki ders sayısı"""
+        return self.lessons.count()
+    
+    @property
+    def total_duration(self):
+        """Toplam video süresi (dakika)"""
+        from django.db.models import Sum
+        total_seconds = self.lessons.aggregate(
+            total=Sum('video_duration')
+        )['total'] or 0
+        return total_seconds // 60
+
+
+class Lesson(models.Model):
+    """
+    Modül içindeki tek bir ders/içerik
+    Video, PDF, Quiz veya Opsiyonel Ödev olabilir
+    """
+    CONTENT_TYPE_CHOICES = [
+        ('video', 'Video'),
+        ('pdf', 'PDF Döküman'),
+        ('quiz', 'Quiz'),
+        ('text', 'Metin İçerik'),
+        ('assignment', 'Opsiyonel Ödev'),
+    ]
+    
+    module = models.ForeignKey(CourseModule, on_delete=models.CASCADE, related_name='lessons')
+    title = models.CharField(max_length=200, verbose_name='Başlık')
+    description = models.TextField(blank=True, verbose_name='Açıklama')
+    content_type = models.CharField(max_length=20, choices=CONTENT_TYPE_CHOICES, verbose_name='İçerik Tipi')
+    order = models.PositiveIntegerField(default=1, verbose_name='Sıra')
+    
+    # Video için
+    video_url = models.URLField(blank=True, null=True, verbose_name='Video URL', 
+                                help_text='YouTube, Vimeo veya diğer video platformları')
+    video_duration = models.PositiveIntegerField(default=0, verbose_name='Video Süresi', 
+                                                 help_text='Süre (saniye)')
+    
+    # PDF için
+    pdf_file = models.FileField(upload_to='lessons/pdfs/', blank=True, null=True, verbose_name='PDF Dosyası')
+    
+    # Metin için
+    text_content = models.TextField(blank=True, verbose_name='Metin İçerik')
+    
+    # Quiz için (mevcut Quiz modeline bağlantı)
+    quiz = models.ForeignKey(Quiz, on_delete=models.SET_NULL, null=True, blank=True, 
+                            related_name='lesson_links', verbose_name='Quiz')
+    
+    # Opsiyonel ödev için
+    is_assignment_optional = models.BooleanField(default=True, verbose_name='Ödev Opsiyonel mi?')
+    assignment_description = models.TextField(blank=True, verbose_name='Ödev Açıklaması')
+    assignment_file = models.FileField(upload_to='lessons/assignments/', blank=True, null=True, 
+                                       verbose_name='Ödev Referans Dosyası')
+    
+    is_preview = models.BooleanField(default=False, verbose_name='Önizleme',
+                                     help_text='Kayıt olmadan izlenebilir mi?')
+    is_mandatory = models.BooleanField(default=True, verbose_name='Zorunlu',
+                                       help_text='Tamamlanması zorunlu mu?')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Ders'
+        verbose_name_plural = 'Dersler'
+        ordering = ['module', 'order']
+        unique_together = ['module', 'order']
+    
+    def __str__(self):
+        return f"{self.module.title} - {self.title}"
+    
+    @property
+    def duration_display(self):
+        """Süreyi okunabilir formatta döndür"""
+        if self.video_duration:
+            minutes = self.video_duration // 60
+            seconds = self.video_duration % 60
+            return f"{minutes}:{seconds:02d}"
+        return "N/A"
+
+
+class LessonProgress(models.Model):
+    """
+    Öğrencinin ders içeriği ilerleme takibi
+    Video izleme, PDF okuma, quiz çözme ve ödev gönderme durumları
+    """
+    STATUS_CHOICES = [
+        ('not_started', 'Başlanmadı'),
+        ('in_progress', 'Devam Ediyor'),
+        ('completed', 'Tamamlandı'),
+    ]
+    
+    student = models.ForeignKey('students.Student', on_delete=models.CASCADE, 
+                               related_name='lesson_progress')
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, 
+                              related_name='student_progress')
+    enrollment = models.ForeignKey('CourseEnrollment', on_delete=models.CASCADE, 
+                                  related_name='lesson_progress')
+    
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='not_started',
+                            verbose_name='Durum')
+    
+    # Video için
+    watched_duration = models.PositiveIntegerField(default=0, verbose_name='İzlenen Süre',
+                                                   help_text='İzlenen süre (saniye)')
+    completion_percentage = models.FloatField(default=0.0, verbose_name='Tamamlanma Yüzdesi',
+                                             validators=[MinValueValidator(0), MaxValueValidator(100)])
+    
+    # Quiz için
+    quiz_score = models.FloatField(null=True, blank=True, verbose_name='Quiz Puanı')
+    quiz_passed = models.BooleanField(default=False, verbose_name='Quiz Geçildi')
+    quiz_attempt = models.ForeignKey(QuizAttempt, on_delete=models.SET_NULL, null=True, blank=True,
+                                    related_name='lesson_progress')
+    
+    # Opsiyonel ödev için
+    assignment_submitted = models.BooleanField(default=False, verbose_name='Ödev Gönderildi')
+    assignment_file = models.FileField(upload_to='optional_assignments/', blank=True, null=True,
+                                       verbose_name='Ödev Dosyası')
+    assignment_notes = models.TextField(blank=True, verbose_name='Öğrenci Notları')
+    assignment_submitted_at = models.DateTimeField(null=True, blank=True)
+    
+    started_at = models.DateTimeField(null=True, blank=True, verbose_name='Başlangıç')
+    completed_at = models.DateTimeField(null=True, blank=True, verbose_name='Tamamlanma')
+    last_accessed = models.DateTimeField(auto_now=True, verbose_name='Son Erişim')
+    
+    class Meta:
+        verbose_name = 'Ders İlerlemesi'
+        verbose_name_plural = 'Ders İlerlemeleri'
+        unique_together = ['student', 'lesson', 'enrollment']
+        ordering = ['-last_accessed']
+    
+    def __str__(self):
+        return f"{self.student.full_name} - {self.lesson.title} ({self.get_status_display()})"
+
+
+class CourseEnrollment(models.Model):
+    """
+    Udemy tarzı kurs kaydı - dönem/grup bağımsız, bireysel kayıt
+    Her öğrenci istediği zaman kursa kaydolabilir
+    """
+    STATUS_CHOICES = [
+        ('active', 'Aktif'),
+        ('completed', 'Tamamlandı'),
+        ('expired', 'Süresi Dolmuş'),
+        ('cancelled', 'İptal Edildi'),
+    ]
+    
+    student = models.ForeignKey('students.Student', on_delete=models.CASCADE, 
+                               related_name='course_enrollments')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, 
+                              related_name='course_enrollments')
+    
+    enrolled_at = models.DateTimeField(auto_now_add=True, verbose_name='Kayıt Tarihi')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active',
+                            verbose_name='Durum')
+    
+    # İlerleme takibi
+    progress_percentage = models.FloatField(default=0.0, verbose_name='İlerleme %',
+                                           validators=[MinValueValidator(0), MaxValueValidator(100)])
+    completed_lessons_count = models.PositiveIntegerField(default=0, 
+                                                          verbose_name='Tamamlanan Ders Sayısı')
+    total_lessons_count = models.PositiveIntegerField(default=0, 
+                                                      verbose_name='Toplam Ders Sayısı')
+    
+    # Sınav erişimi
+    is_eligible_for_exam = models.BooleanField(default=False, 
+                                               verbose_name='Sınava Uygun',
+                                               help_text='Tüm içerik tamamlandı mı?')
+    exam_access_date = models.DateTimeField(null=True, blank=True, 
+                                           verbose_name='Sınav Erişim Tarihi')
+    
+    # Tamamlanma
+    completed_at = models.DateTimeField(null=True, blank=True, 
+                                       verbose_name='Tamamlanma Tarihi')
+    
+    # Sertifika
+    certificate_issued = models.BooleanField(default=False, verbose_name='Sertifika Verildi')
+    certificate_issued_at = models.DateTimeField(null=True, blank=True, 
+                                                verbose_name='Sertifika Tarihi')
+    
+    last_accessed = models.DateTimeField(auto_now=True, verbose_name='Son Erişim')
+    
+    class Meta:
+        verbose_name = 'Kurs Kaydı'
+        verbose_name_plural = 'Kurs Kayıtları'
+        unique_together = ['student', 'course']
+        ordering = ['-enrolled_at']
+    
+    def __str__(self):
+        return f"{self.student.full_name} - {self.course.name}"
+    
+    @property
+    def can_take_exam(self):
+        """Sınava girebilir mi?"""
+        return self.is_eligible_for_exam and self.status == 'active'
+    
+    @property
+    def progress_display(self):
+        """İlerlemeyi okunabilir formatta"""
+        return f"{self.completed_lessons_count}/{self.total_lessons_count} (%{self.progress_percentage:.1f})"
+
+
+class CourseExam(models.Model):
+    """
+    Kursun final sınavı - tüm içerik %100 tamamlanınca erişilebilir
+    Her kursun bir final sınavı olabilir
+    """
+    course = models.OneToOneField(Course, on_delete=models.CASCADE, 
+                                 related_name='final_exam')
+    quiz = models.OneToOneField(Quiz, on_delete=models.CASCADE, 
+                               related_name='course_exam_link')
+    
+    passing_score = models.FloatField(default=70.0, verbose_name='Geçme Notu',
+                                     validators=[MinValueValidator(0), MaxValueValidator(100)])
+    max_attempts = models.PositiveIntegerField(default=3, verbose_name='Maksimum Deneme')
+    duration_minutes = models.PositiveIntegerField(default=60, verbose_name='Süre (Dakika)')
+    
+    instructions = models.TextField(blank=True, verbose_name='Talimatlar',
+                                   help_text='Sınav hakkında öğrencilere verilecek talimatlar')
+    
+    is_active = models.BooleanField(default=True, verbose_name='Aktif')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Kurs Sınavı'
+        verbose_name_plural = 'Kurs Sınavları'
+    
+    def __str__(self):
+        return f"{self.course.name} - Final Sınavı"
+
+
+class ExamAttempt(models.Model):
+    """
+    Öğrencinin sınav denemesi
+    Her öğrenci maksimum deneme hakkı kadar sınava girebilir
+    """
+    STATUS_CHOICES = [
+        ('in_progress', 'Devam Ediyor'),
+        ('completed', 'Tamamlandı'),
+        ('passed', 'Başarılı'),
+        ('failed', 'Başarısız'),
+    ]
+    
+    enrollment = models.ForeignKey(CourseEnrollment, on_delete=models.CASCADE, 
+                                  related_name='exam_attempts')
+    exam = models.ForeignKey(CourseExam, on_delete=models.CASCADE, 
+                           related_name='attempts')
+    student = models.ForeignKey('students.Student', on_delete=models.CASCADE, 
+                               related_name='exam_attempts')
+    
+    attempt_number = models.PositiveIntegerField(default=1, verbose_name='Deneme No')
+    score = models.FloatField(null=True, blank=True, verbose_name='Puan')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, 
+                            default='in_progress', verbose_name='Durum')
+    
+    started_at = models.DateTimeField(auto_now_add=True, verbose_name='Başlangıç')
+    completed_at = models.DateTimeField(null=True, blank=True, verbose_name='Tamamlanma')
+    
+    # QuizAttempt ile ilişki (mevcut quiz sistemini kullan)
+    quiz_attempt = models.OneToOneField(QuizAttempt, on_delete=models.CASCADE, 
+                                       related_name='exam_attempt_link')
+    
+    class Meta:
+        verbose_name = 'Sınav Denemesi'
+        verbose_name_plural = 'Sınav Denemeleri'
+        ordering = ['-started_at']
+        unique_together = ['enrollment', 'attempt_number']
+    
+    def __str__(self):
+        return f"{self.student.full_name} - {self.exam.course.name} (Deneme {self.attempt_number})"
+    
+    @property
+    def is_passed(self):
+        """Sınavı geçti mi?"""
+        return self.status == 'passed'
+
+
+class Certificate(models.Model):
+    """
+    Otomatik oluşturulan kurs tamamlama sertifikaları
+    Sınav başarılı olunca otomatik PDF oluşturulur
+    """
+    enrollment = models.OneToOneField(CourseEnrollment, on_delete=models.CASCADE, 
+                                     related_name='certificate')
+    student = models.ForeignKey('students.Student', on_delete=models.CASCADE, 
+                               related_name='certificates')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, 
+                              related_name='certificates')
+    
+    certificate_id = models.CharField(max_length=100, unique=True, 
+                                     verbose_name='Sertifika No')
+    issue_date = models.DateTimeField(auto_now_add=True, 
+                                     verbose_name='Düzenlenme Tarihi')
+    
+    # Sınav bilgileri
+    exam_score = models.FloatField(verbose_name='Sınav Puanı')
+    completion_date = models.DateTimeField(verbose_name='Tamamlanma Tarihi')
+    
+    # PDF dosyası
+    certificate_file = models.FileField(upload_to='certificates/', blank=True, null=True,
+                                       verbose_name='Sertifika PDF')
+    
+    # Doğrulama
+    verification_url = models.URLField(blank=True, verbose_name='Doğrulama URL')
+    is_valid = models.BooleanField(default=True, verbose_name='Geçerli')
+    revoked_at = models.DateTimeField(null=True, blank=True, 
+                                     verbose_name='İptal Tarihi')
+    revoked_reason = models.TextField(blank=True, verbose_name='İptal Nedeni')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        verbose_name = 'Sertifika'
+        verbose_name_plural = 'Sertifikalar'
+        ordering = ['-issue_date']
+    
+    def __str__(self):
+        return f"{self.certificate_id} - {self.student.full_name}"
+    
+    @property
+    def is_revoked(self):
+        """Sertifika iptal edilmiş mi?"""
+        return not self.is_valid and self.revoked_at is not None

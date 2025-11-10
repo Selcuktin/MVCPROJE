@@ -7,7 +7,7 @@ from django.utils import timezone
 from datetime import timedelta
 
 from .models import Teacher
-from apps.courses.models import CourseGroup, Assignment, Announcement, Enrollment
+from apps.courses.models import CourseGroup, Enrollment
 
 
 class TeacherService:
@@ -61,14 +61,9 @@ class TeacherService:
             for group in teacher_course_groups:
                 total_students += group.enrollments.filter(status='enrolled').count()
             
-            # Get recent assignments and announcements
-            recent_assignments = Assignment.objects.filter(
-                group__in=teacher_course_groups
-            ).select_related('group__course').order_by('-create_date')[:5]
-            
-            recent_announcements = Announcement.objects.filter(
-                group__in=teacher_course_groups
-            ).select_related('group__course').order_by('-create_date')[:5]
+            # Assignments and announcements removed - return empty lists
+            recent_assignments = []
+            recent_announcements = []
             
             return {
                 'teacher': teacher,
@@ -130,11 +125,8 @@ class TeacherService:
         try:
             teacher = Teacher.objects.get(user=user)
             
-            # Get assignments from teacher's course groups
-            teacher_groups = CourseGroup.objects.filter(teacher=teacher, status='active')
-            assignments = Assignment.objects.filter(
-                group__in=teacher_groups
-            ).order_by('-create_date')
+            # Assignments removed - return empty list
+            assignments = []
             
             return {
                 'teacher': teacher,
@@ -149,10 +141,8 @@ class TeacherService:
         try:
             teacher = Teacher.objects.get(user=user)
             
-            # Get announcements from teacher
-            announcements = Announcement.objects.filter(
-                teacher=teacher
-            ).order_by('-create_date')
+            # Announcements removed - return empty list
+            announcements = []
             
             return {
                 'teacher': teacher,
@@ -191,17 +181,11 @@ class TeacherService:
         for group in course_groups:
             total_students += group.enrollments.filter(status='enrolled').count()
         
-        # Get assignment statistics
-        total_assignments = Assignment.objects.filter(
-            group__in=course_groups,
-            status='active'
-        ).count()
+        # Assignments and announcements removed - return zeros
+        total_assignments = 0
         
         # Get announcement statistics
-        total_announcements = Announcement.objects.filter(
-            teacher=teacher,
-            status='active'
-        ).count()
+        total_announcements = 0
         
         return {
             'total_courses': course_groups.count(),

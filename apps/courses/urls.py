@@ -21,24 +21,6 @@ urlpatterns = [
     path('enrollments/', views.EnrollmentListView.as_view(), name='enrollment_list'),
     path('enrollments/<int:pk>/grade/', views.GradeUpdateView.as_view(), name='grade_update'),
     
-    # Assignments
-    path('assignments/', views.AssignmentListView.as_view(), name='assignment_list'),
-    path('assignments/create/', views.AssignmentCreateView.as_view(), name='assignment_create'),
-    path('assignments/<int:pk>/', views.AssignmentDetailView.as_view(), name='assignment_detail'),
-    path('assignments/<int:pk>/edit/', views.AssignmentUpdateView.as_view(), name='assignment_update'),
-    path('assignments/<int:pk>/delete/', views.AssignmentDeleteView.as_view(), name='assignment_delete'),
-    path('assignments/<int:pk>/submit/', views.SubmissionCreateView.as_view(), name='submission_create'),
-    # AI Helpers
-    path('submissions/<int:pk>/generate-feedback/', views.generate_feedback_view, name='generate_feedback'),
-    path('submissions/<int:pk>/plagiarism-check/', views.plagiarism_check_view, name='plagiarism_check'),
-    
-    # Announcements
-    path('announcements/', views.AnnouncementListView.as_view(), name='announcement_list'),
-    path('announcements/create/', views.AnnouncementCreateView.as_view(), name='announcement_create'),
-    path('announcements/<int:pk>/', views.AnnouncementDetailView.as_view(), name='announcement_detail'),
-    path('announcements/<int:pk>/edit/', views.AnnouncementUpdateView.as_view(), name='announcement_update'),
-    path('announcements/<int:pk>/delete/', views.AnnouncementDeleteView.as_view(), name='announcement_delete'),
-    
     # Reports - MVC Pattern ile genişletildi
     path('reports/students/', views.StudentReportView.as_view(), name='student_report'),
     path('reports/courses/', views.CourseReportView.as_view(), name='course_report'),

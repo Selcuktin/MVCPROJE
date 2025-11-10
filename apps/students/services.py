@@ -7,7 +7,7 @@ from django.utils import timezone
 from datetime import timedelta
 
 from .models import Student
-from apps.courses.models import Course, Enrollment, Assignment, Announcement, Submission
+from apps.courses.models import Course, Enrollment
 
 
 class StudentService:
@@ -40,18 +40,15 @@ class StudentService:
             status='enrolled'
         ).select_related('group__course', 'group__teacher')
         
-        # Get student's assignments
-        assignments = Assignment.objects.filter(
-            group__enrollments__student=student,
-            status='active'
-        ).select_related('group__course').order_by('-create_date')
+        # Assignments removed - return empty list
+        assignments = []
         
         return {
             'student': student,
             'enrollments': enrollments,
             'assignments': assignments,
             'total_courses': enrollments.count(),
-            'total_assignments': assignments.count()
+            'total_assignments': 0
         }
     
     def get_student_dashboard_data(self, user):
@@ -63,26 +60,10 @@ class StudentService:
             enrollments = Enrollment.objects.filter(student=student, status='enrolled')
             enrolled_groups = [enrollment.group for enrollment in enrollments]
             
-            # Get recent assignments
-            recent_assignments = Assignment.objects.filter(
-                group__in=enrolled_groups,
-                status='active'
-            ).order_by('-create_date')[:5]
-            
-            # Get recent announcements
-            recent_announcements = Announcement.objects.filter(
-                group__in=enrolled_groups,
-                status='active'
-            ).order_by('-create_date')[:5]
-            
-            # Get pending submissions count
-            pending_submissions = Assignment.objects.filter(
-                group__in=enrolled_groups,
-                status='active',
-                due_date__gte=timezone.now()
-            ).exclude(
-                submissions__student=student
-            ).count()
+            # Assignments and announcements removed - return empty lists
+            recent_assignments = []
+            recent_announcements = []
+            pending_submissions = 0
             
             return {
                 'student': student,
@@ -148,21 +129,14 @@ class StudentService:
         grades = [e.grade for e in enrollments if e.grade]
         gpa = sum(grades) / len(grades) if grades else 0
         
-        # Get assignment statistics
-        total_assignments = Assignment.objects.filter(
-            group__enrollments__student=student,
-            status='active'
-        ).count()
-        
-        completed_assignments = Submission.objects.filter(
-            student=student,
-            assignment__status='active'
-        ).count()
+        # Assignments removed - return zeros
+        total_assignments = 0
+        completed_assignments = 0
         
         return {
             'total_courses': enrollments.count(),
             'gpa': round(gpa, 2),
             'total_assignments': total_assignments,
             'completed_assignments': completed_assignments,
-            'completion_rate': round((completed_assignments / total_assignments * 100), 2) if total_assignments > 0 else 0
+            'completion_rate': 0
         }
