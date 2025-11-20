@@ -259,3 +259,48 @@ def mark_notification_read(request):
     """Mark a notification as read via AJAX"""
     controller = UserController()
     return controller.mark_notification_read_ajax(request)
+
+
+class ProfileView(LoginRequiredMixin, TemplateView):
+    """User profile view"""
+    template_name = 'users/profile.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        
+        # Get user profile
+        try:
+            user_profile = user.userprofile
+        except:
+            user_profile = None
+        
+        # Get role-specific information
+        role_info = {}
+        if user_profile:
+            if user_profile.user_type == 'student':
+                try:
+                    from apps.students.models import Student
+                    student = Student.objects.get(user=user)
+                    role_info = {
+                        'student_number': student.student_number,
+                        'department': student.department,
+                        'status': student.get_status_display(),
+                    }
+                except:
+                    pass
+            elif user_profile.user_type == 'teacher':
+                try:
+                    from apps.teachers.models import Teacher
+                    teacher = Teacher.objects.get(user=user)
+                    role_info = {
+                        'department': teacher.department,
+                        'title': teacher.title,
+                    }
+                except:
+                    pass
+        
+        context['user_profile'] = user_profile
+        context['role_info'] = role_info
+        
+        return context

@@ -1,20 +1,282 @@
 {% extends 'base.html' %}
 
-{% block title %}Profil{% endblock %}
+{% block title %}Profilim{% endblock %}
+
+{% block extra_css %}
+<style>
+    body {
+        background-color: #f8f9fa;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    .profile-container {
+        max-width: 1000px;
+        margin: 0 auto;
+        padding: 2rem 1rem;
+    }
+    
+    /* Profile Header */
+    .profile-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 16px;
+        padding: 3rem 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        text-align: center;
+    }
+    
+    .profile-avatar {
+        width: 120px;
+        height: 120px;
+        border-radius: 50%;
+        background: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto 1.5rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+    
+    .profile-avatar i {
+        font-size: 3.5rem;
+        color: #667eea;
+    }
+    
+    .profile-name {
+        font-size: 2rem;
+        font-weight: 600;
+        margin-bottom: 0.5rem;
+    }
+    
+    .profile-role {
+        font-size: 1.1rem;
+        opacity: 0.9;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+    }
+    
+    .profile-role-badge {
+        background: rgba(255,255,255,0.2);
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+    }
+    
+    /* Info Cards */
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .info-card {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    .info-card-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #1a1a1a;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .info-card-title i {
+        color: #667eea;
+    }
+    
+    .info-item {
+        display: flex;
+        justify-content: space-between;
+        padding: 0.75rem 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+    
+    .info-item:last-child {
+        border-bottom: none;
+    }
+    
+    .info-label {
+        color: #6c757d;
+        font-weight: 500;
+    }
+    
+    .info-value {
+        color: #1a1a1a;
+        font-weight: 600;
+        text-align: right;
+    }
+    
+    /* Action Buttons */
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-top: 2rem;
+    }
+    
+    .action-btn {
+        padding: 0.75rem 2rem;
+        border-radius: 8px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .action-btn-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+    }
+    
+    .action-btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+    
+    .action-btn-secondary {
+        background: white;
+        color: #667eea;
+        border: 2px solid #667eea;
+    }
+    
+    .action-btn-secondary:hover {
+        background: #667eea;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+    }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="container mt-4">
-    <h1>Kullanıcı Profili</h1>
-    
-    <div class="card">
-        <div class="card-body">
-            <h5 class="card-title">{{ user.get_full_name }}</h5>
-            <p class="card-text">
-                <strong>Email:</strong> {{ user.email }}<br>
-                <strong>Kullanıcı Türü:</strong> {{ user.get_user_type_display }}<br>
-                <strong>Kayıt Tarihi:</strong> {{ user.date_joined|date:"d M Y" }}
-            </p>
+<div class="profile-container">
+    <!-- Profile Header -->
+    <div class="profile-header">
+        <div class="profile-avatar">
+            <i class="fas fa-user"></i>
         </div>
+        <h1 class="profile-name">{{ user.get_full_name|default:user.username }}</h1>
+        <div class="profile-role">
+            {% if user_profile %}
+                {% if user_profile.user_type == 'student' %}
+                    <i class="fas fa-graduation-cap"></i>
+                    <span>Öğrenci</span>
+                    <span class="profile-role-badge">Aktif</span>
+                {% elif user_profile.user_type == 'teacher' %}
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    <span>Öğretmen</span>
+                    <span class="profile-role-badge">Eğitmen</span>
+                {% else %}
+                    <i class="fas fa-user-shield"></i>
+                    <span>Yönetici</span>
+                    <span class="profile-role-badge">Admin</span>
+                {% endif %}
+            {% else %}
+                <i class="fas fa-user"></i>
+                <span>Kullanıcı</span>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Info Cards -->
+    <div class="info-grid">
+        <!-- Personal Information -->
+        <div class="info-card">
+            <h3 class="info-card-title">
+                <i class="fas fa-user-circle"></i>
+                Kişisel Bilgiler
+            </h3>
+            <div class="info-item">
+                <span class="info-label">Ad Soyad</span>
+                <span class="info-value">{{ user.get_full_name|default:"-" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Kullanıcı Adı</span>
+                <span class="info-value">{{ user.username }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">E-posta</span>
+                <span class="info-value">{{ user.email|default:"-" }}</span>
+            </div>
+            {% if role_info.student_number %}
+            <div class="info-item">
+                <span class="info-label">Öğrenci No</span>
+                <span class="info-value">{{ role_info.student_number }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Role-Specific Information -->
+        <div class="info-card">
+            <h3 class="info-card-title">
+                <i class="fas fa-info-circle"></i>
+                {% if user_profile.user_type == 'student' %}Öğrenci Bilgileri{% elif user_profile.user_type == 'teacher' %}Öğretmen Bilgileri{% else %}Hesap Bilgileri{% endif %}
+            </h3>
+            {% if role_info.department %}
+            <div class="info-item">
+                <span class="info-label">Bölüm</span>
+                <span class="info-value">{{ role_info.department }}</span>
+            </div>
+            {% endif %}
+            {% if role_info.status %}
+            <div class="info-item">
+                <span class="info-label">Durum</span>
+                <span class="info-value">{{ role_info.status }}</span>
+            </div>
+            {% endif %}
+            {% if role_info.title %}
+            <div class="info-item">
+                <span class="info-label">Ünvan</span>
+                <span class="info-value">{{ role_info.title }}</span>
+            </div>
+            {% endif %}
+            <div class="info-item">
+                <span class="info-label">Kayıt Tarihi</span>
+                <span class="info-value">{{ user.date_joined|date:"d.m.Y" }}</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Son Giriş</span>
+                <span class="info-value">{{ user.last_login|date:"d.m.Y H:i"|default:"-" }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+        <a href="{% url 'home' %}" class="action-btn action-btn-primary">
+            <i class="fas fa-home"></i>
+            Ana Sayfaya Dön
+        </a>
+        <a href="{% url 'users:control_panel' %}" class="action-btn action-btn-secondary">
+            <i class="fas fa-tachometer-alt"></i>
+            Kontrol Paneli
+        </a>
+        {% if user_profile.user_type == 'student' %}
+        <a href="{% url 'students:courses' %}" class="action-btn action-btn-secondary">
+            <i class="fas fa-book"></i>
+            Derslerim
+        </a>
+        {% elif user_profile.user_type == 'teacher' %}
+        <a href="{% url 'teachers:courses' %}" class="action-btn action-btn-secondary">
+            <i class="fas fa-book"></i>
+            Derslerim
+        </a>
+        {% endif %}
     </div>
 </div>
 {% endblock %}
