@@ -1,634 +1,241 @@
 {% extends 'base.html' %}
 
-{% block title %}Öğretmen Paneli - Kurs Yönetim Sistemi{% endblock %}
+{% block title %}Öğretmen Paneli{% endblock %}
 
 {% block extra_css %}
 <style>
-    /* E-nabız benzeri modern, sade tasarım */
     body {
-        background-color: #f5f7fa;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        background-color: #f8f9fa;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
     
-    .container-fluid {
-        padding: 1rem;
-        max-width: 1400px;
+    .dashboard-container {
+        max-width: 1200px;
         margin: 0 auto;
-        margin-top: 0; /* Main'den gelen padding-top yeterli */
+        padding: 2rem 1rem;
     }
     
-    /* Basitleştirilmiş header - minimal */
-    .welcome-section {
-        display: none; /* Kaldırıldı - yer kaplamıyor */
-    }
-    
-    /* Sade stat kartları */
-    .stat-card {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 8px;
-        color: #1a1a1a;
-        transition: all 0.2s ease;
-        cursor: pointer;
-        text-decoration: none;
-        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-        padding: 0.75rem !important; /* Padding küçültüldü */
-    }
-    
-    .stat-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        border-color: #667eea;
-        color: #1a1a1a;
-        text-decoration: none;
-    }
-    
-    .stat-card h3 {
-        font-size: 1.25rem;
-        font-weight: 700;
-        color: #667eea;
-        margin-bottom: 0.25rem;
-    }
-    
-    .stat-card p {
-        color: #6b7280;
-        font-size: 0.75rem;
-        margin: 0;
-    }
-    
-    .stat-card i {
-        color: #667eea;
-        opacity: 0.6;
-        font-size: 1.25rem !important; /* İkonları küçült */
-    }
-    
-    /* Renkli content kartları */
-    .content-card {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-        transition: all 0.2s ease;
-        overflow: hidden;
-    }
-    
-    .content-card:hover {
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-    }
-    
-    /* Dersler kartı - Mavi tonları */
-    .content-card:has(.fa-book) .card-header {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    /* Hoş Geldiniz Kartı */
+    .welcome-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        border-bottom: none;
+        border-radius: 16px;
+        padding: 2rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
     }
     
-    /* Ödevler kartı - Sarı/Turuncu tonları */
-    .content-card:has(.fa-tasks) .card-header {
-        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-        color: white;
-        border-bottom: none;
-    }
-    
-    /* Duyurular kartı - Yeşil tonları */
-    .content-card:has(.fa-bullhorn) .card-header {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        color: white;
-        border-bottom: none;
-    }
-    
-    /* Varsayılan header */
-    .content-card .card-header {
-        background: white;
-        color: #1a1a1a;
-        border-bottom: 1px solid #e5e7eb;
-        border-radius: 12px 12px 0 0 !important;
-        padding: 1rem 1.5rem;
+    .welcome-card h2 {
+        font-size: 1.75rem;
         font-weight: 600;
-    }
-    
-    .content-card .card-body {
-        padding: 1.5rem;
-    }
-    
-    /* Renkli item kartları */
-    .item-card {
-        background: #f9fafb;
-        border-radius: 8px;
-        padding: 1rem;
-        margin-bottom: 0.75rem;
-        border-left: 4px solid transparent;
-        transition: all 0.2s ease;
-        cursor: pointer;
-        border: 1px solid #e5e7eb;
-    }
-    
-    /* Dersler kartındaki item'lar - Mavi border */
-    .content-card:has(.fa-book) .item-card {
-        border-left-color: #3b82f6;
-    }
-    
-    .content-card:has(.fa-book) .item-card:hover {
-        background: #eff6ff;
-        border-left-color: #2563eb;
-        border-color: #2563eb;
-        transform: translateX(3px);
-        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15);
-    }
-    
-    /* Ödevler kartındaki item'lar - Sarı border */
-    .content-card:has(.fa-tasks) .item-card {
-        border-left-color: #f59e0b;
-    }
-    
-    .content-card:has(.fa-tasks) .item-card:hover {
-        background: #fffbeb;
-        border-left-color: #d97706;
-        border-color: #d97706;
-        transform: translateX(3px);
-        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
-    }
-    
-    /* Duyurular kartındaki item'lar - Yeşil border */
-    .content-card:has(.fa-bullhorn) .item-card {
-        border-left-color: #10b981;
-    }
-    
-    .content-card:has(.fa-bullhorn) .item-card:hover {
-        background: #ecfdf5;
-        border-left-color: #059669;
-        border-color: #059669;
-        transform: translateX(3px);
-        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.15);
-    }
-    
-    .item-card:last-child {
-        margin-bottom: 0;
-    }
-    
-    .item-card strong {
-        color: #1a1a1a;
-        font-weight: 600;
-        font-size: 0.95rem;
-    }
-    
-    .item-card p {
-        color: #4b5563;
-        font-size: 0.85rem;
-        margin: 0.25rem 0;
-    }
-    
-    .item-card small {
-        color: #6b7280;
-        font-size: 0.8rem;
-    }
-    
-    /* Renkli badge'ler */
-    .badge-modern {
-        padding: 0.4rem 0.8rem;
-        border-radius: 6px;
-        font-weight: 600;
-        font-size: 0.75rem;
-        background: #e5e7eb;
-        color: #4b5563;
-    }
-    
-    .badge-modern.bg-success {
-        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%);
-        color: #065f46;
-        border: 1px solid #10b981;
-    }
-    
-    .badge-modern.bg-warning {
-        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-        color: #92400e;
-        border: 1px solid #f59e0b;
-    }
-    
-    .badge-modern.bg-danger {
-        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%);
-        color: #991b1b;
-        border: 1px solid #ef4444;
-    }
-    
-    .badge-modern.bg-secondary {
-        background: #f3f4f6;
-        color: #6b7280;
-        border: 1px solid #d1d5db;
-    }
-    
-    /* Ödev countdown badge - Sarı tonları */
-    .countdown-badge {
-        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
-        color: #92400e !important;
-        border: 1px solid #f59e0b !important;
-    }
-    
-    .countdown-badge.bg-success {
-        background: linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%) !important;
-        color: #065f46 !important;
-        border: 1px solid #10b981 !important;
-    }
-    
-    .countdown-badge.bg-warning {
-        background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%) !important;
-        color: #92400e !important;
-        border: 1px solid #f59e0b !important;
-    }
-    
-    .countdown-badge.bg-danger {
-        background: linear-gradient(135deg, #fee2e2 0%, #fecaca 100%) !important;
-        color: #991b1b !important;
-        border: 1px solid #ef4444 !important;
-    }
-    
-    .btn-modern {
-        border-radius: 8px;
-        padding: 0.5rem 1.25rem;
-        font-weight: 600;
-        font-size: 0.875rem;
-        transition: all 0.2s ease;
-        border: 1px solid #e5e7eb;
-        background: white;
-        color: #4b5563;
-    }
-    
-    .btn-modern:hover {
-        background: #667eea;
-        color: white;
-        border-color: #667eea;
-    }
-    
-    .btn-modern.btn-primary {
-        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-        color: white;
-        border-color: #2563eb;
-        box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
-    }
-    
-    .btn-modern.btn-primary:hover {
-        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-        transform: translateY(-2px);
-    }
-    
-    .btn-modern.btn-light {
-        background: white;
-        color: #4b5563;
-        border-color: #e5e7eb;
-    }
-    
-    .btn-modern.btn-warning {
-        background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
-        color: white;
-        border-color: #d97706;
-        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
-    }
-    
-    .btn-modern.btn-warning:hover {
-        background: linear-gradient(135deg, #d97706 0%, #b45309 100%);
-        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
-        transform: translateY(-2px);
-    }
-    
-    .btn-modern.btn-info {
-        background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-        color: white;
-        border-color: #059669;
-        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
-    }
-    
-    .btn-modern.btn-info:hover {
-        background: linear-gradient(135deg, #059669 0%, #047857 100%);
-        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4);
-        transform: translateY(-2px);
-    }
-    
-    .quick-action-card {
-        background: white;
-        border: 1px solid #e5e7eb;
-        border-radius: 12px;
-        color: #1a1a1a;
-        transition: all 0.2s ease;
-        text-decoration: none;
-        padding: 1.5rem;
-        text-align: center;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    }
-    
-    .quick-action-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        border-color: #667eea;
-        color: #1a1a1a;
-        text-decoration: none;
-    }
-    
-    .quick-action-card i {
-        color: #667eea;
         margin-bottom: 0.5rem;
     }
     
-    .countdown-badge {
-        font-size: 0.7rem;
-        min-width: 70px;
+    .welcome-card p {
+        opacity: 0.9;
+        margin: 0;
+        font-size: 0.95rem;
+    }
+    
+    /* İstatistik Kartları */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-box {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
         text-align: center;
-        font-weight: 600;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        text-decoration: none;
+        color: inherit;
+        display: block;
     }
     
-    .countdown-badge.bg-success {
-        background: #d1fae5 !important;
-        color: #065f46 !important;
+    .stat-box:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        text-decoration: none;
     }
     
-    .countdown-badge.bg-warning {
-        background: #fef3c7 !important;
-        color: #92400e !important;
+    .stat-icon {
+        width: 56px;
+        height: 56px;
+        margin: 0 auto 1rem;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
     }
     
-    .countdown-badge.bg-danger {
-        background: #fee2e2 !important;
-        color: #991b1b !important;
+    .stat-icon.blue { background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); color: #1976d2; }
+    .stat-icon.green { background: linear-gradient(135deg, #e8f5e9 0%, #c8e6c9 100%); color: #388e3c; }
+    .stat-icon.orange { background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); color: #f57c00; }
+    .stat-icon.purple { background: linear-gradient(135deg, #f3e5f5 0%, #e1bee7 100%); color: #7b1fa2; }
+    
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 0.25rem;
     }
     
-    .countdown-badge.bg-secondary {
-        background: #f3f4f6 !important;
-        color: #6b7280 !important;
-    }
-    
-    /* Quick Actions Section - daha sade */
-    .quick-actions-section h4 {
-        color: #6b7280;
+    .stat-label {
+        color: #6c757d;
         font-size: 0.9rem;
+        font-weight: 500;
+    }
+    
+    /* Hızlı Erişim Butonları */
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    
+    .action-btn {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        text-decoration: none;
+        color: inherit;
+        display: block;
+        border: 2px solid transparent;
+    }
+    
+    .action-btn:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+        text-decoration: none;
+    }
+    
+    .action-btn.primary { border-color: #667eea; }
+    .action-btn.primary:hover { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
+    
+    .action-btn.success { border-color: #10b981; }
+    .action-btn.success:hover { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
+    
+    .action-btn.warning { border-color: #f59e0b; }
+    .action-btn.warning:hover { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; }
+    
+    .action-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        color: #667eea;
+        transition: color 0.3s ease;
+    }
+    
+    .action-btn.primary:hover .action-icon,
+    .action-btn.success:hover .action-icon,
+    .action-btn.warning:hover .action-icon { color: white; }
+    
+    .action-title {
+        font-size: 1.1rem;
         font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+        margin-bottom: 0.5rem;
+    }
+    
+    .action-desc {
+        font-size: 0.875rem;
+        color: #6c757d;
+        margin: 0;
+    }
+    
+    .action-btn:hover .action-desc {
+        color: rgba(255,255,255,0.9);
     }
 </style>
 {% endblock %}
 
 {% block content %}
-{% if teacher %}
-<!-- Stats Cards - küçültülmüş -->
-<div class="row mb-3" style="margin-top: 0;">
-    <div class="col-md-3 mb-3">
-        <a href="{% url 'teachers:courses' %}" class="stat-card courses card text-decoration-none">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h3 class="mb-1">{{ course_groups.count }}</h3>
-                        <p class="mb-0">Verdiğim Ders</p>
-                    </div>
-                    <i class="fas fa-book fa-2x opacity-75"></i>
-                </div>
-            </div>
-        </a>
-    </div>
-    <div class="col-md-3 mb-3">
-        <a href="{% url 'students:list' %}" class="stat-card students card text-decoration-none">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h3 class="mb-1">{{ total_students|default:0 }}</h3>
-                        <p class="mb-0">Toplam Öğrenci</p>
-                    </div>
-                    <i class="fas fa-users fa-2x opacity-75"></i>
-                </div>
-            </div>
-        </a>
-    </div>
-    <div class="col-md-3 mb-3">
-        <a href="{% url 'teachers:assignments' %}" class="stat-card assignments card text-decoration-none">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h3 class="mb-1">{{ recent_assignments.count }}</h3>
-                        <p class="mb-0">Aktif Ödev</p>
-                    </div>
-                    <i class="fas fa-tasks fa-2x opacity-75"></i>
-                </div>
-            </div>
-        </a>
-    </div>
-    <div class="col-md-3 mb-3">
-        <div class="stat-card department card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h3 class="mb-1">{{ teacher.department|default:"--" }}</h3>
-                        <p class="mb-0">Bölüm</p>
-                    </div>
-                    <i class="fas fa-building fa-2x opacity-75"></i>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Content Cards -->
-<div class="row">
-    <div class="col-md-4 mb-4">
-        <div class="content-card card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-book me-2"></i>Verdiğim Dersler</h5>
-                <a href="{% url 'courses:group_create' %}" class="btn btn-light btn-sm btn-modern">
-                    <i class="fas fa-plus me-1"></i>Yeni
-                </a>
-            </div>
-            <div class="card-body">
-                {% for group in course_groups %}
-                <a href="{% url 'courses:group_detail' group.pk %}" class="text-decoration-none">
-                    <div class="item-card">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <strong class="text-dark">{{ group.course.code }}</strong>
-                                <p class="mb-1 text-dark">{{ group.course.name }}</p>
-                                <small class="text-muted">
-                                    <i class="fas fa-map-marker-alt me-1"></i>{{ group.classroom|default:"--" }}
-                                    {% if group.schedule %}
-                                    <i class="fas fa-clock ms-2 me-1"></i>{{ group.schedule }}
-                                    {% endif %}
-                                </small>
-                            </div>
-                            <span class="badge badge-modern bg-success">
-                                <i class="fas fa-users me-1"></i>{{ group.enrollments.count }}
-                            </span>
-                        </div>
-                    </div>
-                </a>
-                {% empty %}
-                <div class="text-center py-4">
-                    <i class="fas fa-book fa-2x text-muted mb-2"></i>
-                    <p class="text-muted mb-0">Henüz ders grubu yok.</p>
-                </div>
-                {% endfor %}
-                
-                <div class="text-center mt-3">
-                    <a href="{% url 'teachers:courses' %}" class="btn btn-primary btn-modern">
-                        <i class="fas fa-eye me-1"></i>Tüm Dersleri Görüntüle
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
+<div class="dashboard-container">
+    {% if teacher %}
     
-    <div class="col-md-4 mb-4">
-        <div class="content-card card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-tasks me-2"></i>Son Ödevler</h5>
-                <a href="{% url 'courses:assignment_create' %}" class="btn btn-light btn-sm btn-modern">
-                    <i class="fas fa-plus me-1"></i>Yeni
-                </a>
-            </div>
-            <div class="card-body">
-                {% for assignment in recent_assignments %}
-                <a href="{% url 'courses:assignment_detail' assignment.pk %}" class="text-decoration-none">
-                    <div class="item-card">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div class="flex-grow-1">
-                                <strong class="text-dark">{{ assignment.title }}</strong>
-                                <p class="mb-1 text-dark small">{{ assignment.group.course.name }}</p>
-                                <small class="text-muted">
-                                    <i class="fas fa-calendar me-1"></i>{{ assignment.due_date|date:"d.m.Y H:i" }}
-                                </small>
-                            </div>
-                            <span class="badge badge-modern countdown-badge ms-2" 
-                                  data-due-date="{{ assignment.due_date|date:'Y-m-d H:i:s' }}"
-                                  id="countdown-teacher-{{ assignment.pk }}">
-                                <i class="fas fa-clock me-1"></i>Hesaplanıyor...
-                            </span>
-                        </div>
-                    </div>
-                </a>
-                {% empty %}
-                <div class="text-center py-4">
-                    <i class="fas fa-tasks fa-2x text-muted mb-2"></i>
-                    <p class="text-muted mb-0">Henüz ödev yok.</p>
-                </div>
-                {% endfor %}
-                
-                <div class="text-center mt-3">
-                    <a href="{% url 'teachers:assignments' %}" class="btn btn-warning btn-modern">
-                        <i class="fas fa-tasks me-1"></i>Tüm Ödevleri Görüntüle
-                    </a>
-                </div>
-            </div>
-        </div>
+    <!-- Hoş Geldiniz Kartı -->
+    <div class="welcome-card">
+        <h2><i class="fas fa-user-tie me-2"></i>Hoş Geldiniz, {{ user.get_full_name|default:user.username }}</h2>
+        <p><i class="fas fa-building me-2"></i>{{ teacher.department|default:"Bölüm bilgisi yok" }}</p>
     </div>
-    
-    <div class="col-md-4 mb-4">
-        <div class="content-card card">
-            <div class="card-header d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-bullhorn me-2"></i>Son Duyurular</h5>
-                <a href="{% url 'courses:announcement_create' %}" class="btn btn-light btn-sm btn-modern">
-                    <i class="fas fa-plus me-1"></i>Yeni
-                </a>
-            </div>
-            <div class="card-body">
-                {% for announcement in recent_announcements %}
-                <a href="{% url 'courses:announcement_detail' announcement.pk %}" class="text-decoration-none">
-                    <div class="item-card">
-                        <div class="d-flex justify-content-between align-items-start">
-                            <div class="flex-grow-1">
-                                <strong class="text-dark">{{ announcement.title }}</strong>
-                                <p class="mb-1 text-dark small">{{ announcement.group.course.name }}</p>
-                                <small class="text-muted">
-                                    <i class="fas fa-clock me-1"></i>{{ announcement.create_date|date:"d.m.Y H:i" }}
-                                </small>
-                            </div>
-                            <span class="badge badge-modern bg-{% if announcement.status == 'active' %}success{% else %}secondary{% endif %} ms-2">
-                                <i class="fas fa-{% if announcement.status == 'active' %}check{% else %}pause{% endif %} me-1"></i>
-                                {% if announcement.status == 'active' %}Aktif{% else %}Pasif{% endif %}
-                            </span>
-                        </div>
-                    </div>
-                </a>
-                {% empty %}
-                <div class="text-center py-4">
-                    <i class="fas fa-bullhorn fa-2x text-muted mb-2"></i>
-                    <p class="text-muted mb-0">Henüz duyuru yok.</p>
-                </div>
-                {% endfor %}
-                
-                <div class="text-center mt-3">
-                    <a href="{% url 'courses:announcement_list' %}" class="btn btn-info btn-modern">
-                        <i class="fas fa-bullhorn me-1"></i>Tüm Duyuruları Görüntüle
-                    </a>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
 
-<!-- Quick Actions -->
-<div class="row mt-4 quick-actions-section">
-    <div class="col-12 mb-3">
-        <h4 class="text-center">
-            <i class="fas fa-bolt me-2"></i>Hızlı İşlemler
-        </h4>
-    </div>
-    <div class="col-md-4 mb-3">
-        <a href="{% url 'courses:assignment_create' %}" class="quick-action-card warning text-decoration-none">
-            <i class="fas fa-tasks fa-3x mb-3"></i>
-            <h5 class="mb-1">Yeni Ödev</h5>
-            <small class="opacity-75">Öğrencileriniz için ödev oluşturun</small>
-        </a>
-    </div>
-    <div class="col-md-4 mb-3">
-        <a href="{% url 'courses:announcement_create' %}" class="quick-action-card info text-decoration-none">
-            <i class="fas fa-bullhorn fa-3x mb-3"></i>
-            <h5 class="mb-1">Duyuru Yayınla</h5>
-            <small class="opacity-75">Önemli duyuruları paylaşın</small>
-        </a>
-    </div>
-    <div class="col-md-4 mb-3">
-        <a href="{% url 'notes:create' %}" class="quick-action-card secondary text-decoration-none">
-            <i class="fas fa-star fa-3x mb-3"></i>
-            <h5 class="mb-1">Not Ekle</h5>
-            <small class="opacity-75">Öğrenci notlarını girin</small>
-        </a>
-    </div>
-</div>
-{% else %}
-<div class="row">
-    <div class="col-md-8">
-        <div class="alert alert-warning">
-            <h4>Öğretmen Profili Bulunamadı</h4>
-            <p>Hesabınız öğretmen profili ile ilişkilendirilmemiş. Lütfen yönetici ile iletişime geçin.</p>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header bg-info text-white">
-                <h6 class="mb-0"><i class="fas fa-key"></i> Örnek Giriş Bilgileri</h6>
+    <!-- İstatistikler -->
+    <div class="stats-grid">
+        <a href="{% url 'teachers:courses' %}" class="stat-box">
+            <div class="stat-icon blue">
+                <i class="fas fa-book"></i>
             </div>
-            <div class="card-body">
-                <div class="mb-3">
-                    <h6 class="text-primary"><i class="fas fa-chalkboard-teacher"></i> Öğretmen Girişi</h6>
-                    <small class="text-muted">
-                        <strong>Kullanıcı Adı:</strong> teacher1<br>
-                        <strong>Şifre:</strong> teacher123
-                    </small>
-                </div>
-                <div class="mb-3">
-                    <h6 class="text-success"><i class="fas fa-user-graduate"></i> Öğrenci Girişi</h6>
-                    <small class="text-muted">
-                        <strong>Kullanıcı Adı:</strong> student1<br>
-                        <strong>Şifre:</strong> student123
-                    </small>
-                </div>
-                <div class="mb-0">
-                    <h6 class="text-danger"><i class="fas fa-user-shield"></i> Admin Girişi</h6>
-                    <small class="text-muted">
-                        <strong>Kullanıcı Adı:</strong> admin<br>
-                        <strong>Şifre:</strong> admin123
-                    </small>
-                </div>
+            <div class="stat-number">{{ course_groups.count }}</div>
+            <div class="stat-label">Verdiğim Ders</div>
+        </a>
+        
+        <a href="{% url 'students:list' %}" class="stat-box">
+            <div class="stat-icon green">
+                <i class="fas fa-users"></i>
             </div>
-        </div>
+            <div class="stat-number">{{ total_students|default:0 }}</div>
+            <div class="stat-label">Toplam Öğrenci</div>
+        </a>
+        
+        <a href="{% url 'teachers:assignments' %}" class="stat-box">
+            <div class="stat-icon orange">
+                <i class="fas fa-tasks"></i>
+            </div>
+            <div class="stat-number">{{ recent_assignments.count }}</div>
+            <div class="stat-label">Aktif Ödev</div>
+        </a>
+        
+        <a href="{% url 'courses:announcement_list' %}" class="stat-box">
+            <div class="stat-icon purple">
+                <i class="fas fa-bullhorn"></i>
+            </div>
+            <div class="stat-number">{{ recent_announcements.count }}</div>
+            <div class="stat-label">Aktif Duyuru</div>
+        </a>
     </div>
+
+    <!-- Hızlı Erişim Butonları -->
+    <div class="quick-actions">
+        <a href="{% url 'courses:assignment_create' %}" class="action-btn warning">
+            <div class="action-icon">
+                <i class="fas fa-file-alt"></i>
+            </div>
+            <div class="action-title">Yeni Ödev Oluştur</div>
+            <p class="action-desc">Öğrencileriniz için yeni bir ödev hazırlayın</p>
+        </a>
+        
+        <a href="{% url 'courses:announcement_create' %}" class="action-btn success">
+            <div class="action-icon">
+                <i class="fas fa-megaphone"></i>
+            </div>
+            <div class="action-title">Duyuru Yayınla</div>
+            <p class="action-desc">Öğrencilerinizle önemli bilgileri paylaşın</p>
+        </a>
+        
+        <a href="{% url 'notes:create' %}" class="action-btn primary">
+            <div class="action-icon">
+                <i class="fas fa-star"></i>
+            </div>
+            <div class="action-title">Not Ekle</div>
+            <p class="action-desc">Öğrenci notlarını girin ve güncelleyin</p>
+        </a>
+    </div>
+
+    {% else %}
+    <div class="alert alert-warning">
+        <h4><i class="fas fa-exclamation-triangle me-2"></i>Öğretmen Profili Bulunamadı</h4>
+        <p>Hesabınız öğretmen profili ile ilişkilendirilmemiş. Lütfen yönetici ile iletişime geçin.</p>
+    </div>
+    {% endif %}
 </div>
-{% endif %}
 {% endblock %}
 
 {% block extra_js %}
