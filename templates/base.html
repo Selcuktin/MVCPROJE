@@ -139,12 +139,17 @@
             transition: all 0.3s ease;
             border-radius: 8px;
             margin: 0 0.5rem;
+            width: calc(100% - 1rem);
         }
         
         .dropdown-item:hover {
             background: linear-gradient(135deg, #667eea, #764ba2);
             color: white;
             transform: translateX(5px);
+        }
+
+        .dropdown-item.user-menu-item:hover {
+            transform: none !important;
         }
         
         /* Notification Dropdown */
@@ -379,11 +384,11 @@
                                 <i class="fas fa-user me-1"></i>{{ user.get_full_name|default:user.username }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
-                                <li><a class="dropdown-item" href="{% url 'users:profile' %}">
+                                <li><a class="dropdown-item user-menu-item" href="{% url 'users:profile' %}">
                                     <i class="fas fa-id-card me-2"></i>Profilim
                                 </a></li>
                                 <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item" href="{% url 'users:logout' %}">
+                                <li><a class="dropdown-item user-menu-item" href="{% url 'users:logout' %}">
                                     <i class="fas fa-sign-out-alt me-2"></i>Çıkış
                                 </a></li>
                             </ul>
