@@ -70,6 +70,46 @@
         margin-bottom: 0.5rem;
     }
     
+    .form-floating {
+        position: relative;
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-floating .form-control {
+        border: 2px solid #e9ecef;
+        border-radius: 15px;
+        padding: 1rem 0.75rem;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        background: #f8f9fa;
+        height: auto;
+    }
+    
+    .form-floating .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        background: white;
+    }
+    
+    .form-floating label {
+        color: #6c757d;
+        font-weight: 500;
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 100%;
+        padding: 0.75rem 0.75rem;
+        pointer-events: none;
+        border: none;
+        background-color: transparent;
+        transform: none;
+    }
+    
+    .form-floating .form-control:focus ~ label,
+    .form-floating .form-control:not(:placeholder-shown) ~ label {
+        opacity: 0;
+    }
+    
     .form-control {
         border: 2px solid #e9ecef;
         border-radius: 15px;
@@ -287,10 +327,12 @@
                                     {% csrf_token %}
                                     
                                     <div class="mb-3">
-                                        <label for="{{ form.username.id_for_label }}" class="form-label">
-                                            <i class="fas fa-user me-2"></i>Kullanıcı Adı
-                                        </label>
-                                        {{ form.username }}
+                                        <div class="form-floating">
+                                            <input type="text" class="form-control" id="{{ form.username.id_for_label }}" name="username" placeholder=" " {% if form.username.value %}value="{{ form.username.value }}"{% endif %}>
+                                            <label for="{{ form.username.id_for_label }}">
+                                                <i class="fas fa-user me-2"></i>Kullanıcı Adı
+                                            </label>
+                                        </div>
                                         {% if form.username.errors %}
                                             <div class="text-danger mt-1">
                                                 {% for error in form.username.errors %}
@@ -301,10 +343,12 @@
                                     </div>
                                     
                                     <div class="mb-3">
-                                        <label for="{{ form.password.id_for_label }}" class="form-label">
-                                            <i class="fas fa-lock me-2"></i>Şifre
-                                        </label>
-                                        {{ form.password }}
+                                        <div class="form-floating">
+                                            <input type="password" class="form-control" id="{{ form.password.id_for_label }}" name="password" placeholder=" ">
+                                            <label for="{{ form.password.id_for_label }}">
+                                                <i class="fas fa-lock me-2"></i>Şifre
+                                            </label>
+                                        </div>
                                         {% if form.password.errors %}
                                             <div class="text-danger mt-1">
                                                 {% for error in form.password.errors %}
