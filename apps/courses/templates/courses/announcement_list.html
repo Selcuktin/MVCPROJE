@@ -53,6 +53,15 @@
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         margin-bottom: 2rem;
     }
+    
+    /* Lazy Loading Styles */
+    .lazy-card {
+        will-change: opacity;
+    }
+    
+    .lazy-card.lazy-loaded {
+        opacity: 1 !important;
+    }
 </style>
 {% endblock %}
 
@@ -117,7 +126,7 @@
         {% for announcement in announcements %}
         <div class="col-12">
             <a href="{% url 'courses:announcement_detail' announcement.pk %}" style="text-decoration: none; color: inherit;">
-                <div class="announcement-card {% if announcement.status == 'active' %}active{% elif announcement.status == 'expired' %}expired{% endif %}" style="cursor: pointer;">
+                <div class="announcement-card lazy-card {% if announcement.status == 'active' %}active{% elif announcement.status == 'expired' %}expired{% endif %}" style="cursor: pointer; opacity: 0;">
                     <div class="announcement-header">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>

@@ -113,6 +113,15 @@
         margin: 0.25rem;
         font-weight: 500;
     }
+    
+    /* Lazy Loading Styles */
+    .lazy-card {
+        will-change: opacity;
+    }
+    
+    .lazy-card.lazy-loaded {
+        opacity: 1 !important;
+    }
 
     .status-badge {
         position: absolute;
@@ -286,7 +295,7 @@
     <div class="row">
         {% for teacher in teachers %}
         <div class="col-lg-4 col-md-6 mb-4">
-            <div class="teacher-card">
+            <div class="teacher-card lazy-card" style="opacity: 0;">
                 <!-- Teacher Header -->
                 <a href="{% url 'teachers:detail' teacher.pk %}" class="teacher-header" style="text-decoration: none; color: inherit; display: block;">
                     <div class="status-badge status-{{ teacher.status }}">

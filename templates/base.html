@@ -595,5 +595,71 @@
     </script>
 
     {% block extra_js %}{% endblock %}
+    
+    <!-- Lazy Loading Script -->
+    <script>
+        // Lazy Loading için IntersectionObserver
+        document.addEventListener('DOMContentLoaded', function() {
+            // Lazy load için kartları işaretle
+            const lazyCards = document.querySelectorAll('.lazy-card');
+            
+            if ('IntersectionObserver' in window) {
+                const cardObserver = new IntersectionObserver(function(entries, observer) {
+                    entries.forEach(function(entry) {
+                        if (entry.isIntersecting) {
+                            const card = entry.target;
+                            card.classList.add('lazy-loaded');
+                            card.style.opacity = '0';
+                            card.style.transition = 'opacity 0.3s ease-in';
+                            
+                            // Fade-in animasyonu
+                            setTimeout(function() {
+                                card.style.opacity = '1';
+                            }, 50);
+                            
+                            observer.unobserve(card);
+                        }
+                    });
+                }, {
+                    rootMargin: '50px' // Kartlar görünür alana 50px yaklaştığında yükle
+                });
+                
+                lazyCards.forEach(function(card) {
+                    cardObserver.observe(card);
+                });
+            } else {
+                // IntersectionObserver desteklenmiyorsa tüm kartları göster
+                lazyCards.forEach(function(card) {
+                    card.classList.add('lazy-loaded');
+                    card.style.opacity = '1';
+                });
+            }
+            
+            // Görseller için native lazy loading (tarayıcı desteği varsa)
+            const lazyImages = document.querySelectorAll('img[data-src]');
+            if ('loading' in HTMLImageElement.prototype) {
+                lazyImages.forEach(function(img) {
+                    img.src = img.dataset.src;
+                    img.removeAttribute('data-src');
+                });
+            } else {
+                // Fallback: IntersectionObserver ile görsel lazy loading
+                const imageObserver = new IntersectionObserver(function(entries, observer) {
+                    entries.forEach(function(entry) {
+                        if (entry.isIntersecting) {
+                            const img = entry.target;
+                            img.src = img.dataset.src;
+                            img.removeAttribute('data-src');
+                            observer.unobserve(img);
+                        }
+                    });
+                });
+                
+                lazyImages.forEach(function(img) {
+                    imageObserver.observe(img);
+                });
+            }
+        });
+    </script>
 </body>
 </html>

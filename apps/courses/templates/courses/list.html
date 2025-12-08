@@ -42,6 +42,15 @@
     .card-header.bg-gradient {
         background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
     }
+    
+    /* Lazy Loading Styles */
+    .lazy-card {
+        will-change: opacity;
+    }
+    
+    .lazy-card.lazy-loaded {
+        opacity: 1 !important;
+    }
 </style>
 {% endblock %}
 
@@ -91,7 +100,7 @@
     {% for course in courses %}
     <div class="col-md-6 col-lg-4 mb-4">
         <a href="{% url 'courses:detail' course.pk %}" class="course-card-link">
-            <div class="card h-100 shadow-sm border-0 course-card">
+            <div class="card h-100 shadow-sm border-0 course-card lazy-card" style="opacity: 0;">
                 <div class="card-header bg-gradient border-0 d-flex justify-content-between align-items-center">
                     <h6 class="mb-0 fw-bold">{{ course.code }}</h6>
                     <span class="badge bg-{% if course.is_elective %}warning{% else %}primary{% endif %} rounded-pill">

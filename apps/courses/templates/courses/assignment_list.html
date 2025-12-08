@@ -197,6 +197,15 @@
         border-radius: 10px;
         transition: width 0.3s ease;
     }
+    
+    /* Lazy Loading Styles */
+    .lazy-card {
+        will-change: opacity;
+    }
+    
+    .lazy-card.lazy-loaded {
+        opacity: 1 !important;
+    }
 
     .progress-safe {
         background: linear-gradient(90deg, #2ed573, #17c0eb);
@@ -364,8 +373,8 @@
     {% if assignments %}
     <div class="row" id="assignments-container">
         {% for assignment in assignments %}
-        <div class="col-md-6 col-lg-4 mb-4 assignment-item" data-due-date="{{ assignment.due_date|date:'Y-m-d H:i:s' }}"
-            data-assignment-id="{{ assignment.pk }}">
+        <div class="col-md-6 col-lg-4 mb-4 assignment-item lazy-card" data-due-date="{{ assignment.due_date|date:'Y-m-d H:i:s' }}"
+            data-assignment-id="{{ assignment.pk }}" style="opacity: 0;">
             <div class="assignment-card clickable-card" id="card-{{ assignment.pk }}"
                 onclick="window.location.href='{% url 'courses:assignment_detail' assignment.pk %}'"
                 style="cursor: pointer;">

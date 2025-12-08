@@ -52,9 +52,16 @@ def note_create(request):
 @login_required
 def note_edit(request, pk):
     controller = NoteController()
+    # MVC: Controller üzerinden notu ve izin kontrolünü al
+    base_context = controller.update_note_context(request, pk)
+    if base_context.get('error'):
+        return redirect(base_context.get('redirect', 'notes:list'))
+    
+    note = base_context.get('note')
     
     if request.method == 'POST':
-        form = NoteForm(request.POST, user=request.user)
+        # Mevcut not instance'ı ile formu bağla; unique_together hatalarını önler
+        form = NoteForm(request.POST, user=request.user, instance=note)
         if form.is_valid():
             result = controller.update_note_context(request, pk, form.cleaned_data)
             if result.get('success'):
@@ -62,15 +69,10 @@ def note_edit(request, pk):
             elif result.get('error'):
                 return redirect(result.get('redirect', 'notes:list'))
     else:
-        context = controller.update_note_context(request, pk)
-        if context.get('error'):
-            return redirect(context.get('redirect', 'notes:list'))
-        
-        form = NoteForm(instance=context.get('note'), user=request.user)
+        form = NoteForm(instance=note, user=request.user)
     
-    context = controller.update_note_context(request, pk)
-    context['form'] = form
-    return render(request, 'notes/form.html', context)
+    base_context['form'] = form
+    return render(request, 'notes/form.html', base_context)
 
 @login_required
 def note_delete(request, pk):
