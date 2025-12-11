@@ -867,13 +867,16 @@ function openStudentAssignModal(groupId) {
     document.querySelectorAll('#assignStudentList input[type="checkbox"]').forEach(cb => {
         const sid = parseInt(cb.value);
         if (assignedIds.includes(sid)) {
-            cb.checked = true;
+            // Zaten kayıtlı öğrencileri seçili gösterme, sadece disabled yap
+            cb.checked = false;
             cb.disabled = true;
             cb.parentElement.classList.add('text-muted');
+            cb.parentElement.style.opacity = '0.6';
         } else {
             cb.checked = false;
             cb.disabled = false;
             cb.parentElement.classList.remove('text-muted');
+            cb.parentElement.style.opacity = '1';
         }
     });
     document.getElementById('studentAssignModal').classList.add('active');
@@ -887,7 +890,7 @@ function closeStudentAssignModal() {
 document.getElementById('studentAssignForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const groupId = document.getElementById('assignGroupId').value;
-    const selectedStudents = Array.from(document.querySelectorAll('#assignStudentList input[type="checkbox"]:checked')).map(cb => parseInt(cb.value));
+    const selectedStudents = Array.from(document.querySelectorAll('#assignStudentList input[type="checkbox"]:checked:not(:disabled)')).map(cb => parseInt(cb.value));
     
     if (selectedStudents.length === 0) {
         alert('Lütfen en az bir öğrenci seçin.');
@@ -899,7 +902,7 @@ document.getElementById('studentAssignForm').addEventListener('submit', function
     }
     
     // Bulk enrollment oluştur
-    fetch(`{% url "courses:bulk_assign" %}`, {
+    fetch(`{% url "courses:bulk_enroll_students" %}`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -913,7 +916,11 @@ document.getElementById('studentAssignForm').addEventListener('submit', function
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            alert(`${data.count || selectedStudents.length} öğrenci başarıyla eklendi!`);
+            let message = `${data.count || selectedStudents.length} öğrenci başarıyla eklendi!`;
+            if (data.skipped > 0) {
+                message += ` (${data.skipped} öğrenci zaten kayıtlıydı)`;
+            }
+            alert(message);
             location.reload();
         } else {
             alert('Hata: ' + (data.error || 'Bilinmeyen hata'));
@@ -936,17 +943,23 @@ function loadEnrolledStudents(groupId) {
     const studentList = document.getElementById('removeStudentList');
     studentList.innerHTML = '<p style="text-align: center; padding: 2rem; color: #9ca3af;">Yükleniyor...</p>';
     
+    console.log('Loading enrolled students for group:', groupId);
+    
     // Sayfadaki gizli enrollment verilerinden al
     const enrollmentData = document.querySelector(`[data-group-id="${groupId}"]`);
+    console.log('Enrollment data element:', enrollmentData);
     
     if (enrollmentData) {
         const enrollments = Array.from(enrollmentData.querySelectorAll('[data-enrollment-id]'));
+        console.log('Found enrollments:', enrollments.length);
         studentList.innerHTML = '';
         
         if (enrollments.length > 0) {
             enrollments.forEach(enrollmentEl => {
                 const enrollmentId = enrollmentEl.getAttribute('data-enrollment-id');
                 const studentName = enrollmentEl.getAttribute('data-student-name') || 'Öğrenci';
+                
+                console.log('Adding enrollment:', enrollmentId, studentName);
                 
                 const div = document.createElement('div');
                 div.className = 'student-item-checkbox';
@@ -960,6 +973,7 @@ function loadEnrolledStudents(groupId) {
             studentList.innerHTML = '<p style="text-align: center; padding: 2rem; color: #9ca3af;">Kayıtlı öğrenci bulunmuyor.</p>';
         }
     } else {
+        console.error('Enrollment data not found for group:', groupId);
         studentList.innerHTML = '<p style="text-align: center; padding: 2rem; color: #9ca3af;">Öğrenci bilgileri yüklenemedi.</p>';
     }
 }
@@ -1004,6 +1018,8 @@ document.getElementById('studentRemoveForm').addEventListener('submit', function
     e.preventDefault();
     const selectedEnrollments = Array.from(document.querySelectorAll('#removeStudentList input[type="checkbox"]:checked')).map(cb => parseInt(cb.value));
     
+    console.log('Selected enrollments:', selectedEnrollments);
+    
     if (selectedEnrollments.length === 0) {
         alert('Lütfen en az bir öğrenci seçin.');
         return;
@@ -1013,8 +1029,12 @@ document.getElementById('studentRemoveForm').addEventListener('submit', function
         return;
     }
     
+    const url = '{% url "courses:bulk_unenroll_students" %}';
+    console.log('Sending request to:', url);
+    console.log('Request body:', { enrollment_ids: selectedEnrollments });
+    
     // Bulk enrollment silme
-    fetch(`{% url "courses:bulk_remove" %}`, {
+    fetch(url, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -1024,8 +1044,12 @@ document.getElementById('studentRemoveForm').addEventListener('submit', function
             enrollment_ids: selectedEnrollments
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        console.log('Response status:', response.status);
+        return response.json();
+    })
     .then(data => {
+        console.log('Response data:', data);
         if (data.success) {
             alert(`${data.count || selectedEnrollments.length} öğrenci başarıyla çıkarıldı!`);
             location.reload();

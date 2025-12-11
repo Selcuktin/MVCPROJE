@@ -65,6 +65,10 @@ urlpatterns = [
     path('teacher-assignment/check-compatibility/', views.check_compatibility_view, name='check_compatibility'),
     path('teacher-assignment/check-conflicts/', views.check_conflicts_view, name='check_conflicts'),
     path('teacher-assignment/availability/<int:teacher_id>/', views.teacher_availability_view, name='teacher_availability'),
+    
+    # Student Enrollment
+    path('teacher-assignment/bulk-enroll-students/', views.bulk_enroll_students_view, name='bulk_enroll_students'),
+    path('teacher-assignment/bulk-unenroll-students/', views.bulk_unenroll_students_view, name='bulk_unenroll_students'),
 
     # Example Questions (devre dışı)
     # path('questions/', views.ExampleQuestionListView.as_view(), name='question_list'),

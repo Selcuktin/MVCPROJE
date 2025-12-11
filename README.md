@@ -738,85 +738,11 @@ Bu Django MVC Kurs Yönetim Sistemi projesi, modern web teknolojileri kullanıla
 **Gelecek Vizyonu:**
 Sistem, sürekli geliştirme ve iyileştirme süreçleri ile eğitim teknolojilerinin öncü platformlarından biri olmayı hedeflemektedir. Yapay zeka, makine öğrenmesi ve bulut teknolojileri entegrasyonu ile next-generation bir eğitim platformu haline dönüştürülecektir.
 
-## 🧠 Yapay Zeka ve İletişim Modülleri (Planlanan)
+## İletişim ve Mesajlaşma (Plan)
 
-Bu bölüm, talep edilen yeni modüller için taslak mimari, önerilen teknolojiler ve entegrasyon noktalarını özetler.
-
-### 1) Geri Bildirim Üretimi (Template-based)
-- **Amaç**: Ödevler/quizler için hızlı, tutarlı geri bildirim metinleri oluşturmak.
-- **Yaklaşım**: Jinja/Django template tabanlı şablonlar + kurallı metin birleştirme; istenirse LLM ile zenginleştirme.
-- **Önerilen Konumlar**:
-  - `apps/courses/services.py` içinde `generate_feedback(student, assignment, rubric)` fonksiyonu
-  - Şablonlar: `templates/utils/feedback_templates/*.txt`
-- **UI**: Öğretmen ödev değerlendirme ekranına “Geri Bildirim Oluştur” butonu.
-
-### 2) İntihal Tespiti (Basit Benzerlik)
-- **Amaç**: Öğrenci ödevlerinde temel benzerlik kontrolü.
-- **Yaklaşım**: N-gram/TF-IDF kozinüs benzerliği (Python `scikit-learn`) veya Levenshtein/Jaccard.
-- **Önerilen Konumlar**:
-  - `apps/courses/services.py` -> `check_plagiarism(submission_text, corpus)`
-  - Sonuçların kaydı: `utils/models.py` veya `apps/courses/models.py` içine basit bir `PlagiarismReport` modeli.
-- **Not**: Büyük veri seti için ileride background görev (Celery/Redis) önerilir.
-
-### 3) Soru-Cevap Chatbotu (FAQ)
-- **Amaç**: Sık sorulan sorulara anında yanıt.
-- **Yaklaşım**: Kural tabanlı ilk sürüm (regex/anahtar kelime) → RAG tabanlı LLM.
-- **Önerilen Konumlar**:
-  - API: `apps/users/api_views.py` → `/api/faq/ask/`
-  - Veri kaynağı: `templates/users/faq.md` veya DB tablosu `FAQItem`.
-- **UI**: Site genelinde açılan küçük chat widget (footer fixed). 
-
-### 4) Sanal Asistan
-- **Kapsam**: Duyurular, ödev tarihleri, not sorgulama, öğretmen bilgileri, pratik aksiyonlar.
-- **Yaklaşım**: Yetkili kullanıcı bağlamında DB’den sorgu + opsiyonel LLM doğal dil arayüzü.
-- **Önerilen Konumlar**:
-  - API: `apps/users/api_views.py` → `/api/assistant/query/`
-  - İzinler: `utils/permissions.py` (rol bazlı saha kısıtlamaları)
-- **UI**: Navbar bildirim çanının yanında “Asistan” butonu.
-
-### 5) Örnek Soru Çözüm Alanı (Gemini API entegrasyonu)
-- **Amaç**: Öğrenciler soruları “Yapay Zeka ile Çöz” diyerek çözdürebilsin; öğretmenler örnek çözümler paylaşabilsin.
-- **Teknoloji**: Google Gemini API (alternatif: OpenAI/Claude). 
-- **Önerilen Konumlar**:
-  - API: `apps/courses/api_views.py` veya `apps/students/api_views.py` → `/api/ai/solve/`
-  - Ayarlar: `.env` → `GEMINI_API_KEY`; `config/settings.py` içinde `os.environ.get('GEMINI_API_KEY')`
-- **UI**: Ders/ödev sayfalarında “Yapay Zeka ile Çöz” butonu; öğretmen panelinde “Örnek Çözüm Oluştur”.
-- **Güvenlik**: Oran sınırlama (`django-ratelimit`), log maskeleme, PII sızıntı önlemleri.
-
-### 6) Özel Mesajlaşma ve Forum
-- **Özel Mesajlaşma**: Öğrenci-Öğretmen arası 1:1 mesaj kutusu.
-  - Modeller: `Message(thread, sender, recipient, body, created_at, read_at)`
-  - URL: `/messages/`, API: `/api/messages/`
-  - Canlılık: V1 polling; V2 WebSocket (Django Channels)
-- **Forum**: Ders/konu bazlı soru-cevap alanı.
-  - Modeller: `Topic`, `Post`, `Comment`, `Vote`
-  - URL: `/forum/`, API: `/api/forum/`
-
-### 7) Lazy Loading
-- **Amaç**: Performansı artırmak; büyük listeler ve görsellerde ertelenmiş yükleme.
-- **Uygulama**:
-  - Şablonlarda görsellere `loading="lazy"`
-  - Liste sayfalarında sayfalama (DRF `PageNumberPagination` mevcut) + komponent bazlı yükleme.
-  - İleri aşama: IntersectionObserver ile infinite scroll.
-
-### 8) Grup Sohbetleri (Sınıf Bazlı)
-- **Amaç**: Ders/sınıf bazlı anlık grup sohbeti.
-- **Teknoloji**: Django Channels + Redis broker (prod). 
-- **Önerilen Konumlar**:
-  - `apps/courses` içinde `CourseChatMessage` modeli
-  - WS endpoint: `ws://.../ws/courses/<course_id>/`
-  - Yetki: kursa kayıtlı kullanıcı şartı.
-
-### 9) Bildirim Sistemi (E-posta ve Uygulama İçi)
-- **E-posta**: `config/settings_production.py` içinde SMTP ayarları mevcut; `DEFAULT_FROM_EMAIL` kullanımı.
-- **Uygulama İçi**: Mevcut bildirim menüsü; olay bazlı tetikleyiciler (ödev eklendi/not güncellendi).
-- **Plan**: Asenkron gönderim için Celery (opsiyonel), şablonlu e-posta (`templates/emails/*.html`).
-
-### Ortak Güvenlik ve Uyum Notları
-- Oran sınırlama: `django-ratelimit` (API uçlarında aktif edin)
-- Erişim kontrolü: `utils/permissions.py` üzerinden rol bazlı
-- Günlükleme: `utils/logging_middleware.py` (PII maskesi eklenebilir)
-- Ortam değişkenleri: `.env` dosyası ile anahtar/secrets yönetimi
+- AI / LLM tabanlı asistan ve chatbot modülleri kaldırıldı.
+- Gelecekte eklenecek: öğretmen–öğrenci mesajlaşma (1:1 veya ders bazlı grup sohbeti), basit web socket/polling chat.
+- Bildirim ve e-posta altyapısı korunacak; sohbet eklenirken rol ve erişim kontrolü uygulanacak.
 
 ## 📸 Ekran Görüntüleri
 

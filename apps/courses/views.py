@@ -1304,6 +1304,175 @@ def teacher_availability_view(request, teacher_id):
     })
 
 
+@login_required
+@csrf_exempt
+def bulk_enroll_students_view(request):
+    """Toplu öğrenci ekleme"""
+    if not (request.user.is_staff or 
+            hasattr(request.user, 'userprofile') and 
+            request.user.userprofile.user_type in ['admin', 'teacher', 'staff']):
+        return JsonResponse({'success': False, 'error': 'Yetkiniz yok'}, status=403)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            group_id = data.get('group_id')
+            student_ids = data.get('student_ids', [])
+            
+            if not group_id:
+                return JsonResponse({'success': False, 'error': 'Grup seçilmelidir'})
+            
+            if not student_ids or len(student_ids) == 0:
+                return JsonResponse({'success': False, 'error': 'En az bir öğrenci seçilmelidir'})
+            
+            # Grup kontrolü
+            group = get_object_or_404(CourseGroup, pk=group_id)
+            
+            # Yetki kontrolü - öğretmen ise sadece kendi gruplarına ekleyebilir
+            if hasattr(request.user, 'userprofile') and request.user.userprofile.user_type == 'teacher':
+                try:
+                    teacher = Teacher.objects.get(user=request.user)
+                    if group.teacher != teacher:
+                        return JsonResponse({'success': False, 'error': 'Bu gruba öğrenci ekleme yetkiniz yok'}, status=403)
+                except Teacher.DoesNotExist:
+                    return JsonResponse({'success': False, 'error': 'Öğretmen bilgisi bulunamadı'}, status=403)
+            
+            # Öğrencileri ekle
+            added_count = 0
+            skipped_count = 0
+            errors = []
+            
+            for student_id in student_ids:
+                try:
+                    student = Student.objects.get(pk=student_id)
+                    
+                    # Zaten kayıtlı mı kontrol et
+                    existing = Enrollment.objects.filter(
+                        student=student,
+                        group=group,
+                        status='enrolled'
+                    ).exists()
+                    
+                    if existing:
+                        skipped_count += 1
+                        continue
+                    
+                    # Kapasite kontrolü
+                    enrolled_count = Enrollment.objects.filter(
+                        group=group,
+                        status='enrolled'
+                    ).count()
+                    
+                    if enrolled_count >= group.course.capacity:
+                        errors.append(f'{student.full_name}: Ders kapasitesi dolu')
+                        continue
+                    
+                    # Öğrenciyi ekle
+                    Enrollment.objects.create(
+                        student=student,
+                        group=group,
+                        status='enrolled'
+                    )
+                    added_count += 1
+                    
+                except Student.DoesNotExist:
+                    errors.append(f'ID {student_id}: Öğrenci bulunamadı')
+                except Exception as e:
+                    errors.append(f'ID {student_id}: {str(e)}')
+            
+            response_data = {
+                'success': True,
+                'count': added_count,
+                'added': added_count,
+                'skipped': skipped_count
+            }
+            
+            if errors:
+                response_data['errors'] = errors
+            
+            if added_count == 0:
+                response_data['success'] = False
+                response_data['error'] = 'Hiçbir öğrenci eklenemedi'
+            
+            return JsonResponse(response_data)
+            
+        except Exception as e:
+            logger.error(f"Toplu öğrenci ekleme hatası: {str(e)}", exc_info=True)
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    
+    return JsonResponse({'success': False, 'error': 'POST isteği gerekli'}, status=400)
+
+
+@login_required
+@csrf_exempt
+def bulk_unenroll_students_view(request):
+    """Toplu öğrenci çıkarma"""
+    if not (request.user.is_staff or 
+            hasattr(request.user, 'userprofile') and 
+            request.user.userprofile.user_type in ['admin', 'teacher', 'staff']):
+        return JsonResponse({'success': False, 'error': 'Yetkiniz yok'}, status=403)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            enrollment_ids = data.get('enrollment_ids', [])
+            
+            logger.info(f"bulk_unenroll_students_view called with data: {data}")
+            logger.info(f"enrollment_ids: {enrollment_ids}")
+            
+            if not enrollment_ids or len(enrollment_ids) == 0:
+                logger.warning("No enrollment_ids provided")
+                return JsonResponse({'success': False, 'error': 'En az bir öğrenci seçilmelidir'})
+            
+            # Enrollment'ları bul ve sil
+            removed_count = 0
+            errors = []
+            
+            for enrollment_id in enrollment_ids:
+                try:
+                    enrollment = Enrollment.objects.get(pk=enrollment_id)
+                    
+                    # Yetki kontrolü - öğretmen ise sadece kendi gruplarından çıkarabilir
+                    if hasattr(request.user, 'userprofile') and request.user.userprofile.user_type == 'teacher':
+                        try:
+                            teacher = Teacher.objects.get(user=request.user)
+                            if enrollment.group.teacher != teacher:
+                                errors.append(f'Enrollment {enrollment_id}: Bu gruptan öğrenci çıkarma yetkiniz yok')
+                                continue
+                        except Teacher.DoesNotExist:
+                            errors.append(f'Enrollment {enrollment_id}: Öğretmen bilgisi bulunamadı')
+                            continue
+                    
+                    enrollment.delete()
+                    removed_count += 1
+                    
+                except Enrollment.DoesNotExist:
+                    errors.append(f'Enrollment {enrollment_id}: Kayıt bulunamadı')
+                except Exception as e:
+                    errors.append(f'Enrollment {enrollment_id}: {str(e)}')
+            
+            response_data = {
+                'success': True,
+                'count': removed_count,
+                'removed': removed_count
+            }
+            
+            if errors:
+                response_data['errors'] = errors
+            
+            if removed_count == 0:
+                response_data['success'] = False
+                response_data['error'] = 'Hiçbir öğrenci çıkarılamadı'
+            
+            return JsonResponse(response_data)
+            
+        except Exception as e:
+            logger.error(f"Toplu öğrenci çıkarma hatası: {str(e)}", exc_info=True)
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    
+    return JsonResponse({'success': False, 'error': 'POST isteği gerekli'}, status=400)
+
+
 # ---- Feedback & Plagiarism endpoints ----
 @login_required
 @csrf_exempt
