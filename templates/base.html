@@ -263,7 +263,7 @@
                         
                         {% if user.userprofile.user_type == 'student' %}
                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'courses:list' %}">
+                                <a class="nav-link" href="{% url 'students:courses' %}">
                                     <i class="fas fa-book me-1"></i>Derslerim
                                 </a>
                             </li>
@@ -280,7 +280,7 @@
                             {# Soru/Quiz alanı geçici olarak kaldırıldı #}
                         {% elif user.userprofile.user_type == 'teacher' %}
                             <li class="nav-item">
-                                <a class="nav-link" href="{% url 'courses:list' %}">
+                                <a class="nav-link" href="{% url 'teachers:courses' %}">
                                     <i class="fas fa-book me-1"></i>Derslerim
                                 </a>
                             </li>
@@ -529,71 +529,6 @@
         // setInterval(updateNotifications, 30000);
     </script>
     
-    <!-- Floating Chatbot Widget -->
-    <style>
-        #chatbot-toggle { position: fixed; right: 20px; bottom: 20px; z-index: 1100; }
-        #chatbot-panel { position: fixed; right: 20px; bottom: 80px; width: 320px; height: 420px; background: #fff; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); display: none; overflow: hidden; z-index: 1100; }
-        #chatbot-header { background: linear-gradient(135deg, #667eea, #764ba2); color: #fff; padding: 10px 12px; font-weight: 600; }
-        #chatbot-messages { height: 250px; padding: 10px; overflow-y: auto; }
-        #chatbot-input { display: flex; gap: 6px; padding: 10px; border-top: 1px solid #eee; }
-        #chatbot-input input { flex: 1; }
-        .bot-msg { background:#f1f3f4; border-radius:8px; padding:8px 10px; margin-bottom:8px; }
-        .user-msg { background:#e7f1ff; border-radius:8px; padding:8px 10px; margin-bottom:8px; text-align:right; }
-    </style>
-    <button id="chatbot-toggle" class="btn btn-primary"><i class="fas fa-comments"></i></button>
-    <div id="chatbot-panel">
-        <div id="chatbot-header">Asistan</div>
-        <div id="chatbot-messages"></div>
-        <div id="chatbot-suggestions" class="px-2 pb-2" style="border-top:1px solid #eee; display:flex; flex-wrap:wrap; gap:6px;">
-            <button class="btn btn-sm btn-outline-secondary chatbot-suggestion" data-q="hangi ödevler var?">Hangi ödevler var?</button>
-            <button class="btn btn-sm btn-outline-secondary chatbot-suggestion" data-q="son duyurular nedir?">Son duyurular?</button>
-            <button class="btn btn-sm btn-outline-secondary chatbot-suggestion" data-q="notlarım">Notlarım</button>
-            <button class="btn btn-sm btn-outline-secondary chatbot-suggestion" data-q="ders programı">Ders programı</button>
-        </div>
-        <div id="chatbot-input" class="p-2">
-            <input id="chatbot-text" class="form-control" type="text" placeholder="Sorunuzu yazın..." />
-            <button id="chatbot-send" class="btn btn-primary"><i class="fas fa-paper-plane"></i></button>
-        </div>
-    </div>
-    <script>
-        (function(){
-            const toggle = document.getElementById('chatbot-toggle');
-            const panel = document.getElementById('chatbot-panel');
-            const sendBtn = document.getElementById('chatbot-send');
-            const input = document.getElementById('chatbot-text');
-            const box = document.getElementById('chatbot-messages');
-            const sugg = document.getElementById('chatbot-suggestions');
-            function csrf(){
-                const m = document.cookie.match(/csrftoken=([^;]+)/);
-                return m?m[1]:'';
-            }
-            toggle.addEventListener('click',()=>{ panel.style.display = (panel.style.display==='block'?'none':'block'); });
-            function append(type, text){
-                const div = document.createElement('div');
-                div.className = type==='user'?'user-msg':'bot-msg';
-                div.textContent = text;
-                box.appendChild(div); box.scrollTop = box.scrollHeight;
-            }
-            async function ask(){
-                const q = input.value.trim(); if(!q) return; input.value=''; append('user', q);
-                try{
-                    const res = await fetch('/api/assistant/ask/', {method:'POST', headers:{'Content-Type':'application/json','X-CSRFToken': csrf()}, body: JSON.stringify({query:q})});
-                    const data = await res.json();
-                    append('bot', data.answer || data.error || 'Yanıt alınamadı');
-                }catch(e){ append('bot','Hata oluştu'); }
-            }
-            sendBtn.addEventListener('click', ask);
-            input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') ask(); });
-            // Clickable suggestions
-            sugg.addEventListener('click', (e)=>{
-                const t = e.target.closest('.chatbot-suggestion');
-                if(!t) return;
-                input.value = t.getAttribute('data-q') || '';
-                ask();
-            });
-        })();
-    </script>
-
     {% block extra_js %}{% endblock %}
     
     <!-- Lazy Loading Script -->

@@ -598,7 +598,8 @@
 
 
 
-    <!-- İstatistikler -->
+    {% if user.userprofile.user_type != 'student' %}
+    <!-- İstatistikler (öğrenci kontrol panelinde gizli) -->
     <div class="stats-grid">
         <div class="stat-card">
             <div class="stat-icon" style="background: linear-gradient(135deg, #667eea, #764ba2);">
@@ -636,6 +637,7 @@
             <span class="stat-change positive">+8 bu hafta</span>
         </div>
     </div>
+    {% endif %}
     
     <div class="row">
         <!-- Son Aktiviteler -->

@@ -119,12 +119,11 @@ class AssignmentForm(forms.ModelForm):
             except Teacher.DoesNotExist:
                 self.fields['group'].queryset = CourseGroup.objects.none()
         
-        # Due date alanını güncelleme sırasında opsiyonel yap
+        # Hızlı teslim seçeneği kullanıldığında manuel tarih zorunlu olmasın
+        self.fields['due_date'].required = False
         if hasattr(self, 'instance') and self.instance.pk:
-            self.fields['due_date'].required = False
             self.fields['due_date'].help_text = 'Değiştirmek istemiyorsanız boş bırakabilirsiniz'
         else:
-            self.fields['due_date'].required = True
             self.fields['due_date'].help_text = 'Teslim tarihi seçin'
     
     def clean(self):

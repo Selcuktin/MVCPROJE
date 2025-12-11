@@ -1127,6 +1127,25 @@ class TeacherCourseAssignmentView(LoginRequiredMixin, UserPassesTestMixin, Templ
         filters = {k: v for k, v in filters.items() if v}
         
         data = controller.get_assignment_panel_data(self.request, filters)
+
+        # Zenginleştirilmiş atama verisi: öğrenci isimleri ve sayıları
+        current_assignments = []
+        for group in data.get('current_assignments', []):
+            enrollments = list(group.enrollments.select_related('student'))
+            student_names = [e.student.full_name for e in enrollments if hasattr(e, 'student')]
+            student_ids = [e.student.id for e in enrollments if hasattr(e, 'student')]
+            # kısa gösterim
+            display_names = ", ".join(student_names[:3])
+            if len(student_names) > 3:
+                display_names += f" +{len(student_names) - 3}"
+            
+            # mevcut CourseGroup objesini zenginleştir
+            group.student_names = display_names or "Öğrenci atanmamış"
+            group.student_ids = student_ids
+            group.student_count = len(student_names)
+            current_assignments.append(group)
+        
+        data['current_assignments'] = current_assignments
         context.update(data)
         
         # Get departments for filter

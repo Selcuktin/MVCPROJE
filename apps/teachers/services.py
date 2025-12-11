@@ -7,7 +7,8 @@ from django.utils import timezone
 from datetime import timedelta
 
 from .models import Teacher
-from apps.courses.models import CourseGroup, Assignment, Announcement, Enrollment
+from apps.courses.models import CourseGroup, Assignment, Announcement, Enrollment, Submission
+from apps.students.models import Student
 
 
 class TeacherService:
@@ -105,21 +106,48 @@ class TeacherService:
         try:
             teacher = Teacher.objects.get(user=user)
             
-            # Get students from teacher's course groups
+            # Filtre: sadece bu öğretmenin aktif ders grupları
             teacher_groups = CourseGroup.objects.filter(teacher=teacher, status='active')
-            students = []
-            for group in teacher_groups:
-                group_students = Enrollment.objects.filter(
-                    group=group, 
+            
+            # İsteğe bağlı course filtresi
+            return_teacher_students = Student.objects.none()
+            
+            # Aktif derslere kayıtlı öğrenciler (distinct)
+            students_qs = Student.objects.filter(
+                enrollments__group__in=teacher_groups,
+                enrollments__status='enrolled'
+            ).distinct()
+            
+            # Öğrenci kartları için zengin veri
+            student_data = []
+            for student in students_qs:
+                enrollments = Enrollment.objects.filter(
+                    student=student,
+                    group__in=teacher_groups,
                     status='enrolled'
-                ).select_related('student')
-                for enrollment in group_students:
-                    if enrollment.student not in students:
-                        students.append(enrollment.student)
+                ).select_related('group__course')
+                
+                completed_assignments = Submission.objects.filter(
+                    student=student,
+                    assignment__group__in=teacher_groups
+                ).count()
+                
+                pending_assignments = Assignment.objects.filter(
+                    group__in=teacher_groups,
+                    status='active'
+                ).exclude(submissions__student=student).count()
+                
+                student_data.append({
+                    'student': student,
+                    'enrollments': enrollments,
+                    'completed_assignments': completed_assignments,
+                    'pending_assignments': pending_assignments,
+                    'average_grade': None,  # mevcut hesaplama yok
+                })
             
             return {
                 'teacher': teacher,
-                'students': students
+                'students': student_data
             }
             
         except Teacher.DoesNotExist:

@@ -494,6 +494,13 @@
                     <div>
                         <div class="assignment-title">{{ assignment.course.code }} - {{ assignment.course.name }}</div>
                         <div class="assignment-subtitle">{{ assignment.teacher.full_name }}</div>
+                        <div class="assignment-subtitle text-muted">
+                            <i class="fas fa-user-graduate me-1"></i>{{ assignment.student_names }}
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <span class="badge bg-primary">{{ assignment.semester }}</span>
+                        <div class="small text-muted">Grup ID: {{ assignment.id }}</div>
                     </div>
                 </div>
                 <div class="assignment-info">
@@ -523,18 +530,36 @@
                     </div>
                 </div>
                 <div class="assignment-actions">
-                    <button class="btn-edit" onclick="openEditModal({{ assignment.id }}, '{{ assignment.semester }}', '{{ assignment.classroom|default:'' }}', '{{ assignment.schedule|default:'' }}')" style="flex: 1;">
+                    <button class="btn-edit assignment-edit-btn"
+                            data-assignment-id="{{ assignment.id }}"
+                            data-semester="{{ assignment.semester|default_if_none:'' }}"
+                            data-classroom="{{ assignment.classroom|default_if_none:'' }}"
+                            data-schedule="{{ assignment.schedule|default_if_none:'' }}"
+                            style="flex: 1;">
                         <i class="fas fa-edit me-1"></i>Düzenle
                     </button>
-                    <button class="btn-remove" onclick="removeAssignment({{ assignment.id }})" style="flex: 1;">
+                    <button class="btn-remove assignment-remove-btn"
+                            data-assignment-id="{{ assignment.id }}"
+                            style="flex: 1;">
                         <i class="fas fa-trash me-1"></i>Kaldır
                     </button>
-                    <button class="btn-student-assign" onclick="openStudentAssignModal({{ assignment.id }})" style="flex: 1;">
+                    <button class="btn-student-assign assignment-assign-btn"
+                            data-assignment-id="{{ assignment.id }}"
+                            style="flex: 1;">
                         <i class="fas fa-user-plus me-1"></i>Öğrenci Ata
                     </button>
-                    <button class="btn-student-remove" onclick="openStudentRemoveModal({{ assignment.id }})" style="flex: 1;">
+                    <button class="btn-student-remove assignment-remove-student-btn"
+                            data-assignment-id="{{ assignment.id }}"
+                            style="flex: 1;">
                         <i class="fas fa-user-minus me-1"></i>Öğrenci Çıkar
                     </button>
+                </div>
+
+                <!-- Gizli kayıtlı öğrenci verisi (çıkartma modali için) -->
+                <div class="d-none" data-group-id="{{ assignment.id }}">
+                    {% for enrollment in assignment.enrollments.all %}
+                    <div data-enrollment-id="{{ enrollment.id }}" data-student-id="{{ enrollment.student.id }}" data-student-name="{{ enrollment.student.full_name }}"></div>
+                    {% endfor %}
                 </div>
             </div>
             {% endfor %}
@@ -834,6 +859,23 @@ function removeAssignment(assignmentId) {
 // Öğrenci Atama Modal
 function openStudentAssignModal(groupId) {
     document.getElementById('assignGroupId').value = groupId;
+    // Sayfadaki gizli enrollment verilerinden mevcut öğrencileri oku
+    const enrollmentData = document.querySelector(`[data-group-id="${groupId}"]`);
+    const assignedIds = enrollmentData
+        ? Array.from(enrollmentData.querySelectorAll('[data-enrollment-id]')).map(el => parseInt(el.getAttribute('data-student-id')))
+        : [];
+    document.querySelectorAll('#assignStudentList input[type="checkbox"]').forEach(cb => {
+        const sid = parseInt(cb.value);
+        if (assignedIds.includes(sid)) {
+            cb.checked = true;
+            cb.disabled = true;
+            cb.parentElement.classList.add('text-muted');
+        } else {
+            cb.checked = false;
+            cb.disabled = false;
+            cb.parentElement.classList.remove('text-muted');
+        }
+    });
     document.getElementById('studentAssignModal').classList.add('active');
 }
 
@@ -925,6 +967,37 @@ function loadEnrolledStudents(groupId) {
 function closeStudentRemoveModal() {
     document.getElementById('studentRemoveModal').classList.remove('active');
 }
+
+// Delegated button actions
+document.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.assignment-edit-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = btn.getAttribute('data-assignment-id');
+            const semester = btn.getAttribute('data-semester') || '';
+            const classroom = btn.getAttribute('data-classroom') || '';
+            const schedule = btn.getAttribute('data-schedule') || '';
+            openEditModal(id, semester, classroom, schedule);
+        });
+    });
+    document.querySelectorAll('.assignment-remove-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = btn.getAttribute('data-assignment-id');
+            removeAssignment(id);
+        });
+    });
+    document.querySelectorAll('.assignment-assign-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = btn.getAttribute('data-assignment-id');
+            openStudentAssignModal(id);
+        });
+    });
+    document.querySelectorAll('.assignment-remove-student-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const id = btn.getAttribute('data-assignment-id');
+            openStudentRemoveModal(id);
+        });
+    });
+});
 
 // Öğrenci Çıkarma Formu
 document.getElementById('studentRemoveForm').addEventListener('submit', function(e) {

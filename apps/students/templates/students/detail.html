@@ -97,12 +97,6 @@
                 <p class="mb-0 fw-bold">Kayıtlı Ders</p>
             </div>
             
-            <div class="stat-card bg-success text-white">
-                <i class="fas fa-tasks fa-2x mb-2"></i>
-                <h2 class="text-white">{{ submissions.count }}</h2>
-                <p class="mb-0 fw-bold">Teslim Edilen Ödev</p>
-            </div>
-            
             <div class="stat-card bg-info text-white">
                 <i class="fas fa-star fa-2x mb-2"></i>
                 <h2 class="text-white">{{ notes_count|default:0 }}</h2>
@@ -188,10 +182,6 @@
                         <div class="info-label"><i class="fas fa-book me-2 text-primary"></i>Kayıtlı Ders Sayısı</div>
                         <div class="info-value"><strong class="text-dark">{{ enrollments.count }}</strong> <span class="text-dark">ders</span></div>
                     </div>
-                    <div class="info-item">
-                        <div class="info-label"><i class="fas fa-tasks me-2 text-success"></i>Teslim Edilen Ödev</div>
-                        <div class="info-value"><strong class="text-dark">{{ submissions.count }}</strong> <span class="text-dark">ödev</span></div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -215,9 +205,10 @@
                                     <th>Öğretmen</th>
                                     <th>Dönem</th>
                                     <th>Durum</th>
-                                    {% if user.userprofile.user_type == 'teacher' or user.is_staff %}
-                                    <th>Not Ekle</th>
-                                    {% endif %}
+                                    <th>Vize</th>
+                                    <th>Final</th>
+                                    <th>Büt</th>
+                                    <th>Harf Notu</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -232,24 +223,38 @@
                                             {{ enrollment.get_status_display }}
                                         </span>
                                     </td>
-                                    {% if user.userprofile.user_type == 'teacher' or user.is_staff %}
                                     <td>
-                                        <div class="btn-group btn-group-sm">
-                                            <a href="{% url 'notes:create' %}?student={{ student.user.id }}&course={{ enrollment.group.course.id }}&exam_type=vize" 
-                                               class="btn btn-outline-primary btn-sm" title="Vize Notu Ekle">
-                                                <i class="fas fa-plus"></i> Vize
-                                            </a>
-                                            <a href="{% url 'notes:create' %}?student={{ student.user.id }}&course={{ enrollment.group.course.id }}&exam_type=final" 
-                                               class="btn btn-outline-success btn-sm" title="Final Notu Ekle">
-                                                <i class="fas fa-plus"></i> Final
-                                            </a>
-                                            <a href="{% url 'notes:create' %}?student={{ student.user.id }}&course={{ enrollment.group.course.id }}&exam_type=but" 
-                                               class="btn btn-outline-warning btn-sm" title="Büt Notu Ekle">
-                                                <i class="fas fa-plus"></i> Büt
-                                            </a>
-                                        </div>
+                                        {% if enrollment.course_notes and enrollment.course_notes.vize %}
+                                            {{ enrollment.course_notes.vize.score }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
                                     </td>
-                                    {% endif %}
+                                    <td>
+                                        {% if enrollment.course_notes and enrollment.course_notes.final %}
+                                            {{ enrollment.course_notes.final.score }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if enrollment.course_notes and enrollment.course_notes.but %}
+                                            {{ enrollment.course_notes.but.score }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if enrollment.course_notes and enrollment.course_notes.final %}
+                                            {{ enrollment.course_notes.final.grade }}
+                                        {% elif enrollment.course_notes and enrollment.course_notes.but %}
+                                            {{ enrollment.course_notes.but.grade }}
+                                        {% elif enrollment.course_notes and enrollment.course_notes.vize %}
+                                            {{ enrollment.course_notes.vize.grade }}
+                                        {% else %}
+                                            <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>

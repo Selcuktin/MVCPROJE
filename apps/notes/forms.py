@@ -30,6 +30,8 @@ class NoteForm(forms.ModelForm):
             except Teacher.DoesNotExist:
                 self.fields['course'].queryset = Course.objects.none()
         
+        # Öğrenci seçeneklerinin etiketi: ad soyad (yoksa kullanıcı adı)
+        self.fields['student'].label_from_instance = lambda obj: obj.get_full_name() or obj.username
         # Başlangıçta öğrenci listesini boş bırak
         self.fields['student'].queryset = User.objects.none()
         
@@ -58,6 +60,11 @@ class NoteForm(forms.ModelForm):
                 self.fields['student'].queryset = student_users
             except (ValueError, TypeError, Course.DoesNotExist):
                 pass
+
+        # Not düzenlemede mevcut öğrenciyi otomatik seç ve alanı kilitle
+        if self.instance and self.instance.pk:
+            self.fields['student'].initial = self.instance.student
+            self.fields['student'].disabled = True
 
 class NoteFilterForm(forms.Form):
     course = forms.ModelChoiceField(

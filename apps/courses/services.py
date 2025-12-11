@@ -622,38 +622,8 @@ class TeacherCourseAssignmentService:
 
 
 def solve_question_with_ai(question: ExampleQuestion) -> str:
-    """Gemini entegrasyonu: ENV'den GEMINI_API_KEY varsa gerçek çağrı, yoksa fallback."""
-    api_key = os.environ.get('GEMINI_API_KEY')
-    prompt = (
-        "Aşağıdaki soruyu detaylı ve adım adım çöz. Türkçe açıkla.\n"
-        "Soru Başlığı: " + (question.title or "") + "\n"
-        "Soru İçeriği:\n" + (question.content or "") + "\n"
-        "Format:\n- Yaklaşım\n- Adım adım çözüm\n- Varsa formüller\n- Sonuç\n"
-    )
-    if api_key:
-        try:
-            import google.generativeai as genai
-            genai.configure(api_key=api_key)
-            model = genai.GenerativeModel("gemini-2.0-flash")
-            resp = model.generate_content(prompt)
-            text = getattr(resp, 'text', None)
-            if text:
-                return text
-        except Exception:
-            pass
-    # Fallback
-    base = "Yapay Zeka Çözüm Taslağı\n\n"
-    if question.question_type == 'quiz':
-        return base + (
-            f"Soru Başlığı: {question.title}\n"
-            "Yaklaşım: Şıkları eleme + tanım/formül doğrulama.\n"
-            "Adımlar: Şık analizi → Uygun formül → Sonuç."
-        )
-    return base + (
-        f"Soru Başlığı: {question.title}\n"
-        "Çözüm Adımları: Varsayımlar → Tanımlar → Formüller → Ara Hesaplamalar → Sonuç.\n"
-        "Kontrol: Birim, sınır koşulları ve mantık kontrolü yapın."
-    )
+    """LLM entegrasyonu kaldırıldı; artık otomatik çözüm üretmiyoruz."""
+    return ""
 
 
 def _split_choices(block: str):

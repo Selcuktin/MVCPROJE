@@ -8,6 +8,7 @@ from datetime import timedelta
 
 from .models import Student
 from apps.courses.models import Course, Enrollment, Assignment, Announcement, Submission
+from apps.notes.models import Note
 
 
 class StudentService:
@@ -45,13 +46,31 @@ class StudentService:
             group__enrollments__student=student,
             status='active'
         ).select_related('group__course').order_by('-create_date')
+
+        # Get student's submissions (for stats)
+        submissions = Submission.objects.filter(student=student)
+
+        # Collect notes per course and exam type
+        notes = Note.objects.filter(student=student.user)
+        notes_by_course = {}
+        for note in notes:
+            course_id = note.course_id
+            notes_by_course.setdefault(course_id, {})[note.exam_type] = note
+
+        # Attach course-specific notes to each enrollment for easy template access
+        for enrollment in enrollments:
+            enrollment.course_notes = notes_by_course.get(enrollment.group.course.id, {})
         
         return {
             'student': student,
             'enrollments': enrollments,
             'assignments': assignments,
+            'submissions': submissions,
+            'notes_by_course': notes_by_course,
             'total_courses': enrollments.count(),
-            'total_assignments': assignments.count()
+            'total_assignments': assignments.count(),
+            'notes_count': notes.count(),
+            'submissions_count': submissions.count(),
         }
     
     def get_student_dashboard_data(self, user):
