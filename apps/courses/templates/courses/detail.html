@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load user_tags %}
 
 {% block title %}{{ course.name }} - Yönetim Paneli{% endblock %}
 
@@ -9,8 +10,8 @@
         background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
         color: white;
         border-radius: 16px;
-        padding: 2rem;
-        margin-bottom: 2rem;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
         box-shadow: 0 8px 24px rgba(59, 130, 246, 0.25);
         border: none;
     }
@@ -187,7 +188,7 @@
     }
     
     .accordion-body {
-        padding: 1.5rem;
+        padding: 1.25rem;
         background: white;
     }
     
@@ -271,7 +272,7 @@
 {% endblock %}
 
 {% block content %}
-<div class="container-fluid">
+<div class="container">
     <!-- Ders Başlığı -->
     <div class="course-header">
         <div class="d-flex justify-content-between align-items-start">
@@ -298,12 +299,13 @@
 
     <!-- Ana İçerik Alanı -->
     <div class="row">
-        <!-- Sol Taraf - Haftalık Ders İçerikleri (Geniş Alan) -->
-        <div class="col-lg-9">
+        <!-- Sol Taraf - Haftalık Ders İçerikleri (biraz daraltılmış alan) -->
+        <div class="col-lg-8">
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
                     <h5 class="mb-0"><i class="fas fa-book-open me-2"></i>Haftalık Ders İçerikleri</h5>
-                    {% if user.is_staff or user.userprofile.user_type == 'admin' or user.userprofile.user_type == 'teacher' %}
+                    {% get_user_type user as user_type %}
+                    {% if user.is_staff or user_type == 'admin' or user_type == 'teacher' %}
                     <a href="{% url 'courses:content_create' course.pk %}" class="btn btn-light btn-sm">
                         <i class="fas fa-plus me-1"></i>İçerik Ekle
                     </a>
@@ -316,7 +318,7 @@
                         {% for week_group in week_groups %}
                         <div class="accordion-item">
                             <h2 class="accordion-header" id="heading{{ week_group.grouper }}">
-                                <button class="accordion-button {% if not forloop.first %}collapsed{% endif %}" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ week_group.grouper }}">
+                                <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ week_group.grouper }}">
                                     <strong>Hafta {{ week_group.grouper }}</strong>
                                     <span class="badge ms-2" style="background: rgba(59, 130, 246, 0.2); color: #3b82f6; font-weight: 600; padding: 0.35rem 0.75rem; border-radius: 20px;">{{ week_group.list|length }} içerik</span>
                                 </button>
@@ -356,7 +358,8 @@
                                                             <i class="fas fa-external-link-alt me-1"></i>Aç
                                                         </a>
                                                         {% endif %}
-                                                        {% if user.is_staff or user.userprofile.user_type == 'admin' or user.userprofile.user_type == 'teacher' %}
+                                                        {% get_user_type user as user_type %}
+                    {% if user.is_staff or user_type == 'admin' or user_type == 'teacher' %}
                                                         <a href="{% url 'courses:content_update' content.pk %}" class="btn btn-sm btn-outline-warning">
                                                             <i class="fas fa-edit"></i>
                                                         </a>
@@ -380,7 +383,8 @@
                         <i class="fas fa-info-circle fa-2x mb-3"></i>
                         <h5>Henüz içerik eklenmemiş</h5>
                         <p class="mb-0">
-                            {% if user.is_staff or user.userprofile.user_type == 'admin' or user.userprofile.user_type == 'teacher' %}
+                            {% get_user_type user as user_type %}
+                    {% if user.is_staff or user_type == 'admin' or user_type == 'teacher' %}
                             Yukarıdaki "İçerik Ekle" butonunu kullanarak haftalık içerik ekleyebilirsiniz.
                             {% else %}
                             Öğretmeniniz tarafından içerik eklendiğinde burada görüntülenecektir.
@@ -392,8 +396,8 @@
             </div>
         </div>
 
-        <!-- Sağ Taraf - Ders Bilgileri (Küçük Alan) -->
-        <div class="col-lg-3">
+        <!-- Sağ Taraf - Ders Bilgileri (genişletilmiş alan) -->
+        <div class="col-lg-4 mt-3 mt-lg-0">
             <div class="card shadow-sm mb-4">
                 <div class="card-header bg-primary text-white">
                     <h6 class="mb-0"><i class="fas fa-info-circle me-2"></i>Ders Bilgileri</h6>

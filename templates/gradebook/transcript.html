@@ -1,0 +1,111 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Transkript - {{ student.first_name }} {{ student.last_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="text-center mb-4">
+        <h2><i class="fas fa-graduation-cap"></i> AKADEMİK TRANSKRİPT</h2>
+        <p class="lead">{{ student.first_name }} {{ student.last_name }}</p>
+        <p>Öğrenci No: {{ student.school_number }}</p>
+    </div>
+    
+    <!-- Summary -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-primary">{{ gpa }}</h3>
+                    <p>Genel Ortalama (GPA)</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-success">{{ total_credits }}</h3>
+                    <p>Toplam Kredi</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h3 class="text-info">{{ total_courses }}</h3>
+                    <p>Alınan Ders</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Courses by Term -->
+    {% if transcript %}
+    {% regroup transcript by term as terms_list %}
+    
+    {% for term_group in terms_list %}
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">{{ term_group.grouper.name }}</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Ders Kodu</th>
+                            <th>Ders Adı</th>
+                            <th>Kredi</th>
+                            <th>Puan</th>
+                            <th>Harf Notu</th>
+                            <th>Durum</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for course in term_group.list %}
+                        <tr>
+                            <td>{{ course.course.code }}</td>
+                            <td>{{ course.course.name }}</td>
+                            <td>{{ course.credits }}</td>
+                            <td>{{ course.score|floatformat:1 }}</td>
+                            <td>
+                                <span class="badge bg-{% if course.letter_grade|slice:':1' == 'A' or course.letter_grade == 'BB' %}success{% elif course.letter_grade == 'FF' %}danger{% else %}warning{% endif %}">
+                                    {{ course.letter_grade }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if course.status == 'completed' %}
+                                <span class="badge bg-info">Tamamlandı</span>
+                                {% elif course.status == 'enrolled' %}
+                                <span class="badge bg-primary">Devam Ediyor</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="alert alert-info">Henüz tamamlanmış dersiniz bulunmamaktadır.</div>
+    {% endif %}
+    
+    <!-- Actions -->
+    <div class="text-center mt-4">
+        <button class="btn btn-primary" onclick="window.print()">
+            <i class="fas fa-print"></i> Yazdır
+        </button>
+        <a href="{% url 'gradebook:my_grades' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Notlarıma Dön
+        </a>
+    </div>
+</div>
+
+<style>
+@media print {
+    .btn, nav, .breadcrumb { display: none; }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,3 @@
+"""
+Student management app
+"""

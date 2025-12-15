@@ -48,6 +48,7 @@ urlpatterns = [
     
     # AJAX
     path('ajax/update-grade/', views.update_grade_ajax, name='update_grade_ajax'),
+    path('ajax/grade-submission/', views.grade_submission_ajax, name='grade_submission'),
     
     # Student Management
     path('<int:course_pk>/add-student/', views.add_student_to_course, name='add_student'),

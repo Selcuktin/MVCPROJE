@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load user_tags %}
 
 {% block title %}{{ assignment.title }} - Ödev Detayı{% endblock %}
 
@@ -87,7 +88,8 @@
         </div>
         
         <div class="col-md-4">
-            {% if user.userprofile.user_type == 'student' %}
+            {% get_user_type user as user_type %}
+            {% if user_type == 'student' %}
             <div class="card">
                 <div class="card-header">
                     <h6><i class="fas fa-upload me-2"></i>Ödev Teslimi</h6>
@@ -123,7 +125,7 @@
             </div>
             {% endif %}
             
-            {% if user.userprofile.user_type == 'teacher' and assignment.group.teacher.user == user %}
+            {% if user_type == 'teacher' and assignment.group.teacher.user == user %}
             <div class="card">
                 <div class="card-header">
                     <h6><i class="fas fa-chart-bar me-2"></i>İstatistikler</h6>
@@ -209,6 +211,46 @@
     </div>
     {% endif %}
     
+    <!-- Grading Modals -->
+    {% if user.userprofile.user_type == 'teacher' and assignment.group.teacher.user == user %}
+        {% for submission in submissions %}
+        <div class="modal fade" id="gradeModal{{ submission.pk }}" tabindex="-1" aria-labelledby="gradeModalLabel{{ submission.pk }}" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="gradeModalLabel{{ submission.pk }}">
+                            <i class="fas fa-star"></i> Notlandır - {{ submission.student.full_name }}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form id="gradeForm{{ submission.pk }}" onsubmit="gradeSubmission(event, {{ submission.pk }}, {{ assignment.max_score }}); return false;">
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="score{{ submission.pk }}" class="form-label">Puan (Max: {{ assignment.max_score }})</label>
+                                <input type="number" class="form-control" id="score{{ submission.pk }}" 
+                                       name="score" min="0" max="{{ assignment.max_score }}" step="0.01"
+                                       value="{% if submission.score %}{{ submission.score }}{% endif %}" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="feedback{{ submission.pk }}" class="form-label">Geri Bildirim (Opsiyonel)</label>
+                                <textarea class="form-control" id="feedback{{ submission.pk }}" name="feedback" rows="4">{% if submission.feedback %}{{ submission.feedback }}{% endif %}</textarea>
+                            </div>
+                            <input type="hidden" name="submission_id" value="{{ submission.pk }}">
+                            {% csrf_token %}
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-save"></i> Kaydet
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% endif %}
+    
     <div class="row mt-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
@@ -216,7 +258,7 @@
                     <i class="fas fa-arrow-left me-1"></i>Ödev Listesine Dön
                 </a>
                 
-                {% if user.userprofile.user_type == 'teacher' and assignment.group.teacher.user == user %}
+                {% if user_type == 'teacher' and assignment.group.teacher.user == user %}
                 <div class="btn-group" role="group">
                     <a href="{% url 'courses:assignment_update' assignment.pk %}" class="btn btn-warning">
                         <i class="fas fa-edit me-1"></i>Düzenle
@@ -274,10 +316,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 countdownProgress.classList.add('bg-danger');
                 
                 // Update submission status
+                if (submissionStatus) {
                 submissionStatus.className = 'alert alert-danger border-0';
                 submissionStatus.style.background = 'rgba(220, 53, 69, 0.1)';
                 submissionStatus.style.borderLeft = '4px solid #dc3545';
                 submissionStatus.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i><strong>Teslim süresi dolmuş.</strong>';
+                }
                 return;
             }
             
@@ -297,20 +341,24 @@ document.addEventListener('DOMContentLoaded', function() {
                 progressWidth = Math.max(10, Math.min(50, 100 - (days * 10)));
                 
                 // Update submission status - Safe
+                if (submissionStatus) {
                 submissionStatus.className = 'alert alert-info border-0';
                 submissionStatus.style.background = 'rgba(13, 202, 240, 0.1)';
                 submissionStatus.style.borderLeft = '4px solid #0dcaf0';
                 submissionStatus.innerHTML = '<i class="fas fa-info-circle me-2"></i><strong>Bu ödevi teslim edebilirsiniz.</strong>';
+                }
                 
             } else if (hours > 6) {
                 displayText = `${hours} saat ${minutes} dakika`;
                 progressWidth = 60;
                 
                 // Update submission status - Warning
+                if (submissionStatus) {
                 submissionStatus.className = 'alert alert-warning border-0';
                 submissionStatus.style.background = 'rgba(255, 193, 7, 0.1)';
                 submissionStatus.style.borderLeft = '4px solid #ffc107';
                 submissionStatus.innerHTML = '<i class="fas fa-clock me-2"></i><strong>Teslim süreniz yaklaşıyor!</strong>';
+                }
                 
             } else if (hours > 0) {
                 displayText = `${hours}s ${minutes}d ${seconds}s`;
@@ -319,10 +367,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 progressColor = 'bg-warning';
                 
                 // Update submission status - Urgent
+                if (submissionStatus) {
                 submissionStatus.className = 'alert alert-warning border-0';
                 submissionStatus.style.background = 'rgba(255, 165, 2, 0.1)';
                 submissionStatus.style.borderLeft = '4px solid #ffa502';
                 submissionStatus.innerHTML = '<i class="fas fa-exclamation-triangle me-2"></i><strong>Son saatler! Hemen teslim edin.</strong>';
+                }
                 
             } else {
                 displayText = `${minutes}d ${seconds}s`;
@@ -331,10 +381,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 progressColor = 'bg-danger';
                 
                 // Update submission status - Critical
+                if (submissionStatus) {
                 submissionStatus.className = 'alert alert-danger border-0';
                 submissionStatus.style.background = 'rgba(255, 71, 87, 0.1)';
                 submissionStatus.style.borderLeft = '4px solid #ff4757';
                 submissionStatus.innerHTML = '<i class="fas fa-fire me-2"></i><strong>Son dakikalar! Acilen teslim edin!</strong>';
+                }
             }
             
             countdownTimer.innerHTML = `<i class="fas fa-clock me-1"></i>${displayText}`;
@@ -348,5 +400,53 @@ document.addEventListener('DOMContentLoaded', function() {
         setInterval(updateCountdown, 1000);
     }
 });
+
+// Grade submission function
+function gradeSubmission(event, submissionId, maxScore) {
+    event.preventDefault();
+    const form = document.getElementById('gradeForm' + submissionId);
+    const formData = new FormData(form);
+    const score = parseFloat(formData.get('score'));
+    
+    if (score < 0 || score > maxScore) {
+        alert('Puan 0 ile ' + maxScore + ' arasında olmalıdır.');
+        return;
+    }
+    
+    // Show loading
+    const submitBtn = form.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Kaydediliyor...';
+    
+    fetch('{% url "courses:grade_submission" %}', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': formData.get('csrfmiddlewaretoken')
+        },
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Close modal
+            const modal = bootstrap.Modal.getInstance(document.getElementById('gradeModal' + submissionId));
+            modal.hide();
+            
+            // Reload page to show updated grade
+            location.reload();
+        } else {
+            alert('Hata: ' + (data.error || 'Notlandırma başarısız oldu.'));
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Bir hata oluştu. Lütfen tekrar deneyin.');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    });
+}
 </script>
 {% endblock %}

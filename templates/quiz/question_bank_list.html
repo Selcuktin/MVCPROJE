@@ -1,0 +1,157 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Soru Bankası{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-database"></i> Soru Bankası</h2>
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createBankModal">
+            <i class="fas fa-plus"></i> Yeni Banka Oluştur
+        </button>
+    </div>
+    
+    {% if banks %}
+    <div class="row">
+        {% for bank in banks %}
+        <div class="col-md-6 mb-3">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">{{ bank.name }}</h5>
+                        {% if bank.is_shared %}
+                        <span class="badge bg-success">Paylaşılan</span>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="card-text">{{ bank.description|truncatewords:20 }}</p>
+                    <p><strong>Soru Sayısı:</strong> {{ bank.questions.count }}</p>
+                    <p><strong>Oluşturan:</strong> {{ bank.created_by.username }}</p>
+                    
+                    <div class="btn-group w-100">
+                        <a href="{% url 'quiz:question_bank_detail' bank.id %}" class="btn btn-primary">
+                            <i class="fas fa-eye"></i> Görüntüle
+                        </a>
+                        <button class="btn btn-success" onclick="addQuestion({{ bank.id }})">
+                            <i class="fas fa-plus"></i> Soru Ekle
+                        </button>
+                        {% if bank.created_by == user %}
+                        <button class="btn btn-danger" onclick="deleteBank({{ bank.id }}, '{{ bank.name }}')">
+                            <i class="fas fa-trash"></i> Kaldır
+                        </button>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> Henüz soru bankanız yok. İlk bankanızı oluşturun!
+    </div>
+    {% endif %}
+</div>
+
+<!-- Create Bank Modal -->
+<div class="modal fade" id="createBankModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-plus-circle"></i> Yeni Soru Bankası</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="createBankForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="bankName" class="form-label">Banka Adı <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="bankName" name="name" required 
+                               placeholder="Örn: Matematik Final Soruları">
+                    </div>
+                    <div class="mb-3">
+                        <label for="bankDescription" class="form-label">Açıklama</label>
+                        <textarea class="form-control" id="bankDescription" name="description" rows="3"
+                                  placeholder="Bu soru bankası hakkında kısa bir açıklama yazın..."></textarea>
+                    </div>
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="isShared" name="is_shared">
+                        <label class="form-check-label" for="isShared">
+                            <i class="fas fa-share-alt"></i> Diğer öğretmenlerle paylaş
+                        </label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times"></i> İptal
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-check"></i> Oluştur
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Create bank form submission
+document.getElementById('createBankForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    const submitBtn = this.querySelector('button[type="submit"]');
+    const originalText = submitBtn.innerHTML;
+    
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Oluşturuluyor...';
+    
+    fetch('{% url "quiz:question_bank_create" %}', {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.location.href = '/quiz/question-banks/' + data.bank_id + '/';
+        } else {
+            alert('Hata: ' + (data.error || 'Bilinmeyen hata'));
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+        }
+    })
+    .catch(error => {
+        alert('Bir hata oluştu: ' + error);
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+    });
+});
+
+function addQuestion(bankId) {
+    window.location.href = '/quiz/question-banks/' + bankId + '/add-question/';
+}
+
+function deleteBank(bankId, bankName) {
+    if (confirm('"' + bankName + '" soru bankasını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!')) {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/quiz/question-banks/' + bankId + '/delete/';
+        
+        const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfToken;
+        form.appendChild(csrfInput);
+        
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+</script>
+{% endblock %}

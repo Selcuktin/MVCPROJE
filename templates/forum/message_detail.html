@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mesaj Detayı{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4><i class="fas fa-envelope"></i> {{ message.subject }}</h4>
+                    <a href="{% url 'forum:inbox' %}" class="btn btn-sm btn-outline-secondary">
+                        <i class="fas fa-arrow-left"></i> Geri
+                    </a>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <strong>Gönderen:</strong> 
+                                {% if message.sender == user %}
+                                    <span class="badge bg-info">Siz</span>
+                                {% else %}
+                                    {{ message.sender.first_name }} {{ message.sender.last_name }} ({{ message.sender.username }})
+                                {% endif %}
+                            </div>
+                            <small class="text-muted">{{ message.created_at|date:"d.m.Y H:i" }}</small>
+                        </div>
+                        <div>
+                            <strong>Alıcı:</strong> 
+                            {% if message.recipient == user %}
+                                <span class="badge bg-info">Siz</span>
+                            {% else %}
+                                {{ message.recipient.first_name }} {{ message.recipient.last_name }} ({{ message.recipient.username }})
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <hr>
+                    
+                    <div class="message-content" style="min-height: 200px; white-space: pre-wrap;">{{ message.message }}</div>
+                </div>
+            </div>
+            
+            <!-- Reply Section -->
+            {% if message.recipient == user %}
+            <div class="card mt-3">
+                <div class="card-header">
+                    <h5><i class="fas fa-reply"></i> Yanıtla</h5>
+                </div>
+                <div class="card-body">
+                    <form method="post" action="{% url 'forum:message_compose' %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="recipient_id" value="{{ message.sender.id }}">
+                        <div class="mb-3">
+                            <label for="subject" class="form-label">Konu</label>
+                            <input type="text" class="form-control" id="subject" name="subject" 
+                                   value="Re: {{ message.subject }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="message" class="form-label">Mesaj</label>
+                            <textarea class="form-control" id="message" name="message" rows="5" required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Gönder
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-md-4">
+            <!-- Conversation Thread -->
+            <div class="card">
+                <div class="card-header">
+                    <h6><i class="fas fa-comments"></i> Konuşma Geçmişi</h6>
+                </div>
+                <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                    {% for msg in thread %}
+                    <div class="mb-3 p-2 {% if msg.id == message.id %}bg-light border-start border-primary border-3{% else %}border-start border-secondary border-2{% endif %}">
+                        <div class="d-flex justify-content-between align-items-start mb-1">
+                            <small class="fw-bold">
+                                {% if msg.sender == user %}
+                                    <span class="text-primary">Siz</span>
+                                {% else %}
+                                    {{ msg.sender.first_name }} {{ msg.sender.last_name }}
+                                {% endif %}
+                            </small>
+                            <small class="text-muted">{{ msg.created_at|date:"d.m.Y H:i" }}</small>
+                        </div>
+                        <div class="small">{{ msg.subject }}</div>
+                        <div class="small text-muted mt-1">{{ msg.message|truncatewords:15 }}</div>
+                        {% if msg.id != message.id %}
+                        <a href="{% url 'forum:message_detail' msg.id %}" class="btn btn-sm btn-outline-primary mt-1">
+                            <i class="fas fa-eye"></i> Görüntüle
+                        </a>
+                        {% endif %}
+                    </div>
+                    {% empty %}
+                    <p class="text-muted small">Konuşma geçmişi yok</p>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

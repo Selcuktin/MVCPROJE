@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Mesajlar{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2><i class="fas fa-envelope"></i> Mesajlar</h2>
+    </div>
+    
+    {% if unread_count > 0 %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> {{ unread_count }} okunmamış mesajınız var
+    </div>
+    {% endif %}
+    
+    <ul class="nav nav-tabs" role="tablist">
+        <li class="nav-item">
+            <a class="nav-link active" data-bs-toggle="tab" href="#received">
+                Gelen Kutusu ({{ received_messages.count }})
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link" data-bs-toggle="tab" href="#sent">
+                Gönderilen ({{ sent_messages.count }})
+            </a>
+        </li>
+    </ul>
+    
+    <div class="tab-content">
+        <!-- Received Messages -->
+        <div id="received" class="tab-pane active">
+            <div class="list-group mt-3">
+                {% for msg in received_messages %}
+                <a href="{% url 'forum:message_detail' msg.id %}" 
+                   class="list-group-item list-group-item-action {% if not msg.is_read %}list-group-item-primary{% endif %}">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">
+                            {% if not msg.is_read %}<strong>{% endif %}
+                            {{ msg.subject }}
+                            {% if not msg.is_read %}</strong>{% endif %}
+                        </h5>
+                        <small>{{ msg.created_at|date:"d.m.Y H:i" }}</small>
+                    </div>
+                    <p class="mb-1">Gönderen: <strong>{{ msg.sender.username }}</strong></p>
+                    <small>{{ msg.message|truncatewords:20 }}</small>
+                </a>
+                {% empty %}
+                <div class="alert alert-info mt-3">Gelen mesaj yok</div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <!-- Sent Messages -->
+        <div id="sent" class="tab-pane">
+            <div class="list-group mt-3">
+                {% for msg in sent_messages %}
+                <a href="{% url 'forum:message_detail' msg.id %}" 
+                   class="list-group-item list-group-item-action">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">{{ msg.subject }}</h5>
+                        <small>{{ msg.created_at|date:"d.m.Y H:i" }}</small>
+                    </div>
+                    <p class="mb-1">Alıcı: <strong>{{ msg.recipient.username }}</strong></p>
+                    <small>{{ msg.message|truncatewords:20 }}</small>
+                </a>
+                {% empty %}
+                <div class="alert alert-info mt-3">Gönderilmiş mesaj yok</div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

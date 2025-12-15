@@ -43,11 +43,11 @@ def check_course_access(user, course_group):
     if user.is_staff:
         return True
     
-    if hasattr(user, 'userprofile'):
+    if hasattr(user, 'userprofile') and user.userprofile:
         user_type = user.userprofile.user_type
         
         if user_type == 'teacher':
-            from models.teacher_models import Teacher
+            from apps.teachers.models import Teacher
             try:
                 teacher = Teacher.objects.get(user=user)
                 return course_group.teacher == teacher
@@ -55,8 +55,8 @@ def check_course_access(user, course_group):
                 return False
         
         elif user_type == 'student':
-            from models.student_models import Student
-            from models.course_models import Enrollment
+            from apps.students.models import Student
+            from apps.courses.models import Enrollment
             try:
                 student = Student.objects.get(user=user)
                 return Enrollment.objects.filter(
@@ -77,8 +77,8 @@ def check_grade_edit_permission(user, enrollment):
     if user.is_staff:
         return True
     
-    if hasattr(user, 'userprofile') and user.userprofile.user_type == 'teacher':
-        from models.teacher_models import Teacher
+    if hasattr(user, 'userprofile') and user.userprofile and user.userprofile.user_type == 'teacher':
+        from apps.teachers.models import Teacher
         try:
             teacher = Teacher.objects.get(user=user)
             return enrollment.group.teacher == teacher

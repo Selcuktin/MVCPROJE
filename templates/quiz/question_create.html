@@ -1,0 +1,209 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Soru Ekle - {{ bank.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .question-form-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    
+    .form-card {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+    
+    .choice-item {
+        background: #f8f9fa;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .choice-item.correct {
+        border-color: #28a745;
+        background: #d4edda;
+    }
+    
+    .choice-number {
+        width: 30px;
+        height: 30px;
+        background: #667eea;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4 question-form-container">
+    <!-- Header -->
+    <div class="mb-4">
+        <h2><i class="fas fa-question-circle"></i> Yeni Soru Ekle</h2>
+        <p class="text-muted">Soru Bankası: <strong>{{ bank.name }}</strong></p>
+    </div>
+    
+    <form method="post" id="questionForm">
+        {% csrf_token %}
+        
+        <!-- Question Details -->
+        <div class="form-card">
+            <h4 class="mb-3"><i class="fas fa-edit"></i> Soru Detayları</h4>
+            
+            <div class="mb-3">
+                <label for="question_type" class="form-label">Soru Tipi <span class="text-danger">*</span></label>
+                <select class="form-select" id="question_type" name="question_type" required>
+                    <option value="">Seçiniz...</option>
+                    <option value="multiple_choice">Çoktan Seçmeli</option>
+                    <option value="true_false">Doğru/Yanlış</option>
+                    <option value="short_answer">Kısa Cevap</option>
+                    <option value="essay">Uzun Cevap/Essay</option>
+                </select>
+            </div>
+            
+            <div class="mb-3">
+                <label for="question_text" class="form-label">Soru Metni <span class="text-danger">*</span></label>
+                <textarea class="form-control" id="question_text" name="question_text" rows="4" required
+                          placeholder="Sorunuzu buraya yazın..."></textarea>
+            </div>
+            
+            <div class="mb-3">
+                <label for="points" class="form-label">Puan</label>
+                <input type="number" class="form-control" id="points" name="points" value="1" min="1" step="0.5">
+            </div>
+        </div>
+        
+        <!-- Answer Choices (for multiple_choice and true_false) -->
+        <div class="form-card" id="choicesSection" style="display: none;">
+            <h4 class="mb-3"><i class="fas fa-list"></i> Cevap Seçenekleri</h4>
+            <p class="text-muted mb-3">Doğru cevabı işaretleyin</p>
+            
+            <div id="choicesContainer"></div>
+            
+            <button type="button" class="btn btn-outline-primary" id="addChoiceBtn" style="display: none;">
+                <i class="fas fa-plus"></i> Seçenek Ekle
+            </button>
+        </div>
+        
+        <!-- Submit Buttons -->
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'quiz:question_bank_detail' bank.id %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Geri Dön
+            </a>
+            <button type="submit" class="btn btn-success">
+                <i class="fas fa-check"></i> Soruyu Kaydet
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+let choiceCount = 0;
+
+document.getElementById('question_type').addEventListener('change', function() {
+    const type = this.value;
+    const choicesSection = document.getElementById('choicesSection');
+    const choicesContainer = document.getElementById('choicesContainer');
+    const addChoiceBtn = document.getElementById('addChoiceBtn');
+    
+    choicesContainer.innerHTML = '';
+    choiceCount = 0;
+    
+    if (type === 'multiple_choice') {
+        choicesSection.style.display = 'block';
+        addChoiceBtn.style.display = 'block';
+        // Add 4 default choices
+        for (let i = 0; i < 4; i++) {
+            addChoice();
+        }
+    } else if (type === 'true_false') {
+        choicesSection.style.display = 'block';
+        addChoiceBtn.style.display = 'none';
+        // Add True/False choices
+        addChoice('Doğru');
+        addChoice('Yanlış');
+    } else {
+        choicesSection.style.display = 'none';
+    }
+});
+
+document.getElementById('addChoiceBtn').addEventListener('click', addChoice);
+
+function addChoice(defaultText = '') {
+    const container = document.getElementById('choicesContainer');
+    const choiceDiv = document.createElement('div');
+    choiceDiv.className = 'choice-item';
+    choiceDiv.innerHTML = `
+        <div class="d-flex align-items-center gap-3">
+            <div class="choice-number">${String.fromCharCode(65 + choiceCount)}</div>
+            <input type="text" class="form-control" name="choice_${choiceCount}" 
+                   placeholder="Seçenek metni" value="${defaultText}" required>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="is_correct_radio" 
+                       id="correct_${choiceCount}" onclick="markCorrect(${choiceCount})">
+                <input type="hidden" name="is_correct_${choiceCount}" id="is_correct_${choiceCount}" value="off">
+                <label class="form-check-label" for="correct_${choiceCount}">
+                    Doğru
+                </label>
+            </div>
+        </div>
+    `;
+    container.appendChild(choiceDiv);
+    choiceCount++;
+    
+    // Update hidden input for choices count
+    let countInput = document.querySelector('input[name="choices_count"]');
+    if (!countInput) {
+        countInput = document.createElement('input');
+        countInput.type = 'hidden';
+        countInput.name = 'choices_count';
+        document.getElementById('questionForm').appendChild(countInput);
+    }
+    countInput.value = choiceCount;
+}
+
+function markCorrect(index) {
+    // Remove all correct markings
+    document.querySelectorAll('.choice-item').forEach(item => {
+        item.classList.remove('correct');
+    });
+    document.querySelectorAll('input[name^="is_correct_"]').forEach(input => {
+        if (input.type === 'hidden') {
+            input.value = 'off';
+        }
+    });
+    
+    // Mark selected as correct
+    const choiceItem = document.querySelectorAll('.choice-item')[index];
+    choiceItem.classList.add('correct');
+    document.getElementById('is_correct_' + index).value = 'on';
+}
+
+// Form validation
+document.getElementById('questionForm').addEventListener('submit', function(e) {
+    const questionType = document.getElementById('question_type').value;
+    
+    if (questionType === 'multiple_choice' || questionType === 'true_false') {
+        const hasCorrect = Array.from(document.querySelectorAll('input[name^="is_correct_"]'))
+            .some(input => input.type === 'hidden' && input.value === 'on');
+        
+        if (!hasCorrect) {
+            e.preventDefault();
+            alert('Lütfen doğru cevabı işaretleyin!');
+            return false;
+        }
+    }
+});
+</script>
+{% endblock %}

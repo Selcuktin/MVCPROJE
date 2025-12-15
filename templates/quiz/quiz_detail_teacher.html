@@ -1,0 +1,387 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ quiz.title }} - Öğretmen Görünümü{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-clipboard-list text-primary"></i> {{ quiz.title }}</h2>
+            <p class="lead text-muted">{{ quiz.course_group.course.name }} - Grup {{ quiz.course_group.name }}</p>
+        </div>
+        <div>
+            <a href="{% url 'quiz:quiz_add_questions' quiz.id %}" class="btn btn-success me-2">
+                <i class="fas fa-plus"></i> Soru Ekle
+            </a>
+            <a href="/admin/quiz/quiz/{{ quiz.id }}/change/" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Düzenle
+            </a>
+        </div>
+    </div>
+
+    <!-- Quiz Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.total_questions }}</h4>
+                            <p class="mb-0">Toplam Soru</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-question-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.total_attempts }}</h4>
+                            <p class="mb-0">Toplam Deneme</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-users fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.completed_attempts }}</h4>
+                            <p class="mb-0">Tamamlanan</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-check-circle fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        <div>
+                            <h4>{{ stats.average_score|floatformat:1 }}%</h4>
+                            <p class="mb-0">Ortalama Puan</p>
+                        </div>
+                        <div class="align-self-center">
+                            <i class="fas fa-chart-line fa-2x"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quiz Information -->
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-info-circle"></i> Quiz Bilgileri</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>Açıklama:</strong></td>
+                            <td>{{ quiz.description|default:"Açıklama yok" }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Başlangıç:</strong></td>
+                            <td>{{ quiz.start_time|date:"d.m.Y H:i" }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Bitiş:</strong></td>
+                            <td>{{ quiz.end_time|date:"d.m.Y H:i" }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Süre:</strong></td>
+                            <td>{{ quiz.duration_minutes }} dakika</td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-6">
+                    <table class="table table-borderless">
+                        <tr>
+                            <td><strong>Toplam Puan:</strong></td>
+                            <td>{{ quiz.total_points }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Geçme Notu:</strong></td>
+                            <td>%{{ quiz.passing_score }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Maksimum Deneme:</strong></td>
+                            <td>{{ quiz.max_attempts }}</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Durum:</strong></td>
+                            <td>
+                                {% if quiz.is_available %}
+                                <span class="badge bg-success">Aktif</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Kapalı</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Questions Section -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list"></i> Sorular ({{ questions.count }})</h5>
+            {% if questions %}
+            <span class="badge bg-info">Toplam: {{ stats.total_points }} puan</span>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            {% if questions %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>Soru</th>
+                            <th>Tip</th>
+                            <th>Puan</th>
+                            <th>Zorluk</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for qq in questions %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td>
+                                <div class="question-preview">
+                                    {{ qq.question.question_text|truncatewords:15 }}
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if qq.question.question_type == 'multiple_choice' %}primary{% elif qq.question.question_type == 'true_false' %}success{% else %}info{% endif %}">
+                                    {{ qq.question.get_question_type_display }}
+                                </span>
+                            </td>
+                            <td>{{ qq.question.points }}</td>
+                            <td>
+                                <span class="badge bg-{% if qq.question.difficulty == 'easy' %}success{% elif qq.question.difficulty == 'medium' %}warning{% else %}danger{% endif %}">
+                                    {{ qq.question.get_difficulty_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <a href="/admin/quiz/question/{{ qq.question.id }}/change/" class="btn btn-sm btn-outline-primary" title="Düzenle">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button class="btn btn-sm btn-outline-danger" title="Kaldır" onclick="removeQuestion({{ qq.id }})">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-question-circle fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Bu quiz'e henüz soru eklenmemiş</h5>
+                <p class="text-muted">Quiz'i aktif hale getirmek için en az bir soru eklemelisiniz.</p>
+                <a href="{% url 'quiz:quiz_add_questions' quiz.id %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> İlk Soruyu Ekle
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Student Attempts -->
+    <div class="card mb-4">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-users"></i> Öğrenci Denemeleri ({{ attempts.count }})</h5>
+            {% if attempts %}
+            <div>
+                <button class="btn btn-sm btn-success" onclick="exportResults()">
+                    <i class="fas fa-download"></i> Excel'e Aktar
+                </button>
+            </div>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            {% if attempts %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Öğrenci</th>
+                            <th>Öğrenci No</th>
+                            <th>Deneme #</th>
+                            <th>Durum</th>
+                            <th>Puan</th>
+                            <th>Yüzde</th>
+                            <th>Başlangıç</th>
+                            <th>Bitiş</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for attempt in attempts %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-sm me-2">
+                                        <span class="badge bg-secondary rounded-pill">
+                                            {{ attempt.student.first_name|first }}{{ attempt.student.last_name|first }}
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <strong>{{ attempt.student.first_name }} {{ attempt.student.last_name }}</strong>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>{{ attempt.student.student.student_number|default:"-" }}</td>
+                            <td>{{ attempt.attempt_number }}</td>
+                            <td>
+                                <span class="badge bg-{% if attempt.status == 'completed' %}success{% elif attempt.status == 'in_progress' %}warning{% else %}secondary{% endif %}">
+                                    {{ attempt.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if attempt.score is not None %}
+                                {{ attempt.score }}/{{ quiz.total_points }}
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if attempt.percentage is not None %}
+                                <div class="progress" style="height: 20px;">
+                                    <div class="progress-bar bg-{% if attempt.percentage >= quiz.passing_score %}success{% else %}danger{% endif %}" 
+                                         style="width: {{ attempt.percentage }}%">
+                                        {{ attempt.percentage|floatformat:1 }}%
+                                    </div>
+                                </div>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ attempt.start_time|date:"d.m.Y H:i" }}</td>
+                            <td>
+                                {% if attempt.end_time %}
+                                {{ attempt.end_time|date:"d.m.Y H:i" }}
+                                {% else %}
+                                <span class="text-muted">Devam ediyor</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if attempt.status == 'completed' %}
+                                <a href="{% url 'quiz:quiz_attempt_review' attempt.id %}" class="btn btn-sm btn-outline-info" title="Detayları Görüntüle">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="fas fa-users fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Henüz deneme yapılmamış</h5>
+                <p class="text-muted">Öğrenciler quiz'i çözmeye başladığında burada görünecek.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="d-flex justify-content-between">
+        <a href="{% url 'teachers:dashboard' %}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Öğretmen Paneli
+        </a>
+        <div>
+            <a href="{% url 'quiz:quiz_list' %}" class="btn btn-outline-primary me-2">
+                <i class="fas fa-list"></i> Tüm Quiz'ler
+            </a>
+            {% if quiz.is_available %}
+            <button class="btn btn-warning" onclick="toggleQuizStatus(false)">
+                <i class="fas fa-pause"></i> Quiz'i Durdur
+            </button>
+            {% else %}
+            <button class="btn btn-success" onclick="toggleQuizStatus(true)">
+                <i class="fas fa-play"></i> Quiz'i Başlat
+            </button>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript -->
+<script>
+function removeQuestion(questionQuizId) {
+    if (confirm('Bu soruyu quiz\'den kaldırmak istediğinizden emin misiniz?')) {
+        // AJAX call to remove question
+        fetch(`/quiz/remove-question/${questionQuizId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Hata: ' + data.message);
+            }
+        });
+    }
+}
+
+function toggleQuizStatus(activate) {
+    const action = activate ? 'başlatmak' : 'durdurmak';
+    if (confirm(`Quiz'i ${action} istediğinizden emin misiniz?`)) {
+        // AJAX call to toggle status
+        fetch(`/quiz/{{ quiz.id }}/toggle-status/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({activate: activate})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Hata: ' + data.message);
+            }
+        });
+    }
+}
+
+function exportResults() {
+    window.location.href = `/quiz/{{ quiz.id }}/export-results/`;
+}
+</script>
+
+{% csrf_token %}
+{% endblock %}

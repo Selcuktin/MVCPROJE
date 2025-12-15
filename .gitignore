@@ -25,15 +25,19 @@ wheels/
 
 # Django
 *.log
-*.pot
-*.pyc
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
-/media
-/staticfiles
+media/
+staticfiles/
+/static/
 
-# IDEs
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
 .vscode/
 .idea/
 *.swp
@@ -41,9 +45,16 @@ db.sqlite3-journal
 *~
 .DS_Store
 
-# Environment
-.env
-.venv
+# Testing
+.coverage
+htmlcov/
+.pytest_cache/
+.tox/
 
-# Old project folder (to be deleted)
-MVCPROJE/
+# Backup
+*.bak
+*.backup
+
+# Temporary
+*.tmp
+*.temp

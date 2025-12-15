@@ -1,0 +1,169 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Notlandırma - {{ course_group.course.name }}{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <h2><i class="fas fa-clipboard-check"></i> {{ course_group.course.code }} - Notlandırma</h2>
+    <p class="lead">{{ course_group.course.name }} (Grup {{ course_group.name }})</p>
+    
+    <!-- Stats -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body text-center">
+                    <h3>{{ stats.total_students }}</h3>
+                    <p>Toplam Öğrenci</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body text-center">
+                    <h3>{{ stats.graded }}</h3>
+                    <p>Notlandırılmış</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body text-center">
+                    <h3>{{ stats.average|floatformat:1 }}</h3>
+                    <p>Sınıf Ortalaması</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning">
+                <div class="card-body text-center">
+                    <h3>{{ categories.count }}</h3>
+                    <p>Kategori</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="alert alert-info">
+        <strong>Hızlı Notlandırma:</strong> Vize (%40) + Final (%60). Bütünleme girilirse Final yerine geçer.
+    </div>
+    
+    <!-- Gradebook Table (Quick Entry) -->
+    <div class="card">
+        <div class="card-header">
+            <h5><i class="fas fa-table"></i> Öğrenci Notları</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>Öğrenci No</th>
+                            <th>Ad Soyad</th>
+                            <th style="width: 140px;">Vize</th>
+                            <th style="width: 140px;">Final</th>
+                            <th style="width: 140px;">Bütünleme</th>
+                            <th>Toplam</th>
+                            <th>Harf</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for data in gradebook_data %}
+                        <tr>
+                            <td>{{ data.student.school_number }}</td>
+                            <td>{{ data.student.first_name }} {{ data.student.last_name }}</td>
+                            <td>
+                                <input class="form-control form-control-sm grade-input"
+                                       data-student-id="{{ data.student.id }}"
+                                       data-kind="vize"
+                                       data-item-id="{{ vize_item_id }}"
+                                       placeholder="-"
+                                       value="{% if data.vize_score != None %}{{ data.vize_score|floatformat:0 }}{% endif %}">
+                            </td>
+                            <td>
+                                <input class="form-control form-control-sm grade-input"
+                                       data-student-id="{{ data.student.id }}"
+                                       data-kind="final"
+                                       data-item-id="{{ final_item_id }}"
+                                       placeholder="-"
+                                       value="{% if data.final_score != None %}{{ data.final_score|floatformat:0 }}{% endif %}">
+                            </td>
+                            <td>
+                                <input class="form-control form-control-sm grade-input"
+                                       data-student-id="{{ data.student.id }}"
+                                       data-kind="but"
+                                       data-item-id="{{ but_item_id }}"
+                                       placeholder="-"
+                                       value="{% if data.but_score != None %}{{ data.but_score|floatformat:0 }}{% endif %}">
+                            </td>
+                            <td><strong class="total-cell" data-student-id="{{ data.student.id }}">
+                                {% if data.total_score != None %}{{ data.total_score|floatformat:1 }}{% else %}-{% endif %}
+                            </strong></td>
+                            <td>
+                                <span class="badge letter-cell bg-{% if data.letter_grade|slice:':1' == 'A' or data.letter_grade == 'BB' %}success{% elif data.letter_grade == 'FF' %}danger{% else %}warning{% endif %}"
+                                      data-student-id="{{ data.student.id }}">
+                                    {{ data.letter_grade|default:"-" }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    document.querySelectorAll('.grade-input').forEach(inp => {
+        inp.addEventListener('blur', async function() {
+            const studentId = this.dataset.studentId;
+            const kind = this.dataset.kind;
+            const itemId = this.dataset.itemId;
+            const score = this.value.trim();
+
+            this.classList.add('bg-warning');
+            const form = new FormData();
+            form.append('student_id', studentId);
+            form.append('kind', kind);
+            form.append('item_id', itemId);
+            form.append('score', score);
+
+            const res = await fetch('{% url "gradebook:course_quick_entry" course_group.id %}', {
+                method: 'POST',
+                headers: {'X-CSRFToken': '{{ csrf_token }}'},
+                body: form
+            });
+            const data = await res.json();
+            this.classList.remove('bg-warning');
+
+            if (!data.success) {
+                this.classList.add('bg-danger', 'text-white');
+                alert(data.message || 'Not kaydedilemedi');
+                setTimeout(() => this.classList.remove('bg-danger', 'text-white'), 1500);
+                return;
+            }
+
+            const totalCell = document.querySelector(`.total-cell[data-student-id="${studentId}"]`);
+            const letterCell = document.querySelector(`.letter-cell[data-student-id="${studentId}"]`);
+
+            if (totalCell) totalCell.textContent = (data.total === null || data.total === undefined) ? '-' : Number(data.total).toFixed(1);
+            if (letterCell) {
+                letterCell.textContent = data.letter_grade || '-';
+                letterCell.className = 'badge letter-cell';
+                if (!data.letter_grade) {
+                    letterCell.classList.add('bg-secondary');
+                } else if (data.letter_grade.startsWith('A') || data.letter_grade === 'BB') {
+                    letterCell.classList.add('bg-success');
+                } else if (data.letter_grade === 'FF') {
+                    letterCell.classList.add('bg-danger');
+                } else {
+                    letterCell.classList.add('bg-warning');
+                }
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

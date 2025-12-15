@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Sınavlar{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="fas fa-clipboard-list"></i> Sınavlar</h2>
+    
+    {% if quizzes %}
+    <div class="row">
+        {% for quiz in quizzes %}
+        <div class="col-md-6 mb-3">
+            <div class="card {% if not quiz.is_available %}border-secondary{% endif %}">
+                <div class="card-header {% if quiz.is_available %}bg-primary text-white{% else %}bg-secondary text-white{% endif %}">
+                    <h5 class="mb-0">
+                        {{ quiz.title }}
+                        {% if not quiz.is_available %}
+                        <span class="badge bg-warning">Kapalı</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Ders:</strong> {{ quiz.course_group.course.name }}</p>
+                    <p><strong>Başlangıç:</strong> {{ quiz.start_time|date:"d.m.Y H:i" }}</p>
+                    <p><strong>Bitiş:</strong> {{ quiz.end_time|date:"d.m.Y H:i" }}</p>
+                    <p><strong>Süre:</strong> {{ quiz.duration_minutes }} dakika</p>
+                    <p><strong>Maksimum Deneme:</strong> {{ quiz.max_attempts }}</p>
+                    <p><strong>Geçme Notu:</strong> %{{ quiz.passing_score }}</p>
+                    
+                    {% if quiz.id in attempts_by_quiz %}
+                    <hr>
+                    <h6>Denemeleriniz:</h6>
+                    <ul class="list-group">
+                        {% for attempt in attempts_by_quiz.items %}
+                        {% if attempt.0 == quiz.id %}
+                        {% for att in attempt.1 %}
+                        <li class="list-group-item d-flex justify-content-between">
+                            <span>Deneme #{{ att.attempt_number }} - {{ att.status|title }}</span>
+                            {% if att.score %}
+                            <span class="badge bg-{% if att.percentage >= quiz.passing_score %}success{% else %}danger{% endif %}">
+                                {{ att.score }}/{{ quiz.total_points }} (%{{ att.percentage|floatformat:1 }})
+                            </span>
+                            {% endif %}
+                            {% if att.status != 'in_progress' %}
+                            <a href="{% url 'quiz:quiz_attempt_review' att.id %}" class="btn btn-sm btn-info">İncele</a>
+                            {% else %}
+                            <a href="{% url 'quiz:quiz_attempt' att.id %}" class="btn btn-sm btn-warning">Devam Et</a>
+                            {% endif %}
+                        </li>
+                        {% endfor %}
+                        {% endif %}
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                    
+                    {% if quiz.is_available %}
+                    {% with attempts_by_quiz|dictsort:"0"|first as quiz_attempts %}
+                    {% if quiz.id in attempts_by_quiz and quiz_attempts.1|length >= quiz.max_attempts %}
+                    <button class="btn btn-secondary w-100 mt-3" disabled>
+                        Deneme Hakkınız Bitti
+                    </button>
+                    {% else %}
+                    <a href="{% url 'quiz:quiz_take' quiz.id %}" class="btn btn-primary w-100 mt-3">
+                        <i class="fas fa-play"></i> Sınavı Başlat
+                    </a>
+                    {% endif %}
+                    {% endwith %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> Şu anda aktif sınav bulunmamaktadır.
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

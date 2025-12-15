@@ -2,6 +2,11 @@
 Django settings for course_management project.
 """
 
+# Admin Panel Customization
+ADMIN_SITE_HEADER = "Uzaktan Eğitim Sistemi - Yönetim Paneli"
+ADMIN_SITE_TITLE = "Yönetim Paneli"
+ADMIN_INDEX_TITLE = "Hoş Geldiniz"
+
 from pathlib import Path
 import os
 from decouple import config
@@ -39,6 +44,11 @@ INSTALLED_APPS = [
     'apps.students',
     'apps.teachers',
     'apps.notes',
+    'apps.academic',
+    'apps.enrollment',
+    'apps.gradebook',
+    'apps.forum',
+    'apps.quiz',
 ]
 
 MIDDLEWARE = [

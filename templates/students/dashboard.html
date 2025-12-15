@@ -1,0 +1,155 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Öğrenci Ana Sayfa{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="fas fa-user-graduate"></i> Hoş Geldiniz, {{ student.first_name }}!</h2>
+
+    <!-- Quick Stats -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary mb-3">
+                <div class="card-body text-center">
+                    <h2>{{ enrolled_courses_count }}</h2>
+                    <p>Derslerim</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-body text-center">
+                    <h2>{{ student.gpa|default:"0.00" }}</h2>
+                    <p>Genel Ortalama</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-warning mb-3">
+                <div class="card-body text-center">
+                    <h2>{{ pending_assignments }}</h2>
+                    <p>Bekleyen Ödev</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info mb-3">
+                <div class="card-body text-center">
+                    <h2>{{ active_quizzes }}</h2>
+                    <p>Aktif Quiz</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card mb-3">
+                <div class="card-header bg-dark text-white">
+                    <h5 class="mb-0"><i class="fas fa-bolt"></i> Hızlı İşlemler</h5>
+                </div>
+                <div class="card-body">
+                    <a href="{% url 'quiz:quiz_list_student' %}" class="btn btn-info me-2">
+                        <i class="fas fa-file-alt"></i> Quizler
+                    </a>
+                    <a href="{% url 'gradebook:my_grades' %}" class="btn btn-success me-2">
+                        <i class="fas fa-chart-line"></i> Notlarım
+                    </a>
+                    <a href="{% url 'forum:inbox' %}" class="btn btn-warning me-2">
+                        <i class="fas fa-envelope"></i> Mesajlar
+                        {% if unread_messages > 0 %}
+                        <span class="badge bg-danger">{{ unread_messages }}</span>
+                        {% endif %}
+                    </a>
+                    <a href="{% url 'enrollment:my_enrollments' %}" class="btn btn-secondary">
+                        <i class="fas fa-list"></i> Derslerim
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Current Courses -->
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card mb-3">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-book-reader"></i> Derslerim</h5>
+                </div>
+                <div class="card-body">
+                    {% if current_enrollments %}
+                    <div class="list-group">
+                        {% for enrollment in current_enrollments %}
+                        <a href="{% url 'courses:group_detail' enrollment.group.id %}"
+                            class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between">
+                                <h6 class="mb-1">{{ enrollment.group.course.code }} - {{ enrollment.group.course.name }}
+                                </h6>
+                                {% if enrollment.final_grade %}
+                                <span class="badge bg-success">{{ enrollment.final_grade }}</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Devam Ediyor</span>
+                                {% endif %}
+                            </div>
+                            <small>{{ enrollment.group.teacher.first_name }} {{ enrollment.group.teacher.last_name }} -
+                                Grup {{ enrollment.group.name }}</small>
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-muted mb-0">Henüz dersiniz bulunmuyor.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar: Recent Activity -->
+        <div class="col-md-4">
+            <!-- Upcoming Quizzes -->
+            <div class="card mb-3">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-clock"></i> Yaklaşan Quizler</h6>
+                </div>
+                <div class="card-body">
+                    {% if upcoming_quizzes %}
+                    <ul class="list-unstyled">
+                        {% for quiz in upcoming_quizzes %}
+                        <li class="mb-2">
+                            <strong>{{ quiz.title }}</strong><br>
+                            <small>{{ quiz.start_time|date:"d.m.Y H:i" }}</small>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted mb-0">Yaklaşan quiz yok</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Recent Notifications -->
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h6 class="mb-0"><i class="fas fa-bell"></i> Son Bildirimler</h6>
+                </div>
+                <div class="card-body">
+                    {% if recent_notifications %}
+                    <ul class="list-unstyled">
+                        {% for notif in recent_notifications %}
+                        <li class="mb-2 {% if not notif.is_read %}fw-bold{% endif %}">
+                            <small class="text-muted">{{ notif.created_at|date:"d.m H:i" }}</small><br>
+                            {{ notif.title }}
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    <a href="{% url 'users:notifications' %}" class="btn btn-sm btn-outline-warning">Tümünü Gör</a>
+                    {% else %}
+                    <p class="text-muted mb-0">Bildirim yok</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

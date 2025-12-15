@@ -8,9 +8,9 @@ from apps.courses.models import Assignment, Announcement
 
 
 def notifications_context(request):
-    """Add notification count to all templates"""
+    """Add notification count and recent notifications to all templates"""
     if not request.user.is_authenticated:
-        return {'unread_notifications_count': 0}
+        return {'unread_notifications_count': 0, 'navbar_notifications': []}
     
     try:
         # Get user type
@@ -94,8 +94,16 @@ def notifications_context(request):
             except Teacher.DoesNotExist:
                 pass
         
-        return {'unread_notifications_count': unread_count}
+        # Get recent notifications for navbar (last 4)
+        from .services import UserService
+        service = UserService()
+        navbar_notifications = service.get_navbar_notifications(request.user, limit=4)
+        
+        return {
+            'unread_notifications_count': unread_count,
+            'navbar_notifications': navbar_notifications
+        }
         
     except Exception as e:
         # Fallback in case of any error
-        return {'unread_notifications_count': 0}
+        return {'unread_notifications_count': 0, 'navbar_notifications': []}

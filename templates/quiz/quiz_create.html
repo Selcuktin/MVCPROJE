@@ -1,0 +1,159 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Yeni Sınav Oluştur{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="fas fa-plus-circle"></i> Yeni Sınav Oluştur</h2>
+    <p class="lead">{{ course_group.course.name }} - Grup {{ course_group.name }}</p>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="title" class="form-label">Sınav Başlığı *</label>
+                        <input type="text" class="form-control" id="title" name="title" required>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="duration_minutes" class="form-label">Süre (Dakika) *</label>
+                        <input type="number" class="form-control" id="duration_minutes" name="duration_minutes" value="60" min="1" required>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="description" class="form-label">Açıklama</label>
+                    <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label for="start_time" class="form-label">Başlangıç Tarihi/Saati *</label>
+                        <input type="datetime-local" class="form-control" id="start_time" name="start_time" required>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label for="end_time" class="form-label">Bitiş Tarihi/Saati *</label>
+                        <input type="datetime-local" class="form-control" id="end_time" name="end_time" required>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="max_attempts" class="form-label">Maksimum Deneme</label>
+                        <input type="number" class="form-control" id="max_attempts" name="max_attempts" value="1" min="1">
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label for="passing_score" class="form-label">Geçme Notu (%)</label>
+                        <input type="number" class="form-control" id="passing_score" name="passing_score" value="60" min="0" max="100">
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label d-block">&nbsp;</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="shuffle_questions" name="shuffle_questions">
+                            <label class="form-check-label" for="shuffle_questions">
+                                Soruları Karıştır
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info">
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="use_random_questions" name="use_random_questions" onchange="toggleRandomSettings()">
+                        <label class="form-check-label" for="use_random_questions">
+                            <strong>Rastgele Soru Seçimi Aktif</strong> (Her öğrenciye farklı sorular)
+                        </label>
+                    </div>
+                    <div id="randomSettings" style="display: none;">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="random_question_count" class="form-label">Her Öğrenciye Seçilecek Soru Sayısı</label>
+                                <input type="number" class="form-control" id="random_question_count" name="random_question_count" value="40" min="1">
+                                <small class="text-muted">Örnek: 40 soru</small>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="random_question_pool_size" class="form-label">Soru Havuzu Boyutu</label>
+                                <input type="number" class="form-control" id="random_question_pool_size" name="random_question_pool_size" value="250" min="1">
+                                <small class="text-muted">Soru bankasından kaç soru havuzda olacak (Örnek: 250 soru)</small>
+                            </div>
+                        </div>
+                        <div class="alert alert-warning">
+                            <i class="fas fa-info-circle"></i> <strong>Not:</strong> Rastgele soru seçimi aktifken, soru bankasından belirtilen havuz boyutu kadar soru seçmeniz gerekecek. Her öğrenci bu havuzdan rastgele belirtilen sayıda soru alacak.
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="shuffle_options" name="shuffle_options">
+                            <label class="form-check-label" for="shuffle_options">
+                                Şıkları Karıştır
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="show_results_immediately" name="show_results_immediately" checked>
+                            <label class="form-check-label" for="show_results_immediately">
+                                Sonuçları Hemen Göster
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" id="auto_submit" name="auto_submit" checked>
+                            <label class="form-check-label" for="auto_submit">
+                                Otomatik Teslim (Süre Bitince)
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'teachers:dashboard' %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> İptal
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-arrow-right"></i> İleri: Soru Ekle
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+// Set default datetime to now
+document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+    document.getElementById('start_time').value = now.toISOString().slice(0, 16);
+    
+    const end = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // +7 days
+    end.setMinutes(end.getMinutes() - end.getTimezoneOffset());
+    document.getElementById('end_time').value = end.toISOString().slice(0, 16);
+});
+
+function toggleRandomSettings() {
+    const checkbox = document.getElementById('use_random_questions');
+    const settings = document.getElementById('randomSettings');
+    if (checkbox.checked) {
+        settings.style.display = 'block';
+    } else {
+        settings.style.display = 'none';
+    }
+}
+</script>
+{% endblock %}

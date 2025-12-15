@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Quizler{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="fas fa-file-alt"></i> Quizler & Sınavlar</h2>
+    
+    {% if quiz_data %}
+    <div class="row">
+        {% for data in quiz_data %}
+        <div class="col-md-6 mb-3">
+            <div class="card {% if not data.quiz.is_available %}border-secondary{% endif %}">
+                <div class="card-header {% if data.quiz.is_available %}bg-primary text-white{% else %}bg-secondary text-white{% endif %}">
+                    <h5 class="mb-0">
+                        {{ data.quiz.title }}
+                        {% if not data.quiz.is_available %}
+                        <span class="badge bg-warning">Kapalı</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Ders:</strong> {{ data.quiz.course_group.course.name }}</p>
+                    <p><strong>Başlangıç:</strong> {{ data.quiz.start_time|date:"d.m.Y H:i" }}</p>
+                    <p><strong>Bitiş:</strong> {{ data.quiz.end_time|date:"d.m.Y H:i" }}</p>
+                    <p><strong>Süre:</strong> {{ data.quiz.duration_minutes }} dakika</p>
+                    <p><strong>Maksimum Deneme:</strong> {{ data.quiz.max_attempts }}</p>
+                    <p><strong>Geçme Notu:</strong> %{{ data.quiz.passing_score }}</p>
+                    
+                    {% if data.attempts %}
+                    <hr>
+                    <h6>Denemeleriniz:</h6>
+                    <ul class="list-group">
+                        {% for attempt in data.attempts %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>Deneme #{{ attempt.attempt_number }}</strong>
+                                <span class="badge bg-info">{{ attempt.status|title }}</span>
+                                {% if attempt.score %}
+                                <br><small>{{ attempt.score }}/{{ data.quiz.total_points }} (%{{ attempt.percentage|floatformat:1 }})</small>
+                                {% endif %}
+                            </div>
+                            <div>
+                                {% if attempt.status != 'in_progress' %}
+                                <a href="{% url 'quiz:quiz_attempt_review' attempt.id %}" class="btn btn-sm btn-info">İncele</a>
+                                {% else %}
+                                <a href="{% url 'quiz:quiz_attempt' attempt.id %}" class="btn btn-sm btn-warning">Devam Et</a>
+                                {% endif %}
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% endif %}
+                    
+                    {% if data.quiz.is_available %}
+                    {% if not data.can_take %}
+                    <button class="btn btn-secondary w-100 mt-3" disabled>
+                        Deneme Hakkınız Bitti
+                    </button>
+                    {% else %}
+                    <a href="{% url 'quiz:quiz_take' data.quiz.id %}" class="btn btn-primary w-100 mt-3">
+                        <i class="fas fa-play"></i> Quiz'i Başlat
+                    </a>
+                    {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> Şu anda aktif quiz bulunmamaktadır.
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

@@ -1,0 +1,139 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Kayıtlarım{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2><i class="fas fa-graduation-cap"></i> Kayıtlı Derslerim</h2>
+
+            {% if enrollments_by_term %}
+            {% for item in enrollments_by_term %}
+            <div class="card mb-4">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="mb-0">
+                        {{ item.term.name }}
+                        {% if item.term.is_active %}
+                        <span class="badge bg-success">Aktif</span>
+                        {% endif %}
+                    </h5>
+                </div>
+                <div class="card-body">
+                    {% if item.enrollments %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Ders Kodu</th>
+                                    <th>Ders Adı</th>
+                                    <th>Öğretmen</th>
+                                    <th>Grup</th>
+                                    <th>Kredi</th>
+                                    <th>Durum</th>
+                                    <th>Not</th>
+                                    <th>Kayıt Tarihi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for enrollment in item.enrollments %}
+                                <tr>
+                                    <td>{{ enrollment.group.course.code }}</td>
+                                    <td>
+                                        <a href="{% url 'courses:group_detail' enrollment.group.id %}">
+                                            {{ enrollment.group.course.name }}
+                                        </a>
+                                    </td>
+                                    <td>{{ enrollment.group.teacher.first_name }} {{ enrollment.group.teacher.last_name
+                                        }}</td>
+                                    <td>{{ enrollment.group.name }}</td>
+                                    <td>{{ enrollment.group.course.credits }}</td>
+                                    <td>
+                                        {% if enrollment.status == 'enrolled' %}
+                                        <span class="badge bg-success">Kayıtlı</span>
+                                        {% elif enrollment.status == 'dropped' %}
+                                        <span class="badge bg-warning">Bırakıldı</span>
+                                        {% elif enrollment.status == 'completed' %}
+                                        <span class="badge bg-info">Tamamlandı</span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">{{ enrollment.status }}</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if enrollment.final_grade %}
+                                        <strong>{{ enrollment.final_grade }}</strong>
+                                        {% else %}
+                                        <span class="text-muted">-</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ enrollment.enrollment_date|date:"d.m.Y" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Summary Stats -->
+                    <div class="row mt-3">
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6>Toplam Ders</h6>
+                                    <h3>{{ item.enrollments.count }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6>Aktif</h6>
+                                    <h3>{{ item.enrollments|length }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6>Toplam Kredi</h6>
+                                    <h3>
+                                        {% widthratio item.enrollments|length 1 3 %}
+                                    </h3>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card bg-light">
+                                <div class="card-body text-center">
+                                    <h6>Ortalama</h6>
+                                    <h3>{{ student.gpa|default:"-" }}</h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% else %}
+                    <p class="text-muted">Bu dönem için kayıt bulunmamaktadır.</p>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+            {% else %}
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle"></i> Henüz hiç ders kaydınız bulunmamaktadır.
+                <a href="{% url 'enrollment:available_courses' %}" class="alert-link">Ders seçimi yapmak için
+                    tıklayın.</a>
+            </div>
+            {% endif %}
+
+            <div class="text-center mt-4">
+                <a href="{% url 'users:dashboard' %}" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i> Geri Dön
+                </a>
+                <a href="{% url 'enrollment:available_courses' %}" class="btn btn-primary">
+                    <i class="fas fa-plus"></i> Yeni Ders Ekle
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

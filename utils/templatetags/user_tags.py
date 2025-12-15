@@ -10,11 +10,11 @@ register = template.Library()
 @register.simple_tag
 def get_user_type(user):
     """Get user type safely"""
-    if not user.is_authenticated:
+    if not user or not user.is_authenticated:
         return None
     
     # Check if user has userprofile
-    if hasattr(user, 'userprofile'):
+    if hasattr(user, 'userprofile') and user.userprofile:
         return user.userprofile.user_type
     
     # Check if user is student

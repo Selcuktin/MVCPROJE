@@ -23,6 +23,42 @@
         padding: 2rem;
         margin-bottom: 2rem;
         box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        position: relative;
+        overflow: hidden;
+        animation: fadeInDown 0.6s ease-out;
+    }
+    
+    .welcome-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: pulse 3s ease-in-out infinite;
+    }
+    
+    @keyframes fadeInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 0.5;
+        }
+        50% {
+            transform: scale(1.1);
+            opacity: 0.8;
+        }
     }
     
     .welcome-card h2 {
@@ -51,16 +87,50 @@
         padding: 1.5rem;
         text-align: center;
         box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        transition: all 0.3s ease;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         text-decoration: none;
         color: inherit;
         display: block;
+        position: relative;
+        overflow: hidden;
+        animation: fadeInUp 0.6s ease-out backwards;
+    }
+    
+    .stat-box:nth-child(1) { animation-delay: 0.1s; }
+    .stat-box:nth-child(2) { animation-delay: 0.2s; }
+    .stat-box:nth-child(3) { animation-delay: 0.3s; }
+    .stat-box:nth-child(4) { animation-delay: 0.4s; }
+    
+    .stat-box::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+        transition: left 0.5s;
+    }
+    
+    .stat-box:hover::before {
+        left: 100%;
     }
     
     .stat-box:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
         text-decoration: none;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
     
     .stat-icon {
@@ -72,6 +142,21 @@
         align-items: center;
         justify-content: center;
         font-size: 24px;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        position: relative;
+    }
+    
+    .stat-box:hover .stat-icon {
+        transform: scale(1.15) rotate(5deg);
+    }
+    
+    .stat-number {
+        transition: all 0.3s ease;
+    }
+    
+    .stat-box:hover .stat-number {
+        transform: scale(1.1);
+        color: #667eea;
     }
     
     .stat-icon.blue { background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); color: #1976d2; }
@@ -92,73 +177,116 @@
         font-weight: 500;
     }
     
-    /* Hızlı Erişim Butonları */
+    /* Hızlı Erişim Butonları + İçerik kartları */
     .quick-actions {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
         gap: 1.5rem;
         margin-bottom: 2rem;
     }
     
-    .action-btn {
+    .action-card {
         background: white;
-        border-radius: 12px;
-        padding: 2rem;
-        text-align: center;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        border-radius: 18px;
+        padding: 1.5rem;
+        box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+        border: 1px solid rgba(148, 163, 184, 0.25);
         transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .action-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at top left, rgba(129, 140, 248, 0.15), transparent 55%);
+        opacity: 0;
+        transition: opacity 0.3s ease;
+        pointer-events: none;
+    }
+    
+    .action-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 18px 40px rgba(15, 23, 42, 0.18);
+        border-color: rgba(129, 140, 248, 0.6);
+    }
+    
+    .action-card:hover::before {
+        opacity: 1;
+    }
+    
+    .action-card-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 1rem;
+    }
+    
+    .action-chip {
+        padding: 4px 10px;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        background: rgba(15, 23, 42, 0.04);
+        color: #4b5563;
+        font-weight: 600;
+    }
+    
+    .action-btn {
+        background: linear-gradient(135deg, #4f46e5, #6366f1);
+        border-radius: 999px;
+        padding: 0.55rem 1.15rem;
+        color: #fff !important;
+        font-size: 0.8rem;
+        font-weight: 600;
+        border: none;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
         text-decoration: none;
-        color: inherit;
-        display: block;
-        border: 2px solid transparent;
+        box-shadow: 0 8px 20px rgba(79, 70, 229, 0.35);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
     }
     
     .action-btn:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 6px 20px rgba(0,0,0,0.15);
-        text-decoration: none;
+        transform: translateY(-1px);
+        box-shadow: 0 12px 28px rgba(79, 70, 229, 0.45);
+        color: #fff !important;
     }
-    
-    .action-btn.primary { border-color: #667eea; }
-    .action-btn.primary:hover { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; }
-    
-    .action-btn.success { border-color: #10b981; }
-    .action-btn.success:hover { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
-    
-    .action-btn.warning { border-color: #f59e0b; }
-    .action-btn.warning:hover { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; }
-    
-    .action-icon {
-        font-size: 2.5rem;
-        margin-bottom: 1rem;
-        color: #667eea;
-        transition: color 0.3s ease;
-    }
-    
-    .action-btn.primary:hover .action-icon,
-    .action-btn.success:hover .action-icon,
-    .action-btn.warning:hover .action-icon { color: white; }
     
     .action-title {
-        font-size: 1.1rem;
+        font-size: 1.02rem;
         font-weight: 600;
-        margin-bottom: 0.5rem;
+        margin-bottom: 0.35rem;
     }
     
     .action-desc {
-        font-size: 0.875rem;
-        color: #6c757d;
-        margin: 0;
+        font-size: 0.85rem;
+        color: #6b7280;
+        margin-bottom: 0.75rem;
     }
     
-    .action-btn:hover .action-desc {
-        color: rgba(255,255,255,0.9);
+    .pill-link {
+        font-size: 0.78rem;
+        text-decoration: none;
+        color: #4b5563;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+        padding: 0.3rem 0.7rem;
+        border-radius: 999px;
+        background: rgba(148, 163, 184, 0.12);
+    }
+    
+    .pill-link:hover {
+        background: rgba(99, 102, 241, 0.12);
+        color: #4338ca;
     }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="dashboard-container">
+<div class="dashboard-container" style="padding-left: 15px; padding-right: 15px; max-width: 100%; overflow-x: hidden; box-sizing: border-box;">
     {% if teacher %}
     
     <!-- Hoş Geldiniz Kartı -->
@@ -202,31 +330,121 @@
         </a>
     </div>
 
-    <!-- Hızlı Erişim Butonları -->
+    <!-- Hızlı Erişim ve Görev Kartları -->
     <div class="quick-actions">
-        <a href="{% url 'courses:assignment_create' %}" class="action-btn warning">
-            <div class="action-icon">
-                <i class="fas fa-file-alt"></i>
+        <!-- Hızlı İşlemler -->
+        <div class="action-card">
+            <div class="action-card-header">
+                <div>
+                    <div class="text-muted small mb-1"><i class="fas fa-bolt me-1 text-warning"></i>Hızlı İşlemler</div>
+                    <h5 class="mb-0 fw-semibold">Sık Kullanılan Kısayollar</h5>
+                </div>
+                <span class="action-chip"><i class="fas fa-mouse-pointer me-1"></i>Tek tıkla</span>
             </div>
-            <div class="action-title">Yeni Ödev Oluştur</div>
-            <p class="action-desc">Öğrencileriniz için yeni bir ödev hazırlayın</p>
-        </a>
-        
-        <a href="{% url 'courses:announcement_create' %}" class="action-btn success">
-            <div class="action-icon">
-                <i class="fas fa-bullhorn"></i>
+            <p class="action-desc">En çok kullandığınız işlemlere buradan hızlıca ulaşın.</p>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{% url 'quiz:question_bank_list' %}" class="action-btn">
+                    <i class="fas fa-question-circle"></i> Soru Bankası
+                </a>
+                <a href="{% url 'courses:list' %}" class="action-btn">
+                    <i class="fas fa-list"></i> Tüm Derslerim
+                </a>
             </div>
-            <div class="action-title">Duyuru Yayınla</div>
-            <p class="action-desc">Öğrencilerinizle önemli bilgileri paylaşın</p>
-        </a>
-        
-        <a href="{% url 'notes:create' %}" class="action-btn primary">
-            <div class="action-icon">
-                <i class="fas fa-star"></i>
+        </div>
+
+        <!-- Verdiğim Dersler (kartlı görünüm) -->
+        <div class="action-card">
+            <div class="action-card-header">
+                <div>
+                    <div class="text-muted small mb-1"><i class="fas fa-book-open me-1 text-primary"></i>Verdiğim Dersler</div>
+                    <h5 class="mb-0 fw-semibold">{{ course_groups.count }} aktif grup</h5>
+                </div>
+                <a href="{% url 'courses:list' %}" class="pill-link">
+                    <span>Tüm Dersler</span><i class="fas fa-arrow-right"></i>
+                </a>
             </div>
-            <div class="action-title">Not Ekle</div>
-            <p class="action-desc">Öğrenci notlarını girin ve güncelleyin</p>
-        </a>
+            {% if course_groups %}
+                <div class="list-group small">
+                    {% for group in course_groups|slice:":4" %}
+                        <a href="{% url 'courses:detail' group.course.pk %}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center border-0 px-0 py-1">
+                            <div>
+                                <div class="fw-semibold">{{ group.course.code }} - {{ group.course.name }}</div>
+                                <div class="text-muted">
+                                    Grup {{ group.name }} • {{ group.enrollments.count }} öğrenci
+                                </div>
+                            </div>
+                            <i class="fas fa-chevron-right text-muted small"></i>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted small mb-0">Henüz size atanmış ders bulunmuyor.</p>
+            {% endif %}
+        </div>
+
+        <!-- Notlandırılacak Ödevler -->
+        <div class="action-card">
+            <div class="action-card-header">
+                <div>
+                    <div class="text-muted small mb-1"><i class="fas fa-clipboard-check me-1 text-success"></i>Notlandırılacak Ödevler</div>
+                    <h5 class="mb-0 fw-semibold">
+                        {{ pending_assignments|length|default:0 }} bekleyen ödev
+                    </h5>
+                </div>
+                <a href="{% url 'courses:assignment_list' %}?state=pending" class="pill-link">
+                    <span>Tümünü Gör</span><i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            {% if pending_assignments %}
+                <div class="list-group small">
+                    {% for a in pending_assignments|slice:":4" %}
+                        <a href="{% url 'courses:assignment_detail' a.pk %}" class="list-group-item list-group-item-action border-0 px-0 py-1 d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-semibold">{{ a.title }}</div>
+                                <div class="text-muted">
+                                    {{ a.group.course.code }} • Teslim: {{ a.due_date|date:"d.m.Y H:i" }}
+                                </div>
+                            </div>
+                            <span class="badge bg-warning-subtle text-warning-emphasis">Notlandır</span>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted small mb-0">Şu anda notlandırılacak ödev bulunmuyor.</p>
+            {% endif %}
+        </div>
+
+        <!-- Aktif Sınavlar -->
+        <div class="action-card">
+            <div class="action-card-header">
+                <div>
+                    <div class="text-muted small mb-1"><i class="fas fa-file-signature me-1 text-info"></i>Aktif Sınavlar</div>
+                    <h5 class="mb-0 fw-semibold">
+                        {{ active_quizzes|length|default:0 }} aktif sınav
+                    </h5>
+                </div>
+                <a href="{% url 'quiz:quiz_list' %}" class="pill-link">
+                    <span>Tüm Sınavlar</span><i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            {% if active_quizzes %}
+                <div class="list-group small">
+                    {% for q in active_quizzes|slice:":4" %}
+                        <a href="{% url 'quiz:quiz_detail' q.pk %}" class="list-group-item list-group-item-action border-0 px-0 py-1 d-flex justify-content-between align-items-center">
+                            <div>
+                                <div class="fw-semibold">{{ q.title }}</div>
+                                <div class="text-muted">
+                                    {{ q.course_group.course.code }} • Bitiş: {{ q.end_time|date:"d.m.Y H:i" }}
+                                </div>
+                            </div>
+                            <span class="badge bg-info-subtle text-info-emphasis">Detay</span>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="text-muted small mb-0">Şu anda aktif sınav bulunmuyor.</p>
+            {% endif %}
+        </div>
     </div>
 
     <!-- Son Duyurular -->

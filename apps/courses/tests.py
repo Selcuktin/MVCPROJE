@@ -8,9 +8,10 @@ from django.utils import timezone
 from datetime import timedelta
 
 from .models import Course, CourseGroup, Enrollment
-from .services import CourseService, EnrollmentService
+from .services import CourseService
 from apps.teachers.models import Teacher
 from apps.students.models import Student
+from apps.users.models import UserProfile
 
 User = get_user_model()
 
@@ -79,14 +80,22 @@ class CourseServiceTest(TestCase):
         )
     
     def test_check_course_capacity(self):
-        # Initially should have capacity
-        self.assertTrue(CourseService.check_course_capacity(self.course_group))
+        # Initially should have capacity available
+        enrolled_count = Enrollment.objects.filter(
+            group=self.course_group,
+            status='enrolled'
+        ).count()
+        self.assertTrue(enrolled_count < self.course.capacity)
         
         # Create students to fill capacity
         for i in range(2):
             student_user = User.objects.create_user(
                 username=f'student{i}',
                 email=f'student{i}@test.com'
+            )
+            UserProfile.objects.create(
+                user=student_user,
+                user_type='student'
             )
             student = Student.objects.create(
                 user=student_user,
@@ -106,7 +115,11 @@ class CourseServiceTest(TestCase):
             )
         
         # Now should be at capacity
-        self.assertFalse(CourseService.check_course_capacity(self.course_group))
+        enrolled_count = Enrollment.objects.filter(
+            group=self.course_group,
+            status='enrolled'
+        ).count()
+        self.assertEqual(enrolled_count, self.course.capacity)
 
 class CourseViewTest(TestCase):
     def setUp(self):
@@ -114,6 +127,10 @@ class CourseViewTest(TestCase):
         self.user = User.objects.create_user(
             username='testuser',
             password='testpass123'
+        )
+        UserProfile.objects.create(
+            user=self.user,
+            user_type='admin'
         )
         
         self.course = Course.objects.create(

@@ -372,7 +372,7 @@
     }
     
     .main-content {
-        opacity: 0;
+        opacity: 1;
         transition: opacity 0.5s ease-in;
     }
     
@@ -531,7 +531,7 @@
 </div>
 
 <!-- Main Content -->
-<div id="main-content" class="main-content">
+<div id="main-content" class="main-content loaded">
     <!-- Login Portals Section -->
     <section class="portals-section">
         <div class="container">
@@ -819,14 +819,14 @@
                     </div>
                 </a>
                 
-                <a href="{% url 'users:control_panel' %}" class="admin-action-card">
+                <a href="/admin/" class="admin-action-card">
                     <div style="display: flex; align-items: center; gap: 1rem;">
                         <div style="width: 50px; height: 50px; border-radius: 50%; background: #667eea; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
                             <i class="fas fa-tachometer-alt"></i>
                         </div>
                         <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.25rem;">Kontrol Paneli</div>
-                            <div style="font-size: 0.85rem; color: #6b7280;">Detaylı kontrol paneli</div>
+                            <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.25rem;">Yönetim Paneli</div>
+                            <div style="font-size: 0.85rem; color: #6b7280;">Admin paneline git</div>
                         </div>
                         <i class="fas fa-chevron-right" style="color: #9ca3af;"></i>
                     </div>
@@ -842,17 +842,28 @@ document.addEventListener('DOMContentLoaded', function() {
     const loadingScreen = document.getElementById('loading-screen');
     const mainContent = document.getElementById('main-content');
     
+    if (loadingScreen && mainContent) {
     // Simulate loading time
     setTimeout(function() {
+            if (loadingScreen) {
         loadingScreen.style.opacity = '0';
         setTimeout(function() {
+                    if (loadingScreen) {
             loadingScreen.style.display = 'none';
+                    }
+                    if (mainContent) {
             mainContent.classList.add('loaded');
+                    }
             
             // Initialize AOS animations after loading
             initAOSAnimations();
         }, 500);
+            }
     }, 300); // 0.3 second loading time
+    } else {
+        // If elements don't exist, just initialize animations
+        initAOSAnimations();
+    }
 });
 
 // Simple AOS (Animate On Scroll) implementation

@@ -45,16 +45,19 @@ class TeacherDashboardView(LoginRequiredMixin, UserPassesTestMixin, TemplateView
         return context
 
 class TeacherCoursesView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
+    """
+    Geriye dönük uyumluluk için tutuluyor, ancak artık tek ders listesi
+    merkezi olarak /courses/ altında gösteriliyor.
+    Bu view, öğretmeni doğrudan genel dersler sayfasına yönlendirir.
+    """
     template_name = 'teachers/courses.html'
     
     def test_func(self):
         return hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type == 'teacher'
     
-    def get_context_data(self, **kwargs):
-        context = super().get_context_data(**kwargs)
-        controller = TeacherController()
-        context.update(controller.get_teacher_courses_context(self.request))
-        return context
+    def get(self, request, *args, **kwargs):
+        # Tüm Derslerim -> merkezi ders listesine yönlendirme
+        return redirect('courses:list')
 
 class TeacherStudentsView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
     template_name = 'teachers/students.html'

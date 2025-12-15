@@ -154,7 +154,7 @@ class CourseCreateView(LoginRequiredMixin, UserPassesTestMixin, CreateView):
     success_url = reverse_lazy('courses:list')
     
     def test_func(self):
-        return self.request.user.is_staff or hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type in ['admin', 'teacher']
+        return self.request.user.is_staff or (hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type in ['admin'])
     
     def form_valid(self, form):
         messages.success(self.request, 'Ders başarıyla oluşturuldu.')
@@ -167,7 +167,7 @@ class CourseUpdateView(LoginRequiredMixin, UserPassesTestMixin, UpdateView):
     success_url = reverse_lazy('courses:list')
     
     def test_func(self):
-        return self.request.user.is_staff or hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type in ['admin', 'teacher']
+        return self.request.user.is_staff or (hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type in ['admin'])
     
     def form_valid(self, form):
         messages.success(self.request, 'Ders başarıyla güncellendi.')
@@ -200,19 +200,28 @@ class CourseGroupDetailView(LoginRequiredMixin, DetailView):
         context = super().get_context_data(**kwargs)
         group = self.get_object()
         
-        # Enrollments ile birlikte notları da getir
-        enrollments = group.enrollments.select_related('student')
-        
-        # Her enrollment için notları getir
+        # Optimize with Prefetch to avoid N+1 queries
         from apps.notes.models import Note
+        from django.db.models import Prefetch
+        
+        notes_prefetch = Prefetch(
+            'student__user__student_notes',
+            queryset=Note.objects.filter(course=group.course).select_related('course'),
+            to_attr='course_notes_list'
+        )
+        
+        enrollments = group.enrollments.select_related(
+            'student', 
+            'student__user'
+        ).prefetch_related(notes_prefetch)
+        
+        # Process enrollment data
         enrollment_data = []
         for enrollment in enrollments:
-            notes = Note.objects.filter(
-                student=enrollment.student.user,  # Student nesnesinden User nesnesine geçiş
-                course=group.course
-            )
+            # Get notes from prefetched data
+            notes = getattr(enrollment.student.user, 'course_notes_list', [])
             
-            # Notları sınav türüne göre grupla
+            # Group notes by exam type
             note_dict = {}
             for note in notes:
                 note_dict[note.exam_type] = note
@@ -314,12 +323,19 @@ class AssignmentListView(LoginRequiredMixin, ListView):
         state = (self.request.GET.get('state') or '').lower()
         now = timezone.now()
         qs_base = Assignment.objects.select_related('group__course', 'group__teacher').prefetch_related('submissions', 'group__enrollments')
+
+        # Optional filter: specific course group (for teacher flow)
+        group_id = self.request.GET.get('group')
         if hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type == 'student':
             student = Student.objects.get(user=self.request.user)
             qs_base = qs_base.filter(group__enrollments__student=student)
         elif hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type == 'teacher':
             teacher = Teacher.objects.get(user=self.request.user)
             qs_base = qs_base.filter(group__teacher=teacher)
+
+        # Apply group filter only after teacher/student scoping
+        if group_id:
+            qs_base = qs_base.filter(group_id=group_id)
 
         if state == 'approaching':
             # teslim tarihi yakında olanlar: 7 gün içinde ve gelecekte
@@ -907,6 +923,64 @@ def update_grade_ajax(request):
         return JsonResponse({'success': False, 'error': str(e)})
 
 @login_required
+@csrf_exempt
+def grade_submission_ajax(request):
+    """AJAX endpoint for grading assignment submissions"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Only POST method allowed'})
+    
+    # Check if user is teacher
+    if not (hasattr(request.user, 'userprofile') and request.user.userprofile.user_type == 'teacher'):
+        return JsonResponse({'success': False, 'error': 'Permission denied'})
+    
+    try:
+        submission_id = request.POST.get('submission_id')
+        score = request.POST.get('score')
+        feedback = request.POST.get('feedback', '')
+        
+        if not submission_id or not score:
+            return JsonResponse({'success': False, 'error': 'Missing required fields'})
+        
+        try:
+            score_val = float(score)
+        except (ValueError, TypeError):
+            return JsonResponse({'success': False, 'error': 'Invalid score format'})
+        
+        # Get submission
+        submission = get_object_or_404(Submission, id=submission_id)
+        assignment = submission.assignment
+        
+        # Check if teacher owns this assignment
+        teacher = Teacher.objects.get(user=request.user)
+        if assignment.group.teacher != teacher:
+            return JsonResponse({'success': False, 'error': 'Permission denied'})
+        
+        # Validate score
+        if score_val < 0 or score_val > float(assignment.max_score):
+            return JsonResponse({'success': False, 'error': f'Score must be between 0 and {assignment.max_score}'})
+        
+        # Update submission
+        submission.score = score_val
+        submission.feedback = feedback
+        submission.status = 'graded'
+        submission.save()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Grade updated successfully',
+            'score': str(submission.score),
+            'max_score': str(assignment.max_score)
+        })
+        
+    except Submission.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Submission not found'})
+    except Teacher.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Teacher profile not found'})
+    except Exception as e:
+        logger.error(f"Grade submission error: {e}")
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@login_required
 def add_student_to_course(request, course_pk):
     """Derse öğrenci ekle"""
     if request.method != 'POST':
@@ -982,6 +1056,7 @@ def remove_student_from_course(request, course_pk, student_id):
     # Yetki kontrolü
     if not (request.user.is_staff or 
             hasattr(request.user, 'userprofile') and 
+            request.user.userprofile and
             request.user.userprofile.user_type in ['admin', 'teacher']):
         messages.error(request, 'Bu işlem için yetkiniz yok.')
         return redirect('courses:detail', pk=course_pk)
@@ -991,16 +1066,36 @@ def remove_student_from_course(request, course_pk, student_id):
     try:
         student = Student.objects.get(id=student_id)
         
-        # Öğrencinin kaydını bul ve sil
-        enrollment = Enrollment.objects.filter(
-            student=student,
-            group__course=course,
-            status='enrolled'
-        ).first()
-        
-        if not enrollment:
-            messages.warning(request, f'{student.full_name} bu derse kayıtlı değil.')
-            return redirect('courses:detail', pk=course_pk)
+        # If user is teacher, only allow removing from their own groups
+        if (hasattr(request.user, 'userprofile') and 
+            request.user.userprofile and 
+            request.user.userprofile.user_type == 'teacher'):
+            try:
+                teacher = Teacher.objects.get(user=request.user)
+                enrollment = Enrollment.objects.filter(
+                    student=student,
+                    group__course=course,
+                    group__teacher=teacher,
+                    status='enrolled'
+                ).first()
+                
+                if not enrollment:
+                    messages.error(request, 'Bu öğrenci sizin dersinizde kayıtlı değil.')
+                    return redirect('courses:detail', pk=course_pk)
+            except Teacher.DoesNotExist:
+                messages.error(request, 'Öğretmen profili bulunamadı.')
+                return redirect('courses:detail', pk=course_pk)
+        else:
+            # Admin can remove from any group
+            enrollment = Enrollment.objects.filter(
+                student=student,
+                group__course=course,
+                status='enrolled'
+            ).first()
+            
+            if not enrollment:
+                messages.warning(request, f'{student.full_name} bu derse kayıtlı değil.')
+                return redirect('courses:detail', pk=course_pk)
         
         enrollment.delete()
         messages.success(request, f'{student.full_name} dersten başarıyla çıkarıldı.')

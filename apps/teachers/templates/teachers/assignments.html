@@ -130,9 +130,9 @@
 
     <!-- Ödev Listesi -->
     {% if assignments %}
-        <div class="row">
+        <div class="row g-4">
             {% for assignment in assignments %}
-                <div class="col-lg-6 col-xl-4 mb-4">
+                <div class="col-12 col-md-6 col-xl-4">
                     <div class="assignment-card card h-100 position-relative">
                         <!-- Durum Badge -->
                         {% if assignment.status == 'active' %}

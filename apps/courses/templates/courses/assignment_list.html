@@ -1,4 +1,6 @@
 {% extends 'base.html' %}
+{% load static %}
+{% load user_tags %}
 
 {% block title %}Ödevler - Kurs Yönetim Sistemi{% endblock %}
 
@@ -309,7 +311,8 @@
                         <h1 class="mb-0"><i class="fas fa-tasks me-2"></i>Ödevler</h1>
                         <p class="mb-0 opacity-75">Tüm ödevlerinizi buradan takip edebilirsiniz</p>
                     </div>
-                    {% if user.userprofile.user_type == 'teacher' %}
+                    {% get_user_type user as user_type %}
+                    {% if user_type == 'teacher' %}
                     <a href="{% url 'courses:assignment_create' %}" class="btn btn-light btn-modern">
                         <i class="fas fa-plus me-1"></i>Yeni Ödev
                     </a>

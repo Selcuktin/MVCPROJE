@@ -1,0 +1,404 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}👥 Öğrencilerim{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-user-graduate text-primary"></i> Öğrencilerim</h2>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Ana Sayfa</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'teachers:dashboard' %}">Öğretmen Paneli</a></li>
+                    <li class="breadcrumb-item active">Öğrencilerim</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Statistics Cards - Responsive -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="card text-white h-100" style="background: linear-gradient(135deg, #ff6b6b, #ee5a52);">
+                <div class="card-body text-center p-2 p-md-3">
+                    <i class="fas fa-users fa-lg fa-md-2x mb-2"></i>
+                    <h5 class="h6 h-md-4 mb-1">{{ total_students|default:0 }}</h5>
+                    <p class="mb-0 small">Toplam Öğrenci</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card text-white h-100" style="background: linear-gradient(135deg, #4ecdc4, #44a08d);">
+                <div class="card-body text-center p-2 p-md-3">
+                    <i class="fas fa-book fa-lg fa-md-2x mb-2"></i>
+                    <h5 class="h6 h-md-4 mb-1">{{ my_courses|default:0 }}</h5>
+                    <p class="mb-0 small">Verdiğim Ders</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card text-white h-100" style="background: linear-gradient(135deg, #45b7d1, #96c93d);">
+                <div class="card-body text-center p-2 p-md-3">
+                    <i class="fas fa-chart-line fa-lg fa-md-2x mb-2"></i>
+                    <h5 class="h6 h-md-4 mb-1">{{ class_average|floatformat:1|default:"0.0" }}</h5>
+                    <p class="mb-0 small">Sınıf Ortalaması</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="card text-white h-100" style="background: linear-gradient(135deg, #f093fb, #f5576c);">
+                <div class="card-body text-center p-2 p-md-3">
+                    <i class="fas fa-trophy fa-lg fa-md-2x mb-2"></i>
+                    <h5 class="h6 h-md-4 mb-1">{{ active_assignments|default:0 }}</h5>
+                    <p class="mb-0 small">Aktif Ödev</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Course Filter -->
+    {% if my_course_groups %}
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-6">
+                    <h5 class="mb-0"><i class="fas fa-filter"></i> Ders Filtresi</h5>
+                </div>
+                <div class="col-md-6">
+                    <select class="form-select" id="courseFilter" onchange="filterByCourse()">
+                        <option value="">Tüm Dersler</option>
+                        {% for course in my_course_groups %}
+                        <option value="{{ course.id }}">{{ course.course.code }} - {{ course.course.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Students List -->
+    {% if students %}
+    <div class="card">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-list"></i> Öğrenci Listesi ({{ students|length }})</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Öğrenci</th>
+                            <th>Öğrenci No</th>
+                            <th>Ders</th>
+                            <th>Vize</th>
+                            <th>Final</th>
+                            <th>Büt</th>
+                            <th>Ortalama</th>
+                            <th>Harf Notu</th>
+                            <th>Durum</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student_data in students %}
+                        {% for enrollment in student_data.enrollments %}
+                        {% with enrollment.group as course_group %}
+                        {% with student_data.student as student %}
+                        <tr data-course-id="{{ course_group.id }}">
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="avatar-circle me-3">
+                                        {{ student.first_name|first }}{{ student.last_name|first }}
+                                    </div>
+                                    <div>
+                                        <strong>{{ student.first_name }} {{ student.last_name }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ student.email }}</small>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ student.student_number|default:"N/A" }}</span>
+                            </td>
+                            <td>
+                                <div>
+                                    <strong>{{ course_group.course.code }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ course_group.course.name|truncatewords:2 }}</small>
+                                </div>
+                            </td>
+                            <!-- Vize Notu -->
+                            <td class="text-center">
+                                {% for note in student.notes.all %}
+                                {% if note.course_group.id == course_group.id %}
+                                <span
+                                    class="badge bg-{% if note.midterm >= 60 %}success{% elif note.midterm >= 40 %}warning{% else %}danger{% endif %}">
+                                    {{ note.midterm|default:"-" }}
+                                </span>
+
+                                {% endif %}
+                                {% empty %}
+                                <span class="text-muted">-</span>
+                                {% endfor %}
+                            </td>
+                            <!-- Final Notu -->
+                            <td class="text-center">
+                                {% for note in student.notes.all %}
+                                {% if note.course_group.id == course_group.id %}
+                                <span
+                                    class="badge bg-{% if note.final >= 60 %}success{% elif note.final >= 40 %}warning{% else %}danger{% endif %}">
+                                    {{ note.final|default:"-" }}
+                                </span>
+
+                                {% endif %}
+                                {% empty %}
+                                <span class="text-muted">-</span>
+                                {% endfor %}
+                            </td>
+                            <!-- Bütünleme Notu -->
+                            <td class="text-center">
+                                {% for note in student.notes.all %}
+                                {% if note.course_group.id == course_group.id %}
+                                {% if note.makeup %}
+                                <span class="badge bg-info">{{ note.makeup }}</span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+
+                                {% endif %}
+                                {% empty %}
+                                <span class="text-muted">-</span>
+                                {% endfor %}
+                            </td>
+                            <!-- Ortalama -->
+                            <td class="text-center">
+                                {% for note in student.notes.all %}
+                                {% if note.course_group.id == course_group.id %}
+                                {% if note.average %}
+                                <div class="progress" style="height: 20px; min-width: 60px;">
+                                    <div class="progress-bar bg-{% if note.average >= 60 %}success{% elif note.average >= 40 %}warning{% else %}danger{% endif %}"
+                                        style="width: {{ note.average }}%">
+                                        {{ note.average|floatformat:1 }}
+                                    </div>
+                                </div>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+
+                                {% endif %}
+                                {% empty %}
+                                <span class="text-muted">-</span>
+                                {% endfor %}
+                            </td>
+                            <!-- Harf Notu -->
+                            <td class="text-center">
+                                {% for note in student.notes.all %}
+                                {% if note.course_group.id == course_group.id %}
+                                {% if note.letter_grade %}
+                                <span
+                                    class="badge bg-{% if note.letter_grade == 'AA' or note.letter_grade == 'BA' %}success{% elif note.letter_grade == 'BB' or note.letter_grade == 'CB' %}primary{% elif note.letter_grade == 'CC' or note.letter_grade == 'DC' %}warning{% else %}danger{% endif %} fs-6">
+                                    {{ note.letter_grade }}
+                                </span>
+                                {% else %}
+                                <span class="text-muted">-</span>
+                                {% endif %}
+
+                                {% endif %}
+                                {% empty %}
+                                <span class="text-muted">-</span>
+                                {% endfor %}
+                            </td>
+                            <!-- Durum -->
+                            <td>
+                                {% for note in student.notes.all %}
+                                {% if note.course_group.id == course_group.id %}
+                                {% if note.letter_grade == 'FF' %}
+                                <span class="badge bg-danger">Kaldı</span>
+                                {% elif note.letter_grade %}
+                                <span class="badge bg-success">Geçti</span>
+                                {% else %}
+                                <span class="badge bg-secondary">Değerlendirilmedi</span>
+                                {% endif %}
+
+                                {% endif %}
+                                {% empty %}
+                                <span class="badge bg-secondary">Not Girilmedi</span>
+                                {% endfor %}
+                            </td>
+                            <td>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <a href="/admin/students/student/{{ student.id }}/change/"
+                                        class="btn btn-outline-info btn-sm" title="Profil">
+                                        <i class="fas fa-user"></i>
+                                    </a>
+                                    <a href="/admin/notes/note/add/" class="btn btn-outline-success btn-sm"
+                                        title="Not Ekle">
+                                        <i class="fas fa-sticky-note"></i>
+                                    </a>
+                                    <a href="{% url 'gradebook:course_gradebook' course_group.id %}"
+                                        class="btn btn-outline-primary btn-sm" title="Not Ekle/Düzenle">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endwith %}
+                        {% endwith %}
+                        {% endfor %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="row justify-content-center">
+        <div class="col-md-6 text-center">
+            <div class="card border-0 shadow-sm">
+                <div class="card-body py-5">
+                    <i class="fas fa-user-graduate fa-4x text-muted mb-4"></i>
+                    <h4 class="text-muted">Henüz Öğrenci Yok</h4>
+                    <p class="text-muted">Derslerinize henüz öğrenci kaydı yapılmamış.</p>
+                    <a href="{% url 'teachers:dashboard' %}" class="btn btn-primary">
+                        <i class="fas fa-arrow-left"></i> Ana Sayfaya Dön
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    /* Avatar Circle */
+    .avatar-circle {
+        width: 40px;
+        height: 40px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: bold;
+        font-size: 0.9rem;
+    }
+
+    /* Responsive Fixes */
+    @media (max-width: 768px) {
+        .table-responsive {
+            font-size: 0.9rem;
+        }
+
+        .btn-group-sm .btn {
+            padding: 0.25rem 0.4rem;
+            font-size: 0.8rem;
+        }
+
+        .avatar-circle {
+            width: 35px;
+            height: 35px;
+            font-size: 0.8rem;
+        }
+
+        .progress {
+            height: 15px !important;
+        }
+    }
+
+    @media (max-width: 576px) {
+        .container-fluid {
+            padding-left: 1rem;
+            padding-right: 1rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 0.5rem 0.25rem;
+            font-size: 0.85rem;
+        }
+
+        .btn-group {
+            flex-direction: column;
+        }
+
+        .btn-group .btn {
+            margin-bottom: 0.1rem;
+            border-radius: 0.25rem !important;
+        }
+    }
+
+    /* Statistics Cards Responsive */
+    @media (max-width: 576px) {
+        .card-body h5 {
+            font-size: 1.2rem;
+        }
+
+        .card-body .fa-lg {
+            font-size: 1.2em;
+        }
+
+        /* Hide some columns on mobile */
+        .table th:nth-child(n+6):nth-child(-n+8),
+        .table td:nth-child(n+6):nth-child(-n+8) {
+            display: none;
+        }
+    }
+
+    @media (max-width: 768px) {
+
+        /* Hide Büt and Harf Notu columns on tablet */
+        .table th:nth-child(6),
+        .table td:nth-child(6),
+        .table th:nth-child(8),
+        .table td:nth-child(8) {
+            display: none;
+        }
+    }
+
+    /* Ensure cards don't overflow */
+    @media (max-width: 1200px) {
+        .col-6.col-lg-3 {
+            flex: 0 0 50%;
+            max-width: 50%;
+        }
+    }
+
+    @media (max-width: 992px) {
+        .col-6.col-lg-3 {
+            flex: 0 0 50%;
+            max-width: 50%;
+        }
+    }
+
+    /* Table hover effects */
+    .table-hover tbody tr:hover {
+        background-color: rgba(102, 126, 234, 0.05);
+    }
+
+    /* Progress bar animation */
+    .progress-bar {
+        transition: width 0.6s ease;
+    }
+</style>
+
+<script>
+    function filterByCourse() {
+        const courseId = document.getElementById('courseFilter').value;
+        const rows = document.querySelectorAll('tbody tr[data-course-id]');
+
+        rows.forEach(row => {
+            if (courseId === '' || row.getAttribute('data-course-id') === courseId) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+</script>
+{% endblock %}

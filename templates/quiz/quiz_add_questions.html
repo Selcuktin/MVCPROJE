@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Soru Ekle - {{ quiz.title }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="fas fa-question-circle"></i> Soru Ekle: {{ quiz.title }}</h2>
+    <p class="lead">{{ quiz.course_group.course.name }}</p>
+    
+    <div class="alert {% if quiz.use_random_questions %}alert-warning{% else %}alert-info{% endif %}">
+        <i class="fas fa-info-circle"></i> 
+        {% if quiz.use_random_questions %}
+            <strong>Rastgele Soru Modu Aktif:</strong> En az <strong>{{ quiz.random_question_pool_size }}</strong> soru seçmelisiniz. 
+            Her öğrenci bu havuzdan rastgele <strong>{{ quiz.random_question_count }}</strong> soru alacak.
+        {% else %}
+            Soru bankalarından soruları seçerek sınava ekleyin.
+        {% endif %}
+    </div>
+    
+    <form method="post" id="questionForm">
+        {% csrf_token %}
+        
+        {% if banks %}
+        {% for bank in banks %}
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0">{{ bank.name }}</h5>
+                    <small>{{ bank.questions.count }} soru</small>
+                </div>
+                <button type="button" class="btn btn-sm btn-light" onclick="toggleBankSelection('bank_{{ bank.id }}')">
+                    <i class="fas fa-check-square"></i> Tümünü Seç/Kaldır
+                </button>
+            </div>
+            <div class="card-body">
+                {% if bank.questions.all %}
+                <div class="row" id="bank_{{ bank.id }}">
+                    {% for question in bank.questions.all %}
+                    {% if question.id not in added_question_ids %}
+                    <div class="col-md-12 mb-2">
+                        <div class="form-check">
+                            <input class="form-check-input question-checkbox" type="checkbox" name="questions" value="{{ question.id }}" id="q{{ question.id }}">
+                            <label class="form-check-label" for="q{{ question.id }}">
+                                <strong>{{ question.question_text|truncatewords:15 }}</strong>
+                                <span class="badge bg-secondary">{{ question.points }} puan</span>
+                            </label>
+                        </div>
+                    </div>
+                    {% endif %}
+                    {% endfor %}
+                </div>
+                {% if not bank.questions.all %}
+                <p class="text-muted">Bu bankada soru bulunmuyor.</p>
+                {% endif %}
+                {% else %}
+                <p class="text-muted">Bu bankada soru bulunmuyor.</p>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+        
+        <div class="d-flex justify-content-between mt-4">
+            <a href="{% url 'quiz:quiz_detail' quiz.id %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Atla
+            </a>
+            <button type="submit" class="btn btn-success" id="submitBtn" onclick="return validateQuestionSelection()">
+                <i class="fas fa-check"></i> Soruları Ekle ve Bitir
+            </button>
+        </div>
+        {% else %}
+        <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle"></i> Henüz soru bankanız yok. 
+            <a href="{% url 'quiz:question_bank_list' %}" class="alert-link">Soru bankası oluşturun</a>.
+        </div>
+        
+        <a href="{% url 'quiz:quiz_detail' quiz.id %}" class="btn btn-secondary mt-3">
+            <i class="fas fa-arrow-left"></i> Sınav Detayına Dön
+        </a>
+        {% endif %}
+    </form>
+</div>
+
+<script>
+// Toggle all questions in a bank
+function toggleBankSelection(bankId) {
+    const bankDiv = document.getElementById(bankId);
+    if (!bankDiv) return;
+    
+    const checkboxes = bankDiv.querySelectorAll('input[type="checkbox"]');
+    if (checkboxes.length === 0) {
+        alert('Bu bankada seçilebilir soru bulunmuyor.');
+        return;
+    }
+    
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    checkboxes.forEach(cb => cb.checked = !allChecked);
+    
+    updateSubmitButton();
+}
+
+// Validate question selection before submit
+function validateQuestionSelection() {
+    const checkboxes = document.querySelectorAll('input[name="questions"]:checked');
+    if (checkboxes.length === 0) {
+        alert('Lütfen en az bir soru seçin!');
+        return false;
+    }
+    return true;
+}
+
+// Update submit button state
+function updateSubmitButton() {
+    const checkboxes = document.querySelectorAll('input[name="questions"]:checked');
+    const submitBtn = document.getElementById('submitBtn');
+    if (checkboxes.length === 0) {
+        submitBtn.disabled = true;
+        submitBtn.classList.add('disabled');
+    } else {
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('disabled');
+    }
+}
+
+// Add event listeners to all checkboxes
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('input[name="questions"]');
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateSubmitButton);
+    });
+    updateSubmitButton();
+});
+</script>
+{% endblock %}

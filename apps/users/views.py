@@ -73,12 +73,26 @@ else:
         redirect_authenticated_user = True
         
         def get_success_url(self):
+            # Superuser/staff için admin panel
+            if self.request.user.is_superuser or self.request.user.is_staff:
+                return '/admin/'
+            
             controller = UserController()
             return controller.get_login_success_url(self.request.user)
         
         def form_valid(self, form):
-            controller = UserController()
-            controller.handle_login_success(self.request, form.get_user())
+            user = form.get_user()
+            
+            # Superuser/staff check
+            if user.is_superuser or user.is_staff:
+                # Admin için özel işlem
+                from django.contrib import messages
+                messages.success(self.request, f'Admin olarak giriş yaptınız, Hoş geldiniz {user.get_full_name() or user.username}!')
+            else:
+                # Normal kullanıcı işlemi
+                controller = UserController()
+                controller.handle_login_success(self.request, user)
+            
             return super().form_valid(form)
 
 class CustomLogoutView(LogoutView):
@@ -254,11 +268,19 @@ from django.contrib.auth.decorators import login_required
 import json
 
 @login_required
-@csrf_exempt
 def mark_notification_read(request):
     """Mark a notification as read via AJAX"""
     controller = UserController()
     return controller.mark_notification_read_ajax(request)
+
+
+@login_required
+def get_unread_notification_count(request):
+    """Get unread notification count via AJAX"""
+    from .services import UserService
+    service = UserService()
+    count = service.get_unread_notifications_count(request.user)
+    return JsonResponse({'count': count})
 
 
 class ProfileView(LoginRequiredMixin, TemplateView):

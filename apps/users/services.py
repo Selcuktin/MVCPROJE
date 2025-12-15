@@ -361,10 +361,21 @@ class UserService:
         
         return assignments_in_month
     
+    def get_unread_notifications_count(self, user):
+        """Get unread notification count only (fast method for AJAX)"""
+        data = self.get_notifications_data(user)
+        return data.get('unread_count', 0)
+    
+    def get_navbar_notifications(self, user, limit=4):
+        """Get recent notifications for navbar dropdown"""
+        data = self.get_notifications_data(user)
+        notifications = data.get('notifications', [])
+        return notifications[:limit]
+    
     def get_notifications_data(self, user):
         """Get notifications for user"""
         user_type = 'student'
-        if hasattr(user, 'userprofile'):
+        if hasattr(user, 'userprofile') and user.userprofile:
             user_type = user.userprofile.user_type
         
         notifications = []
@@ -387,9 +398,13 @@ class UserService:
                 'color': 'info'
             }]
         
+        unread_count = len([n for n in notifications if not n.get('is_read')])
+        read_count = len(notifications) - unread_count
+        
         return {
             'notifications': notifications,
-            'unread_count': len([n for n in notifications if not n['is_read']]),
+            'unread_count': unread_count,
+            'read_count': read_count,
             'total_count': len(notifications)
         }
     

@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ders Seçimi{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <h2><i class="fas fa-book-reader"></i> Ders Seçimi</h2>
+            
+            {% if active_term %}
+            <div class="alert alert-info">
+                <strong>Aktif Dönem:</strong> {{ active_term.name }}
+                {% if active_term.is_registration_open %}
+                <span class="badge bg-success">Kayıt Açık</span>
+                {% else %}
+                <span class="badge bg-danger">Kayıt Kapalı</span>
+                {% endif %}
+                
+                {% if active_term.days_remaining %}
+                <span class="float-end">
+                    <i class="fas fa-clock"></i> {{ active_term.days_remaining }} gün kaldı
+                </span>
+                {% endif %}
+            </div>
+            {% else %}
+            <div class="alert alert-warning">
+                Aktif dönem bulunamadı. Kayıt yapılamaz.
+            </div>
+            {% endif %}
+            
+            <hr>
+            
+            <!-- Current Enrollments -->
+            <h4>Kayıtlı Derslerim ({{ current_enrollments.count }})</h4>
+            {% if current_enrollments %}
+            <div class="table-responsive mb-4">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Ders Kodu</th>
+                            <th>Ders Adı</th>
+                            <th>Öğretmen</th>
+                            <th>Kredi</th>
+                            <th>Grup</th>
+                            <th>İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for enrollment in current_enrollments %}
+                        <tr>
+                            <td>{{ enrollment.group.course.code }}</td>
+                            <td>{{ enrollment.group.course.name }}</td>
+                            <td>{{ enrollment.group.teacher.first_name }} {{ enrollment.group.teacher.last_name }}</td>
+                            <td>{{ enrollment.group.course.credits }}</td>
+                            <td>{{ enrollment.group.name }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-danger drop-btn" 
+                                        data-enrollment-id="{{ enrollment.id }}"
+                                        data-course-name="{{ enrollment.group.course.name }}">
+                                    <i class="fas fa-times"></i> Bırak
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">Henüz kayıtlı olduğunuz ders yok.</p>
+            {% endif %}
+            
+            <hr>
+            
+            <!-- Available Courses -->
+            <h4>Kayıt Yapılabilir Dersler</h4>
+            {% if registration_open %}
+            {% if available_courses %}
+            <div class="row">
+                {% for item in available_courses %}
+                <div class="col-md-6 mb-3">
+                    <div class="card {% if not item.has_capacity %}border-danger{% endif %}">
+                        <div class="card-body">
+                            <h5 class="card-title">
+                                {{ item.group.course.code }} - {{ item.group.course.name }}
+                                {% if not item.has_capacity %}
+                                <span class="badge bg-danger">Kontenjan Dolu</span>
+                                {% endif %}
+                            </h5>
+                            <p class="card-text">
+                                <strong>Öğretmen:</strong> {{ item.group.teacher.first_name }} {{ item.group.teacher.last_name }}<br>
+                                <strong>Grup:</strong> {{ item.group.name }}<br>
+                                <strong>Kredi:</strong> {{ item.group.course.credits }}<br>
+                                <strong>Sınıf:</strong> {{ item.group.classroom }}<br>
+                                <strong>Program:</strong> {{ item.group.schedule }}<br>
+                                <strong>Kapasite:</strong> {{ item.method.current_enrollment_count }} / {{ item.method.max_students|default:"Sınırsız" }}
+                            </p>
+                            
+                            {% if item.requires_key %}
+                            <div class="input-group mb-2">
+                                <input type="text" class="form-control enrollment-key" 
+                                       placeholder="Kayıt Anahtarı" 
+                                       data-group-id="{{ item.group.id }}">
+                            </div>
+                            {% endif %}
+                            
+                            <button class="btn btn-primary enroll-btn w-100" 
+                                    data-group-id="{{ item.group.id }}"
+                                    data-requires-key="{{ item.requires_key|yesno:'true,false' }}"
+                                    {% if not item.has_capacity %}disabled{% endif %}>
+                                <i class="fas fa-plus"></i> Kayıt Ol
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="alert alert-info">
+                Kayıt yapabileceğiniz ders bulunmamaktadır.
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="alert alert-warning">
+                <i class="fas fa-exclamation-triangle"></i> Kayıt dönemi kapalı.
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- AJAX Scripts -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Enroll button handler
+    document.querySelectorAll('.enroll-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const groupId = this.dataset.groupId;
+            const requiresKey = this.dataset.requiresKey === 'true';
+            
+            let enrollmentKey = '';
+            if (requiresKey) {
+                const keyInput = document.querySelector(`.enrollment-key[data-group-id="${groupId}"]`);
+                enrollmentKey = keyInput.value.trim();
+                
+                if (!enrollmentKey) {
+                    alert('Lütfen kayıt anahtarını giriniz.');
+                    return;
+                }
+            }
+            
+            if (!confirm('Bu derse kayıt olmak istediğinizden emin misiniz?')) {
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+            if (enrollmentKey) {
+                formData.append('enrollment_key', enrollmentKey);
+            }
+            
+            fetch(`/enrollment/enroll/${groupId}/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Kayıt başarılı!');
+                    location.reload();
+                } else {
+                    alert('Hata: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Bir hata oluştu: ' + error);
+            });
+        });
+    });
+    
+    // Drop button handler
+    document.querySelectorAll('.drop-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const enrollmentId = this.dataset.enrollmentId;
+            const courseName = this.dataset.courseName;
+            
+            if (!confirm(`"${courseName}" dersini bırakmak istediğinizden emin misiniz?`)) {
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+            
+            fetch(`/enrollment/drop/${enrollmentId}/`, {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Ders başarıyla bırakıldı.');
+                    location.reload();
+                } else {
+                    alert('Hata: ' + data.message);
+                }
+            })
+            .catch(error => {
+                alert('Bir hata oluştu: ' + error);
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

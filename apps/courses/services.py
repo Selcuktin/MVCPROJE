@@ -82,10 +82,29 @@ class CourseService:
         return course
     
     def delete_course(self, course):
-        """Delete course (soft delete)"""
+        """Delete course (soft delete) with dependency check"""
+        # Check for active course groups
+        active_groups = course.groups.filter(status='active').count()
+        if active_groups > 0:
+            return {
+                'success': False,
+                'error': f'Bu dersin {active_groups} aktif grubu var. Önce grupları silin veya arşivleyin.'
+            }
+        
+        # Check for active enrollments
+        active_enrollments = Enrollment.objects.filter(
+            group__course=course,
+            status='enrolled'
+        ).count()
+        if active_enrollments > 0:
+            return {
+                'success': False,
+                'error': f'Bu derse kayıtlı {active_enrollments} öğrenci var. Önce kayıtları kaldırın.'
+            }
+        
         course.status = 'inactive'
         course.save()
-        return True
+        return {'success': True}
 
 
 class AssignmentService:
@@ -520,6 +539,24 @@ class TeacherCourseAssignmentService:
     
     def assign_course_to_teacher(self, course, teacher, semester, classroom, schedule, performed_by):
         """Assign course to teacher"""
+        # Check if assignment already exists
+        existing = CourseGroup.objects.filter(
+            course=course,
+            teacher=teacher,
+            semester=semester,
+            status='active'
+        ).exists()
+        
+        if existing:
+            return {
+                'success': False,
+                'error': 'Bu öğretmen bu dersi bu dönemde zaten veriyor',
+                'course_group': None,
+                'compatibility': None,
+                'conflicts': None,
+                'warnings': ['Mevcut atama tespit edildi']
+            }
+        
         # Check compatibility
         compatibility = self.check_compatibility(teacher, course)
         
@@ -576,21 +613,50 @@ class TeacherCourseAssignmentService:
         return {'success': True, 'message': 'Atama başarıyla kaldırıldı'}
     
     def bulk_assign(self, course_ids, teacher_ids, semester, classroom, schedule, performed_by):
-        """Bulk assign courses to teachers"""
+        """Bulk assign courses to teachers with proper error handling"""
         self._bulk_mode = True
         results = []
+        errors = []
         
         for course_id in course_ids:
-            course = Course.objects.get(pk=course_id)
+            try:
+                course = Course.objects.get(pk=course_id)
+            except Course.DoesNotExist:
+                errors.append(f'Ders ID {course_id} bulunamadı')
+                continue
+            
             for teacher_id in teacher_ids:
-                teacher = Teacher.objects.get(pk=teacher_id)
-                result = self.assign_course_to_teacher(
-                    course, teacher, semester, classroom, schedule, performed_by
-                )
-                results.append(result)
+                try:
+                    teacher = Teacher.objects.get(pk=teacher_id)
+                except Teacher.DoesNotExist:
+                    errors.append(f'Öğretmen ID {teacher_id} bulunamadı')
+                    continue
+                
+                try:
+                    result = self.assign_course_to_teacher(
+                        course, teacher, semester, classroom, schedule, performed_by
+                    )
+                    results.append(result)
+                except Exception as e:
+                    errors.append(f'{course.code} - {teacher.full_name}: {str(e)}')
+                    results.append({
+                        'success': False,
+                        'error': str(e),
+                        'course': course,
+                        'teacher': teacher
+                    })
         
         delattr(self, '_bulk_mode')
-        return results
+        
+        # Return both results and errors
+        success_count = sum(1 for r in results if r.get('success'))
+        return {
+            'results': results,
+            'errors': errors,
+            'total': len(results),
+            'success_count': success_count,
+            'error_count': len(results) - success_count
+        }
     
     def bulk_remove(self, course_group_ids, performed_by):
         """Bulk remove course assignments"""

@@ -1,0 +1,264 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load quiz_extras %}
+
+{% block title %}{{ bank.name }} - Soru Bankası{% endblock %}
+
+{% block extra_css %}
+<style>
+    .bank-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+    }
+    
+    .question-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        transition: all 0.3s ease;
+    }
+    
+    .question-card:hover {
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        transform: translateY(-2px);
+    }
+    
+    .question-type-badge {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    
+    .choice-item {
+        background: #f8f9fa;
+        padding: 0.5rem 1rem;
+        border-radius: 6px;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .choice-item.correct {
+        background: #d4edda;
+        border: 2px solid #28a745;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <!-- Bank Header -->
+    <div class="bank-header">
+        <div class="d-flex justify-content-between align-items-start">
+            <div>
+                <h2><i class="fas fa-database"></i> {{ bank.name }}</h2>
+                <p class="mb-2 opacity-75">{{ bank.description }}</p>
+                <div class="d-flex gap-3">
+                    <span><i class="fas fa-question-circle"></i> {{ questions.count }} Soru</span>
+                    <span><i class="fas fa-user"></i> {{ bank.created_by.get_full_name|default:bank.created_by.username }}</span>
+                    {% if bank.is_shared %}
+                    <span class="badge bg-success"><i class="fas fa-share-alt"></i> Paylaşılan</span>
+                    {% endif %}
+                </div>
+            </div>
+            <div>
+                <a href="{% url 'quiz:question_create' bank.id %}" class="btn btn-light">
+                    <i class="fas fa-plus"></i> Soru Ekle
+                </a>
+                <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#bulkUploadModal">
+                    <i class="fas fa-upload"></i> Toplu Soru Ekle
+                </button>
+                <a href="{% url 'quiz:question_bank_list' %}" class="btn btn-outline-light">
+                    <i class="fas fa-arrow-left"></i> Geri
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Questions List -->
+    {% if questions %}
+    <div class="row">
+        {% for question in questions %}
+        <div class="col-12">
+            <div class="question-card">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="flex-grow-1">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="question-type-badge bg-primary text-white">
+                                {% if question.question_type == 'multiple_choice' %}
+                                    <i class="fas fa-list"></i> Çoktan Seçmeli
+                                {% elif question.question_type == 'true_false' %}
+                                    <i class="fas fa-check-double"></i> Doğru/Yanlış
+                                {% elif question.question_type == 'short_answer' %}
+                                    <i class="fas fa-pen"></i> Kısa Cevap
+                                {% else %}
+                                    <i class="fas fa-file-alt"></i> Essay
+                                {% endif %}
+                            </span>
+                            <span class="badge bg-secondary">
+                                <i class="fas fa-star"></i> {{ question.points }} Puan
+                            </span>
+                        </div>
+                        <h5 class="mb-3">{{ question.question_text }}</h5>
+                        
+                        <!-- Display answer choices -->
+                        {% if question.question_type == 'multiple_choice' %}
+                        <div class="choices-list">
+                            {% if question.option_a %}
+                            <div class="choice-item {% if question.correct_answer|upper == 'A' %}correct{% endif %}">
+                                <span class="fw-bold">A)</span>
+                                <span class="flex-grow-1">{{ question.option_a }}</span>
+                                {% if question.correct_answer|upper == 'A' %}
+                                <span class="badge bg-success"><i class="fas fa-check"></i> Doğru</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            {% if question.option_b %}
+                            <div class="choice-item {% if question.correct_answer|upper == 'B' %}correct{% endif %}">
+                                <span class="fw-bold">B)</span>
+                                <span class="flex-grow-1">{{ question.option_b }}</span>
+                                {% if question.correct_answer|upper == 'B' %}
+                                <span class="badge bg-success"><i class="fas fa-check"></i> Doğru</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            {% if question.option_c %}
+                            <div class="choice-item {% if question.correct_answer|upper == 'C' %}correct{% endif %}">
+                                <span class="fw-bold">C)</span>
+                                <span class="flex-grow-1">{{ question.option_c }}</span>
+                                {% if question.correct_answer|upper == 'C' %}
+                                <span class="badge bg-success"><i class="fas fa-check"></i> Doğru</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            {% if question.option_d %}
+                            <div class="choice-item {% if question.correct_answer|upper == 'D' %}correct{% endif %}">
+                                <span class="fw-bold">D)</span>
+                                <span class="flex-grow-1">{{ question.option_d }}</span>
+                                {% if question.correct_answer|upper == 'D' %}
+                                <span class="badge bg-success"><i class="fas fa-check"></i> Doğru</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                            {% if question.option_e %}
+                            <div class="choice-item {% if question.correct_answer|upper == 'E' %}correct{% endif %}">
+                                <span class="fw-bold">E)</span>
+                                <span class="flex-grow-1">{{ question.option_e }}</span>
+                                {% if question.correct_answer|upper == 'E' %}
+                                <span class="badge bg-success"><i class="fas fa-check"></i> Doğru</span>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% elif question.question_type == 'true_false' %}
+                        <div class="choices-list">
+                            <div class="choice-item {% if question.correct_answer|upper == 'T' or question.correct_answer|upper == 'TRUE' %}correct{% endif %}">
+                                <span class="fw-bold">T)</span>
+                                <span class="flex-grow-1">Doğru</span>
+                                {% if question.correct_answer|upper == 'T' or question.correct_answer|upper == 'TRUE' %}
+                                <span class="badge bg-success"><i class="fas fa-check"></i> Doğru</span>
+                                {% endif %}
+                            </div>
+                            <div class="choice-item {% if question.correct_answer|upper == 'F' or question.correct_answer|upper == 'FALSE' %}correct{% endif %}">
+                                <span class="fw-bold">F)</span>
+                                <span class="flex-grow-1">Yanlış</span>
+                                {% if question.correct_answer|upper == 'F' or question.correct_answer|upper == 'FALSE' %}
+                                <span class="badge bg-success"><i class="fas fa-check"></i> Doğru</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-sm btn-outline-primary" onclick="editQuestion({{ question.id }})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteQuestion({{ question.id }})">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="text-muted small">
+                    <i class="fas fa-clock"></i> {{ question.created_at|date:"d.m.Y H:i" }}
+                    <span class="ms-2"><i class="fas fa-user"></i>
+                        {% if question.bank.created_by %}
+                            {{ question.bank.created_by.get_full_name|default:question.bank.created_by.username }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="alert alert-info text-center">
+        <i class="fas fa-info-circle fa-2x mb-3"></i>
+        <h5>Henüz soru eklenmemiş</h5>
+        <p class="mb-3">Bu soru bankasına ilk soruyu siz ekleyin!</p>
+        <a href="{% url 'quiz:question_create' bank.id %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> İlk Soruyu Ekle
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Bulk Upload Modal -->
+<div class="modal fade" id="bulkUploadModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title"><i class="fas fa-upload"></i> Toplu Soru Ekle</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="bulkUploadForm" method="post" enctype="multipart/form-data" action="{% url 'quiz:question_bulk_upload' bank.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle"></i> <strong>Format:</strong> Her satır bir soru olmalıdır. Format: <br>
+                        <code>Soru metni | Tip (multiple_choice/true_false/short_answer/essay) | Doğru cevap | Puan | A) Seçenek A | B) Seçenek B | ...</code>
+                    </div>
+                    <div class="mb-3">
+                        <label for="bulkQuestions" class="form-label">Sorular (Her satır bir soru)</label>
+                        <textarea class="form-control" id="bulkQuestions" name="questions" rows="10" 
+                                  placeholder="Örnek:&#10;Python nedir? | multiple_choice | A | 5 | A) Programlama dili | B) Veritabanı | C) İşletim sistemi | D) Web tarayıcısı&#10;Python dinamik tipte bir dildir. | true_false | T | 3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="bulkFile" class="form-label">Veya Dosya Yükle (TXT)</label>
+                        <input type="file" class="form-control" id="bulkFile" name="file" accept=".txt">
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-upload"></i> Yükle
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function editQuestion(questionId) {
+    alert('Düzenleme özelliği yakında eklenecek!');
+    // TODO: Implement edit functionality
+}
+
+function deleteQuestion(questionId) {
+    if (confirm('Bu soruyu silmek istediğinizden emin misiniz?')) {
+        // TODO: Implement delete functionality
+        alert('Silme özelliği yakında eklenecek!');
+    }
+}
+</script>
+{% endblock %}

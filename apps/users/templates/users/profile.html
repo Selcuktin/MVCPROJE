@@ -262,9 +262,9 @@
             <i class="fas fa-home"></i>
             Ana Sayfaya Dön
         </a>
-        <a href="{% url 'users:control_panel' %}" class="action-btn action-btn-secondary">
-            <i class="fas fa-tachometer-alt"></i>
-            Kontrol Paneli
+        <a href="/admin/" class="action-btn action-btn-secondary">
+            <i class="fas fa-cog"></i>
+            Yönetim Paneli
         </a>
         {% if user_profile.user_type == 'student' %}
         <a href="{% url 'students:courses' %}" class="action-btn action-btn-secondary">

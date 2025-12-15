@@ -134,18 +134,26 @@ class Command(BaseCommand):
         groups = CourseGroup.objects.all()
         students = Student.objects.all()
         
-        for group in groups:
-            for student in students[:2]:  # İlk 2 öğrenciyi kaydet
+        # Enroll first 2 students, but only 1 group per course per student (no duplicates)
+        for student in students[:2]:
+            seen_course_ids = set(
+                Enrollment.objects.filter(student=student).values_list('group__course_id', flat=True)
+            )
+            for group in groups.order_by('course__code', 'id'):
+                if group.course_id in seen_course_ids:
+                    continue
                 if not Enrollment.objects.filter(student=student, group=group).exists():
                     Enrollment.objects.create(
                         student=student,
                         group=group,
                         status='enrolled'
                     )
+                    seen_course_ids.add(group.course_id)
                     self.stdout.write(f'[+] Enrollment created: {student.full_name} -> {group.course.name}')
 
         # Create sample assignments
-        from apps.courses.models import Assignment
+        from apps.courses.models import Assignment, Submission
+        from django.core.files.base import ContentFile
         from datetime import datetime, timedelta
         
         assignments_data = [
@@ -182,6 +190,23 @@ class Command(BaseCommand):
                         status='active'
                     )
                     self.stdout.write(f'[+] Assignment created: {assignment_data["title"]}')
+
+        # Create a few demo submissions (ungraded) so teacher dashboard shows "notlandırılacak ödev"
+        for assignment in Assignment.objects.filter(status='active').select_related('group')[:10]:
+            enrollment = Enrollment.objects.filter(group=assignment.group, status='enrolled').select_related('student').first()
+            if not enrollment:
+                continue
+            if Submission.objects.filter(assignment=assignment, student=enrollment.student).exists():
+                continue
+            submission = Submission(
+                assignment=assignment,
+                student=enrollment.student,
+                status='submitted',
+                score=None,
+                feedback='',
+            )
+            submission.file_url.save('demo_submission.txt', ContentFile(b'Demo submission'), save=True)
+            self.stdout.write(f'[+] Submission created (ungraded): {enrollment.student.full_name} -> {assignment.title}')
 
         # Create sample announcements
         from apps.courses.models import Announcement
@@ -242,6 +267,85 @@ class Command(BaseCommand):
                         exam_type='final',
                         score=final_score
                     )
+
+        # Create sample Gradebook (categories/items/grades) so /gradebook/my-grades/ isn't empty
+        try:
+            from django.utils import timezone
+            from apps.gradebook.models import GradeCategory, GradeItem, Grade
+            from decimal import Decimal
+
+            for group in groups:
+                # Categories
+                vize_cat, _ = GradeCategory.objects.get_or_create(
+                    course_group=group,
+                    name='Vize',
+                    defaults={
+                        'category_type': 'exam',
+                        'weight': Decimal('40'),
+                        'description': 'Vize sınavı (%40)'
+                    }
+                )
+                final_cat, _ = GradeCategory.objects.get_or_create(
+                    course_group=group,
+                    name='Final',
+                    defaults={
+                        'category_type': 'exam',
+                        'weight': Decimal('60'),
+                        'description': 'Final sınavı (%60)'
+                    }
+                )
+
+                # Items
+                vize_item, _ = GradeItem.objects.get_or_create(
+                    category=vize_cat,
+                    name='Vize Sınavı',
+                    defaults={
+                        'max_score': Decimal('100'),
+                        'weight_in_category': Decimal('100'),
+                        'status': 'published',
+                    }
+                )
+                final_item, _ = GradeItem.objects.get_or_create(
+                    category=final_cat,
+                    name='Final Sınavı',
+                    defaults={
+                        'max_score': Decimal('100'),
+                        'weight_in_category': Decimal('100'),
+                        'status': 'published',
+                    }
+                )
+
+                for enrollment in Enrollment.objects.filter(group=group, status='enrolled').select_related('student__user'):
+                    student = enrollment.student
+
+                    # Use Note scores if they exist (keeps the demo consistent)
+                    vize_note = Note.objects.filter(course=group.course, student=student.user, exam_type='vize').first()
+                    final_note = Note.objects.filter(course=group.course, student=student.user, exam_type='final').first()
+
+                    if vize_note and vize_note.score is not None:
+                        Grade.objects.get_or_create(
+                            student=student,
+                            item=vize_item,
+                            defaults={
+                                'enrollment': enrollment,
+                                'score': Decimal(str(vize_note.score)),
+                                'graded_at': timezone.now(),
+                            }
+                        )
+                    if final_note and final_note.score is not None:
+                        Grade.objects.get_or_create(
+                            student=student,
+                            item=final_item,
+                            defaults={
+                                'enrollment': enrollment,
+                                'score': Decimal(str(final_note.score)),
+                                'graded_at': timezone.now(),
+                            }
+                        )
+
+            self.stdout.write(self.style.SUCCESS('[+] Gradebook demo data created/updated'))
+        except Exception as e:
+            self.stdout.write(f'[!] Gradebook demo data skipped: {e}')
 
         self.stdout.write(self.style.SUCCESS('[+] Sample data created successfully!'))
         self.stdout.write('')

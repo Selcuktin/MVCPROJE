@@ -11,6 +11,11 @@ from apps.users.api_views import faq_ask
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenBlacklistView
 
+# Admin panel başlığını özelleştir
+admin.site.site_header = "Uzaktan Eğitim Sistemi - Yönetim Paneli"
+admin.site.site_title = "Yönetim Paneli"
+admin.site.index_title = "Sistem Yönetimi"
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('', HomeView.as_view(), name='home'),
@@ -19,6 +24,10 @@ urlpatterns = [
     path('students/', include('apps.students.urls')),
     path('teachers/', include('apps.teachers.urls')),
     path('notes/', include('apps.notes.urls')),
+    path('enrollment/', include('apps.enrollment.urls')),
+    path('gradebook/', include('apps.gradebook.urls')),
+    path('quiz/', include('apps.quiz.urls')),
+    path('messages/', include('apps.forum.urls')),
     
     # JWT Authentication
     path('api/token/', TokenObtainPairView.as_view(), name='token_obtain_pair'),

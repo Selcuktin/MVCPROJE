@@ -9,6 +9,9 @@ from datetime import timedelta
 from .models import Student
 from apps.courses.models import Course, Enrollment, Assignment, Announcement, Submission
 from apps.notes.models import Note
+from apps.gradebook.models import GradeCategory
+
+
 
 
 class StudentService:
@@ -35,11 +38,20 @@ class StudentService:
         """Get student detail with related data"""
         student = Student.objects.get(id=student_id)
         
-        # Get student's enrollments
-        enrollments = Enrollment.objects.filter(
+        # Get student's enrollments and remove duplicates
+        all_enrollments = Enrollment.objects.filter(
             student=student, 
             status='enrolled'
-        ).select_related('group__course', 'group__teacher')
+        ).select_related('group__course', 'group__teacher').order_by('group__course__code', 'group__semester')
+        
+        # Remove duplicates: keep only one enrollment per course code + semester
+        seen = set()
+        enrollments = []
+        for enrollment in all_enrollments:
+            key = (enrollment.group.course.code, enrollment.group.semester)
+            if key not in seen:
+                seen.add(key)
+                enrollments.append(enrollment)
         
         # Get student's assignments
         assignments = Assignment.objects.filter(
@@ -78,21 +90,37 @@ class StudentService:
         try:
             student = Student.objects.get(user=user)
             
-            # Get enrollments
-            enrollments = Enrollment.objects.filter(student=student, status='enrolled')
+            # Get enrollments and remove duplicates by course code + semester
+            all_enrollments = Enrollment.objects.filter(
+                student=student, 
+                status='enrolled'
+            ).select_related(
+                'group__course', 
+                'group__teacher'
+            ).order_by('group__course__code', 'group__semester')
+            
+            # Remove duplicates: keep only one enrollment per course code + semester
+            seen = set()
+            enrollments = []
+            for enrollment in all_enrollments:
+                key = (enrollment.group.course.code, enrollment.group.semester)
+                if key not in seen:
+                    seen.add(key)
+                    enrollments.append(enrollment)
+            
             enrolled_groups = [enrollment.group for enrollment in enrollments]
             
             # Get recent assignments
             recent_assignments = Assignment.objects.filter(
                 group__in=enrolled_groups,
                 status='active'
-            ).order_by('-create_date')[:5]
+            ).select_related('group__course').order_by('-create_date')[:5]
             
             # Get recent announcements
             recent_announcements = Announcement.objects.filter(
                 group__in=enrolled_groups,
                 status='active'
-            ).order_by('-create_date')[:5]
+            ).select_related('group__course').order_by('-create_date')[:5]
             
             # Get pending submissions count
             pending_submissions = Assignment.objects.filter(
@@ -103,12 +131,20 @@ class StudentService:
                 submissions__student=student
             ).count()
             
+            # Get grades summary
+            grades_count = GradeCategory.objects.filter(
+                course_group__in=enrolled_groups,
+                is_active=True
+            ).count()
+            
             return {
                 'student': student,
                 'enrollments': enrollments,
+                'enrolled_count': len(enrollments),
                 'recent_assignments': recent_assignments,
                 'recent_announcements': recent_announcements,
                 'pending_submissions': pending_submissions,
+                'grades_count': grades_count,
                 'now': timezone.now()
             }
             
@@ -120,20 +156,50 @@ class StudentService:
         try:
             student = Student.objects.get(user=user)
             
-            # Get enrolled course groups
-            enrollments = Enrollment.objects.filter(student=student, status='enrolled')
+            # Get enrollments (show active + completed) with related data
+            enrollments_qs = Enrollment.objects.filter(
+                student=student,
+                status__in=['enrolled', 'completed']
+            ).select_related(
+                'group__course',
+                'group__teacher'
+            ).order_by('group__course__code', '-id')
+
+            # De-dupe by course (students should not see same course twice even if multiple groups exist)
+            enrollments = []
+            seen_course_ids = set()
+            for e in enrollments_qs:
+                course_id = getattr(e.group, 'course_id', None)
+                if course_id and course_id in seen_course_ids:
+                    continue
+                if course_id:
+                    seen_course_ids.add(course_id)
+                enrollments.append(e)
+
+            active_enrollments_count = len([e for e in enrollments if e.status == 'enrolled'])
+            completed_enrollments_count = len([e for e in enrollments if e.status == 'completed'])
+
+            total_credits = 0
+            for e in enrollments:
+                try:
+                    total_credits += int(getattr(e.group.course, 'credits', 0) or 0)
+                except (TypeError, ValueError):
+                    pass
             
             # Get available course groups (not enrolled)
-            enrolled_group_ids = enrollments.values_list('group_id', flat=True)
+            enrolled_group_ids = [e.group_id for e in enrollments]
             from apps.courses.models import CourseGroup
             available_groups = CourseGroup.objects.filter(
                 status='active'
-            ).exclude(id__in=enrolled_group_ids)
+            ).exclude(id__in=enrolled_group_ids).select_related('course', 'teacher')
             
             return {
                 'student': student,
                 'enrollments': enrollments,
-                'available_groups': available_groups
+                'available_groups': available_groups,
+                'active_enrollments_count': active_enrollments_count,
+                'completed_enrollments_count': completed_enrollments_count,
+                'total_credits': total_credits,
             }
             
         except Student.DoesNotExist:
@@ -153,19 +219,39 @@ class StudentService:
         return student
     
     def delete_student(self, student_id):
-        """Delete student (soft delete)"""
-        student = Student.objects.get(id=student_id)
+        """Delete student (soft delete) with dependency check"""
+        try:
+            student = Student.objects.get(id=student_id)
+        except Student.DoesNotExist:
+            return {'success': False, 'error': 'Öğrenci bulunamadı'}
+        
+        # Check for active enrollments
+        active_enrollments = Enrollment.objects.filter(
+            student=student,
+            status='enrolled'
+        ).count()
+        
+        if active_enrollments > 0:
+            return {
+                'success': False,
+                'error': f'Bu öğrencinin {active_enrollments} aktif ders kaydı var. Önce kayıtları kaldırın.'
+            }
+        
         student.status = 'inactive'
         student.save()
-        return True
+        return {'success': True}
     
     def get_student_statistics(self, student):
         """Get statistics for a specific student"""
         enrollments = Enrollment.objects.filter(student=student, status='enrolled')
         
-        # Calculate GPA
-        grades = [e.grade for e in enrollments if e.grade]
-        gpa = sum(grades) / len(grades) if grades else 0
+        # Calculate GPA - convert letter grades to numeric
+        numeric_grades = [
+            letter_grade_to_numeric(e.grade) 
+            for e in enrollments 
+            if e.grade and e.grade != 'NA' and letter_grade_to_numeric(e.grade) is not None
+        ]
+        gpa = sum(numeric_grades) / len(numeric_grades) if numeric_grades else 0
         
         # Get assignment statistics
         total_assignments = Assignment.objects.filter(

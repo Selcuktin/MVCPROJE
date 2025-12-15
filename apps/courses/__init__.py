@@ -1,0 +1,3 @@
+"""
+Course management app
+"""

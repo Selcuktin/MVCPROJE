@@ -61,7 +61,23 @@ class CourseGroup(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='groups')
     teacher = models.ForeignKey('teachers.Teacher', on_delete=models.CASCADE, related_name='course_groups')
     name = models.CharField(max_length=50, default='A')
-    semester = models.CharField(max_length=20)
+    
+    # Academic term integration (nullable for backward compatibility)
+    academic_term = models.ForeignKey(
+        'academic.AcademicTerm',
+        on_delete=models.PROTECT,
+        related_name='course_groups',
+        null=True,
+        blank=True,
+        help_text='Akademik dönem (örn: 2024-2025 Güz)'
+    )
+    
+    # Legacy field (will be deprecated)
+    semester = models.CharField(
+        max_length=20,
+        help_text='Eski dönem formatı - kullanım dışı'
+    )
+    
     classroom = models.CharField(max_length=50)
     schedule = models.CharField(max_length=200, help_text='Ör: Pazartesi 09:00-12:00')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
@@ -72,7 +88,27 @@ class CourseGroup(models.Model):
         unique_together = ['course', 'teacher', 'semester']
     
     def __str__(self):
+        if self.academic_term:
+            return f"{self.course.code} - {self.name} ({self.academic_term.name})"
         return f"{self.course.code} - {self.name} ({self.semester})"
+    
+    def save(self, *args, **kwargs):
+        """Auto-generate name if not provided (A, B, C, ...)"""
+        if not self.pk and (not self.name or self.name == 'A'):
+            # Get existing groups for this course and semester
+            existing_groups = CourseGroup.objects.filter(
+                course=self.course,
+                semester=self.semester
+            ).values_list('name', flat=True)
+            
+            # Generate next available letter
+            letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+            for letter in letters:
+                if letter not in existing_groups:
+                    self.name = letter
+                    break
+        
+        super().save(*args, **kwargs)
 
 class Enrollment(models.Model):
     STATUS_CHOICES = [
@@ -90,6 +126,7 @@ class Enrollment(models.Model):
         ('CC', 'CC'),
         ('DC', 'DC'),
         ('DD', 'DD'),
+        ('FD', 'FD'),
         ('FF', 'FF'),
         ('NA', 'Henüz Değerlendirilmedi'),
     ]
@@ -116,6 +153,62 @@ class Enrollment(models.Model):
     
     def __str__(self):
         return f"{self.student.full_name} - {self.group.course.name}"
+    
+    def calculate_letter_grade(self):
+        """Calculate letter grade from numerical grades"""
+        # Eğer final veya büt notu yoksa NA döndür
+        if not self.final_grade and not self.makeup_grade:
+            return 'NA'
+        
+        # Büt varsa final yerine onu kullan
+        final_score = self.makeup_grade if self.makeup_grade else self.final_grade
+        
+        # Weighted average: Vize %40, Final/Büt %50, Proje %10
+        total = 0
+        weight = 0
+        
+        if self.midterm_grade is not None:
+            total += self.midterm_grade * 0.4
+            weight += 0.4
+        
+        if final_score is not None:
+            total += final_score * 0.5
+            weight += 0.5
+        
+        if self.project_grade is not None:
+            total += self.project_grade * 0.1
+            weight += 0.1
+        
+        if weight == 0:
+            return 'NA'
+        
+        # Calculate average
+        average = total / weight
+        
+        # Convert to letter grade
+        if average >= 90:
+            return 'AA'
+        elif average >= 85:
+            return 'BA'
+        elif average >= 80:
+            return 'BB'
+        elif average >= 75:
+            return 'CB'
+        elif average >= 70:
+            return 'CC'
+        elif average >= 65:
+            return 'DC'
+        elif average >= 60:
+            return 'DD'
+        elif average >= 50:
+            return 'FD'
+        else:
+            return 'FF'
+    
+    def save(self, *args, **kwargs):
+        """Override save to auto-calculate letter grade"""
+        self.grade = self.calculate_letter_grade()
+        super().save(*args, **kwargs)
 
 class Assignment(models.Model):
     STATUS_CHOICES = [
@@ -140,6 +233,13 @@ class Assignment(models.Model):
     
     def __str__(self):
         return f"{self.group.course.code} - {self.title}"
+    
+    def save(self, *args, **kwargs):
+        """Auto-update status based on deadline"""
+        from django.utils import timezone
+        if self.due_date and timezone.now() > self.due_date and self.status == 'active':
+            self.status = 'expired'
+        super().save(*args, **kwargs)
     
     @property
     def is_expired(self):
@@ -241,6 +341,13 @@ class Announcement(models.Model):
     
     def __str__(self):
         return f"{self.group.course.code} - {self.title}"
+    
+    def save(self, *args, **kwargs):
+        """Auto-update status based on expiry date"""
+        from django.utils import timezone
+        if self.expire_date and timezone.now() > self.expire_date and self.status == 'active':
+            self.status = 'expired'
+        super().save(*args, **kwargs)
 
 class CourseContent(models.Model):
     CONTENT_TYPE_CHOICES = [

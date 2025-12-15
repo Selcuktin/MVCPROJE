@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Öğretmen Ana Sayfa{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="fas fa-chalkboard-teacher"></i> Hoş Geldiniz, {{ teacher.first_name }} {{ teacher.last_name }}!</h2>
+    
+    <!-- Quick Stats -->
+    <div class="row mt-4">
+        <div class="col-md-3">
+            <a href="{% url 'teachers:courses' %}" class="text-decoration-none">
+            <div class="card text-white bg-primary mb-3" style="cursor:pointer;">
+                <div class="card-body text-center">
+                    <h2>{{ my_courses_count }}</h2>
+                    <p>Verdiğim Ders</p>
+                </div>
+            </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{% url 'teachers:students' %}" class="text-decoration-none">
+            <div class="card text-white bg-success mb-3" style="cursor:pointer;">
+                <div class="card-body text-center">
+                    <h2>{{ total_students }}</h2>
+                    <p>Toplam Öğrenci</p>
+                </div>
+            </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{% url 'courses:assignment_list' %}?state=active" class="text-decoration-none">
+            <div class="card text-white bg-warning mb-3" style="cursor:pointer;">
+                <div class="card-body text-center">
+                    <h2>{{ pending_grading }}</h2>
+                    <p>Notlandırılacak</p>
+                </div>
+            </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{% url 'quiz:quiz_list_student' %}" class="text-decoration-none">
+            <div class="card text-white bg-info mb-3" style="cursor:pointer;">
+                <div class="card-body text-center">
+                    <h2>{{ active_quizzes_count }}</h2>
+                    <p>Aktif Quiz</p>
+                </div>
+            </div>
+            </a>
+        </div>
+    </div>
+    
+    <!-- Quick Actions -->
+    <div class="card mb-3">
+        <div class="card-header bg-dark text-white">
+            <h5 class="mb-0"><i class="fas fa-bolt"></i> Hızlı İşlemler</h5>
+        </div>
+        <div class="card-body">
+            <a href="{% url 'quiz:question_bank_list' %}" class="btn btn-info me-2">
+                <i class="fas fa-question-circle"></i> Soru Bankası
+            </a>
+            <a href="{% url 'forum:inbox' %}" class="btn btn-warning me-2">
+                <i class="fas fa-envelope"></i> Mesajlar
+                {% if unread_messages > 0 %}
+                <span class="badge bg-danger">{{ unread_messages }}</span>
+                {% endif %}
+            </a>
+            <a href="{% url 'courses:list' %}" class="btn btn-secondary">
+                <i class="fas fa-list"></i> Tüm Derslerim
+            </a>
+        </div>
+    </div>
+    
+    <!-- My Courses -->
+    <div class="card mb-3">
+        <div class="card-header">
+            <h5 class="mb-0"><i class="fas fa-book"></i> Verdiğim Dersler</h5>
+        </div>
+        <div class="card-body">
+            {% if my_courses %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Ders Kodu</th>
+                            <th>Ders Adı</th>
+                            <th>Grup</th>
+                            <th>Öğrenci Sayısı</th>
+                            <th>İşlemler</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for group in my_courses %}
+                        <tr>
+                            <td>{{ group.course.code }}</td>
+                            <td>{{ group.course.name }}</td>
+                            <td>{{ group.name }}</td>
+                            <td>
+                                <span class="badge bg-primary">{{ group.student_count }} öğrenci</span>
+                            </td>
+                            <td>
+                                <a href="{% url 'courses:group_detail' group.id %}" class="btn btn-sm btn-primary">Detay</a>
+                                <a href="{% url 'gradebook:course_gradebook' group.id %}" class="btn btn-sm btn-success">Notlandırma</a>
+                                <a href="{% url 'quiz:quiz_create' group.id %}" class="btn btn-sm btn-info">Sınav Oluştur</a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">Henüz ders ataması yapılmamış.</p>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Pending Tasks -->
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-warning">
+                    <h6 class="mb-0"><i class="fas fa-tasks"></i> Notlandırılacak Ödevler</h6>
+                </div>
+                <div class="card-body">
+                    {% if pending_assignments %}
+                    <ul class="list-group">
+                        {% for assignment in pending_assignments %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            <div class="me-2">
+                                {{ assignment.group.course.code }} - {{ assignment.title }}
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="badge bg-warning">{{ assignment.submission_count }} teslim</span>
+                                <a class="btn btn-sm btn-outline-warning" href="{% url 'courses:assignment_detail' assignment.id %}#submissions">
+                                    Notlandır
+                                </a>
+                            </div>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted mb-0">Notlandırılacak ödev yok</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0"><i class="fas fa-clipboard-list"></i> Aktif Sınavlar</h6>
+                </div>
+                <div class="card-body">
+                    {% if active_quizzes %}
+                    <ul class="list-group">
+                        {% for quiz in active_quizzes %}
+                        <li class="list-group-item d-flex justify-content-between align-items-center">
+                            {{ quiz.course_group.course.code }} - {{ quiz.title }}
+                            <a href="{% url 'quiz:quiz_detail' quiz.id %}" class="btn btn-sm btn-info">Yönet</a>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    {% else %}
+                    <p class="text-muted mb-0">Aktif sınav yok</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

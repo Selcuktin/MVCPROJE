@@ -23,6 +23,42 @@
         padding: 2rem;
         margin-bottom: 2rem;
         box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+        position: relative;
+        overflow: hidden;
+        animation: fadeInDown 0.6s ease-out;
+    }
+    
+    .welcome-card::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+        animation: pulse 3s ease-in-out infinite;
+    }
+    
+    @keyframes fadeInDown {
+        from {
+            opacity: 0;
+            transform: translateY(-20px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @keyframes pulse {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 0.5;
+        }
+        50% {
+            transform: scale(1.1);
+            opacity: 0.8;
+        }
     }
     
     .welcome-card h2 {
@@ -51,16 +87,50 @@
         padding: 1.5rem;
         text-align: center;
         box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        transition: all 0.3s ease;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         text-decoration: none;
         color: inherit;
         display: block;
+        position: relative;
+        overflow: hidden;
+        animation: fadeInUp 0.6s ease-out backwards;
+    }
+    
+    .stat-box:nth-child(1) { animation-delay: 0.1s; }
+    .stat-box:nth-child(2) { animation-delay: 0.2s; }
+    .stat-box:nth-child(3) { animation-delay: 0.3s; }
+    .stat-box:nth-child(4) { animation-delay: 0.4s; }
+    
+    .stat-box::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+        transition: left 0.5s;
+    }
+    
+    .stat-box:hover::before {
+        left: 100%;
     }
     
     .stat-box:hover {
-        transform: translateY(-4px);
-        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        transform: translateY(-8px) scale(1.02);
+        box-shadow: 0 8px 24px rgba(0,0,0,0.15);
         text-decoration: none;
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
     
     .stat-icon {
@@ -72,6 +142,21 @@
         align-items: center;
         justify-content: center;
         font-size: 24px;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        position: relative;
+    }
+    
+    .stat-box:hover .stat-icon {
+        transform: scale(1.15) rotate(5deg);
+    }
+    
+    .stat-number {
+        transition: all 0.3s ease;
+    }
+    
+    .stat-box:hover .stat-number {
+        transform: scale(1.1);
+        color: #667eea;
     }
     
     .stat-icon.blue { background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); color: #1976d2; }
@@ -99,13 +184,49 @@
         padding: 1.5rem;
         margin-bottom: 1rem;
         box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        transition: all 0.3s ease;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         border-left: 4px solid #f59e0b;
+        position: relative;
+        overflow: hidden;
+        animation: slideInLeft 0.5s ease-out backwards;
+    }
+    
+    .assignment-card:nth-child(1) { animation-delay: 0.1s; }
+    .assignment-card:nth-child(2) { animation-delay: 0.2s; }
+    .assignment-card:nth-child(3) { animation-delay: 0.3s; }
+    .assignment-card:nth-child(4) { animation-delay: 0.4s; }
+    .assignment-card:nth-child(5) { animation-delay: 0.5s; }
+    
+    .assignment-card::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, #f59e0b, #f97316);
+        transition: width 0.3s;
+    }
+    
+    .assignment-card:hover::after {
+        width: 100%;
+        opacity: 0.05;
     }
     
     .assignment-card:hover {
-        transform: translateX(4px);
-        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        transform: translateX(8px) scale(1.02);
+        box-shadow: 0 8px 24px rgba(245, 158, 11, 0.2);
+    }
+    
+    @keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
     }
     
     .assignment-title {
@@ -158,13 +279,49 @@
         padding: 1.5rem;
         margin-bottom: 1rem;
         box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        transition: all 0.3s ease;
+        transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         border-left: 4px solid #10b981;
+        position: relative;
+        overflow: hidden;
+        animation: slideInRight 0.5s ease-out backwards;
+    }
+    
+    .announcement-card:nth-child(1) { animation-delay: 0.1s; }
+    .announcement-card:nth-child(2) { animation-delay: 0.2s; }
+    .announcement-card:nth-child(3) { animation-delay: 0.3s; }
+    .announcement-card:nth-child(4) { animation-delay: 0.4s; }
+    .announcement-card:nth-child(5) { animation-delay: 0.5s; }
+    
+    .announcement-card::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, #10b981, #059669);
+        transition: width 0.3s;
+    }
+    
+    .announcement-card:hover::after {
+        width: 100%;
+        opacity: 0.05;
     }
     
     .announcement-card:hover {
-        transform: translateX(4px);
-        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        transform: translateX(8px) scale(1.02);
+        box-shadow: 0 8px 24px rgba(16, 185, 129, 0.2);
+    }
+    
+    @keyframes slideInRight {
+        from {
+            opacity: 0;
+            transform: translateX(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
     }
     
     .section-title {

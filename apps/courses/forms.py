@@ -216,6 +216,11 @@ class EnrollmentForm(forms.ModelForm):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        # Validation will be done in the view since we don't have fields
+        return cleaned_data
 
 class GradeForm(forms.ModelForm):
     class Meta:
@@ -235,6 +240,36 @@ class GradeForm(forms.ModelForm):
             'project_grade': 'Proje Notu',
             'attendance': 'Devam (%)',
         }
+    
+    def clean_midterm_grade(self):
+        grade = self.cleaned_data.get('midterm_grade')
+        if grade is not None and (grade < 0 or grade > 100):
+            raise forms.ValidationError('Vize notu 0-100 arasında olmalıdır.')
+        return grade
+    
+    def clean_final_grade(self):
+        grade = self.cleaned_data.get('final_grade')
+        if grade is not None and (grade < 0 or grade > 100):
+            raise forms.ValidationError('Final notu 0-100 arasında olmalıdır.')
+        return grade
+    
+    def clean_makeup_grade(self):
+        grade = self.cleaned_data.get('makeup_grade')
+        if grade is not None and (grade < 0 or grade > 100):
+            raise forms.ValidationError('Büt notu 0-100 arasında olmalıdır.')
+        return grade
+    
+    def clean_project_grade(self):
+        grade = self.cleaned_data.get('project_grade')
+        if grade is not None and (grade < 0 or grade > 100):
+            raise forms.ValidationError('Proje notu 0-100 arasında olmalıdır.')
+        return grade
+    
+    def clean_attendance(self):
+        attendance = self.cleaned_data.get('attendance')
+        if attendance is not None and (attendance < 0 or attendance > 100):
+            raise forms.ValidationError('Devam oranı 0-100 arasında olmalıdır.')
+        return attendance
 
 class CourseContentForm(forms.ModelForm):
     class Meta:

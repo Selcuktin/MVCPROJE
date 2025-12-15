@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load user_tags %}
 
 {% block title %}{{ group.course.name }} - Ders Grubu Detayı{% endblock %}
 
@@ -102,7 +103,8 @@
                 </div>
             </div>
             
-            {% if user.userprofile.user_type == 'teacher' and group.teacher.user == user %}
+            {% get_user_type user as user_type %}
+            {% if user_type == 'teacher' and group.teacher.user == user %}
             <div class="card mt-3">
                 <div class="card-header">
                     <h6><i class="fas fa-cogs me-2"></i>Öğretmen İşlemleri</h6>
@@ -123,8 +125,9 @@
         </div>
     </div>
     
-    <!-- Kayıtlı Öğrenciler -->
-    {% if enrollments %}
+    <!-- Kayıtlı Öğrenciler - Sadece Öğretmenler Görebilir -->
+    {% get_user_type user as user_type %}
+    {% if enrollments and user_type == 'teacher' and group.teacher.user == user %}
     <div class="row mt-4">
         <div class="col-12">
             <div class="card">
@@ -159,14 +162,15 @@
                                             <div class="border rounded p-2 mb-2">
                                                 <small class="text-muted d-block">Vize</small>
                                                 {% if enrollment.midterm_grade %}
-                                                    <span class="badge bg-{% if enrollment.midterm_grade >= 70 %}success{% elif enrollment.midterm_grade >= 50 %}warning{% else %}danger{% endif %} fs-6">
-                                                        {% if enrollment.midterm_grade >= 90 %}AA{% elif enrollment.midterm_grade >= 85 %}BA{% elif enrollment.midterm_grade >= 80 %}BB{% elif enrollment.midterm_grade >= 75 %}CB{% elif enrollment.midterm_grade >= 70 %}CC{% elif enrollment.midterm_grade >= 65 %}DC{% elif enrollment.midterm_grade >= 60 %}DD{% elif enrollment.midterm_grade >= 50 %}FD{% else %}FF{% endif %}
+                                                    <span class="badge bg-secondary fs-6">
+                                                        {{ enrollment.midterm_grade|floatformat:0 }}/100
                                                     </span>
-                                                    <div><small>{{ enrollment.midterm_grade|floatformat:0 }}/100</small></div>
+                                                    <div><small class="text-muted">Puan</small></div>
                                                 {% else %}
                                                     <span class="text-muted">-</span>
                                                     <div>
-                                                        {% if user.userprofile.user_type == 'teacher' and group.teacher.user == user %}
+                                                        {% get_user_type user as user_type %}
+            {% if user_type == 'teacher' and group.teacher.user == user %}
                                                         <a href="{% url 'notes:create' %}?course={{ group.course.pk }}&student={{ enrollment.student.user.id }}&exam_type=vize" class="btn btn-outline-primary btn-sm">
                                                             <i class="fas fa-plus"></i> Ekle
                                                         </a>
@@ -181,14 +185,15 @@
                                             <div class="border rounded p-2 mb-2">
                                                 <small class="text-muted d-block">Final</small>
                                                 {% if enrollment.final_grade %}
-                                                    <span class="badge bg-{% if enrollment.final_grade >= 70 %}success{% elif enrollment.final_grade >= 50 %}warning{% else %}danger{% endif %} fs-6">
-                                                        {% if enrollment.final_grade >= 90 %}AA{% elif enrollment.final_grade >= 85 %}BA{% elif enrollment.final_grade >= 80 %}BB{% elif enrollment.final_grade >= 75 %}CB{% elif enrollment.final_grade >= 70 %}CC{% elif enrollment.final_grade >= 65 %}DC{% elif enrollment.final_grade >= 60 %}DD{% elif enrollment.final_grade >= 50 %}FD{% else %}FF{% endif %}
+                                                    <span class="badge bg-secondary fs-6">
+                                                        {{ enrollment.final_grade|floatformat:0 }}/100
                                                     </span>
-                                                    <div><small>{{ enrollment.final_grade|floatformat:0 }}/100</small></div>
+                                                    <div><small class="text-muted">Puan</small></div>
                                                 {% else %}
                                                     <span class="text-muted">-</span>
                                                     <div>
-                                                        {% if user.userprofile.user_type == 'teacher' and group.teacher.user == user %}
+                                                        {% get_user_type user as user_type %}
+            {% if user_type == 'teacher' and group.teacher.user == user %}
                                                         <a href="{% url 'notes:create' %}?course={{ group.course.pk }}&student={{ enrollment.student.user.id }}&exam_type=final" class="btn btn-outline-primary btn-sm">
                                                             <i class="fas fa-plus"></i> Ekle
                                                         </a>
@@ -203,14 +208,15 @@
                                             <div class="border rounded p-2 mb-2">
                                                 <small class="text-muted d-block">Bütünleme</small>
                                                 {% if enrollment.makeup_grade %}
-                                                    <span class="badge bg-{% if enrollment.makeup_grade >= 70 %}success{% elif enrollment.makeup_grade >= 50 %}warning{% else %}danger{% endif %} fs-6">
-                                                        {% if enrollment.makeup_grade >= 90 %}AA{% elif enrollment.makeup_grade >= 85 %}BA{% elif enrollment.makeup_grade >= 80 %}BB{% elif enrollment.makeup_grade >= 75 %}CB{% elif enrollment.makeup_grade >= 70 %}CC{% elif enrollment.makeup_grade >= 65 %}DC{% elif enrollment.makeup_grade >= 60 %}DD{% elif enrollment.makeup_grade >= 50 %}FD{% else %}FF{% endif %}
+                                                    <span class="badge bg-secondary fs-6">
+                                                        {{ enrollment.makeup_grade|floatformat:0 }}/100
                                                     </span>
-                                                    <div><small>{{ enrollment.makeup_grade|floatformat:0 }}/100</small></div>
+                                                    <div><small class="text-muted">Puan</small></div>
                                                 {% else %}
                                                     <span class="text-muted">-</span>
                                                     <div>
-                                                        {% if user.userprofile.user_type == 'teacher' and group.teacher.user == user %}
+                                                        {% get_user_type user as user_type %}
+            {% if user_type == 'teacher' and group.teacher.user == user %}
                                                         <a href="{% url 'notes:create' %}?course={{ group.course.pk }}&student={{ enrollment.student.user.id }}&exam_type=but" class="btn btn-outline-primary btn-sm">
                                                             <i class="fas fa-plus"></i> Ekle
                                                         </a>
@@ -230,7 +236,8 @@
                                             {{ enrollment.get_status_display }}
                                         </span>
                                     </div>
-                                    {% if user.userprofile.user_type == 'teacher' and group.teacher.user == user %}
+                                    {% get_user_type user as user_type %}
+            {% if user_type == 'teacher' and group.teacher.user == user %}
                                     <div class="btn-group btn-group-sm">
                                         <a href="{% url 'students:detail' enrollment.student.pk %}" class="btn btn-outline-info" title="Detay">
                                             <i class="fas fa-eye"></i>
