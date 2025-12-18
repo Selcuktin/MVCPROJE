@@ -3,73 +3,664 @@
 
 {% block title %}Mesajlar{% endblock %}
 
+{% block extra_css %}
+<style>
+    .messaging-container {
+        display: flex;
+        height: 500px;
+        max-height: calc(100vh - 200px);
+        background: #fff;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        width: 100%;
+        max-width: 1100px;
+        margin: 0 auto;
+    }
+    
+    /* Sol Sidebar - Kişi Listesi */
+    .contacts-sidebar {
+        width: 300px;
+        min-width: 300px;
+        max-width: 300px;
+        border-right: 1px solid #e5e5e5;
+        display: flex;
+        flex-direction: column;
+        background: #f8f9fa;
+    }
+    
+    .contacts-header {
+        padding: 16px;
+        border-bottom: 1px solid #e5e5e5;
+        background: #fff;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .contacts-header h5 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 600;
+    }
+    
+    .contacts-header .btn-new-message {
+        padding: 6px 12px;
+        font-size: 13px;
+        border-radius: 8px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        transition: opacity 0.2s;
+    }
+    
+    .contacts-header .btn-new-message:hover {
+        opacity: 0.9;
+    }
+    
+    .contacts-list {
+        flex: 1;
+        overflow-y: auto;
+    }
+    
+    .contact-item {
+        padding: 14px 16px;
+        border-bottom: 1px solid #e5e5e5;
+        cursor: pointer;
+        transition: background 0.2s;
+        background: #fff;
+    }
+    
+    .contact-item:hover {
+        background: #f1f3f4;
+    }
+    
+    .contact-item.active {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: #fff;
+    }
+    
+    .contact-name {
+        font-weight: 600;
+        font-size: 14px;
+        margin-bottom: 4px;
+    }
+    
+    .contact-preview {
+        font-size: 13px;
+        color: #666;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    
+    .contact-item.active .contact-preview {
+        color: rgba(255,255,255,0.85);
+    }
+    
+    /* Sağ Taraf - Konuşma Alanı */
+    .conversation-area {
+        width: 800px;
+        max-width: 800px;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+    
+    .conversation-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid #e5e5e5;
+        background: #fff;
+        flex-shrink: 0;
+    }
+    
+    .conversation-header h5 {
+        margin: 0;
+        font-size: 16px;
+        font-weight: 600;
+    }
+    
+    .conversation-header .btn-outline-danger {
+        padding: 0.25rem 0.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .messages-container {
+        flex: 1;
+        overflow-y: auto;
+        overflow-x: hidden;
+        padding: 20px;
+        background: #f8f9fa;
+        width: 800px;
+    }
+    
+    .message-item {
+        margin-bottom: 16px;
+        width: 100%;
+        max-width: 800px;
+    }
+    
+    .message-item.me {
+        text-align: right;
+    }
+    
+    .message-sender {
+        font-size: 11px;
+        color: #666;
+        margin-bottom: 4px;
+        font-weight: 600;
+    }
+    
+    .message-item.me .message-sender {
+        color: #667eea;
+    }
+    
+    .message-bubble {
+        display: inline-block;
+        max-width: 450px;
+        padding: 10px 14px;
+        border-radius: 16px;
+        background: #e4e6eb;
+        word-wrap: break-word;
+        word-break: break-word;
+        color: #050505;
+    }
+    
+    .message-item.me .message-bubble {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: #fff;
+    }
+    
+    .message-time {
+        font-size: 10px;
+        color: #999;
+        margin-top: 4px;
+    }
+    
+    .message-time {
+        font-size: 11px;
+        color: #999;
+        margin-top: 4px;
+    }
+    
+    .message-input-area {
+        padding: 16px 20px;
+        border-top: 1px solid #e5e5e5;
+        background: #fff;
+    }
+    
+    .message-input-area textarea {
+        width: 100%;
+        resize: none;
+        height: 60px;
+        padding: 10px 14px;
+        border-radius: 12px;
+        border: 1px solid #ddd;
+        font-size: 14px;
+    }
+    
+    .message-input-area button {
+        margin-top: 10px;
+        width: 100%;
+        border: none;
+        border-radius: 12px;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: #fff;
+        padding: 10px 0;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: opacity 0.2s;
+    }
+    
+    .message-input-area button:hover {
+        opacity: 0.9;
+    }
+    
+    .empty-state {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: #999;
+        font-size: 14px;
+        text-align: center;
+        padding: 40px;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .messaging-container {
+            height: calc(100vh - 150px);
+        }
+        
+        .contacts-sidebar {
+            width: 100%;
+            border-right: none;
+        }
+        
+        .conversation-area {
+            display: none;
+        }
+        
+        .contacts-sidebar.hide-mobile {
+            display: none;
+        }
+        
+        .conversation-area.show-mobile {
+            display: flex;
+        }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+<div class="container-fluid mt-4">
+    <div class="mb-4">
         <h2><i class="fas fa-envelope"></i> Mesajlar</h2>
     </div>
     
-    {% if unread_count > 0 %}
-    <div class="alert alert-info">
-        <i class="fas fa-info-circle"></i> {{ unread_count }} okunmamış mesajınız var
-    </div>
-    {% endif %}
-    
-    <ul class="nav nav-tabs" role="tablist">
-        <li class="nav-item">
-            <a class="nav-link active" data-bs-toggle="tab" href="#received">
-                Gelen Kutusu ({{ received_messages.count }})
-            </a>
-        </li>
-        <li class="nav-item">
-            <a class="nav-link" data-bs-toggle="tab" href="#sent">
-                Gönderilen ({{ sent_messages.count }})
-            </a>
-        </li>
-    </ul>
-    
-    <div class="tab-content">
-        <!-- Received Messages -->
-        <div id="received" class="tab-pane active">
-            <div class="list-group mt-3">
-                {% for msg in received_messages %}
-                <a href="{% url 'forum:message_detail' msg.id %}" 
-                   class="list-group-item list-group-item-action {% if not msg.is_read %}list-group-item-primary{% endif %}">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h5 class="mb-1">
-                            {% if not msg.is_read %}<strong>{% endif %}
-                            {{ msg.subject }}
-                            {% if not msg.is_read %}</strong>{% endif %}
-                        </h5>
-                        <small>{{ msg.created_at|date:"d.m.Y H:i" }}</small>
-                    </div>
-                    <p class="mb-1">Gönderen: <strong>{{ msg.sender.username }}</strong></p>
-                    <small>{{ msg.message|truncatewords:20 }}</small>
-                </a>
-                {% empty %}
-                <div class="alert alert-info mt-3">Gelen mesaj yok</div>
-                {% endfor %}
+    <div class="messaging-container">
+        <!-- Sol Sidebar - Kişi Listesi -->
+        <div class="contacts-sidebar" id="contactsSidebar">
+            <div class="contacts-header">
+                <h5>Sohbetler</h5>
+                <button class="btn-new-message" onclick="showNewMessageModal()">
+                    <i class="fas fa-plus"></i> Yeni
+                </button>
+            </div>
+            <div class="contacts-list" id="contactsList">
+                <div class="empty-state">Yükleniyor...</div>
             </div>
         </div>
         
-        <!-- Sent Messages -->
-        <div id="sent" class="tab-pane">
-            <div class="list-group mt-3">
-                {% for msg in sent_messages %}
-                <a href="{% url 'forum:message_detail' msg.id %}" 
-                   class="list-group-item list-group-item-action">
-                    <div class="d-flex w-100 justify-content-between">
-                        <h5 class="mb-1">{{ msg.subject }}</h5>
-                        <small>{{ msg.created_at|date:"d.m.Y H:i" }}</small>
+        <!-- Sağ Taraf - Konuşma Alanı -->
+        <div class="conversation-area" id="conversationArea">
+            <div class="conversation-header" id="conversationHeader">
+                <h5>Bir sohbet seçin</h5>
+            </div>
+            <div class="messages-container" id="messagesContainer">
+                <div class="empty-state">
+                    <div>
+                        <i class="fas fa-comments fa-3x mb-3" style="color: #ddd;"></i>
+                        <p>Soldaki listeden bir kişi seçerek mesajlaşmaya başlayın</p>
                     </div>
-                    <p class="mb-1">Alıcı: <strong>{{ msg.recipient.username }}</strong></p>
-                    <small>{{ msg.message|truncatewords:20 }}</small>
-                </a>
-                {% empty %}
-                <div class="alert alert-info mt-3">Gönderilmiş mesaj yok</div>
-                {% endfor %}
+                </div>
+            </div>
+            <div class="message-input-area" id="messageInputArea" style="display: none;">
+                <textarea id="messageText" placeholder="Mesajınızı yazın..."></textarea>
+                <button id="sendMessageBtn">Gönder</button>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+let currentUserId = null;
+let allThreads = [];
+let allRecipients = [];
+
+// Sayfa yüklendiğinde
+document.addEventListener('DOMContentLoaded', function() {
+    loadInbox();
+    loadRecipients();
+    
+    // Her 10 saniyede bir güncelle
+    setInterval(() => {
+        loadInbox();
+    }, 10000);
+});
+
+// Gelen kutusu verilerini yükle
+function loadInbox() {
+    fetch('/messages/api/inbox/')
+        .then(r => r.json())
+        .then(data => {
+            allThreads = data.threads || [];
+            renderContacts();
+            
+            // Eğer bir sohbet açıksa, onu güncelle (ama yeniden açma)
+            if (currentUserId) {
+                loadThread(currentUserId);
+            } else if (allThreads.length > 0 && !currentUserId) {
+                // İlk yüklemede ilk sohbeti otomatik aç
+                const firstThread = allThreads[0];
+                openConversation(firstThread.other_id, firstThread.other_user);
+            }
+        })
+        .catch(err => console.error('Inbox yüklenemedi:', err));
+}
+
+// Alıcı listesini yükle
+function loadRecipients() {
+    fetch('/messages/recipients/')
+        .then(r => r.json())
+        .then(data => {
+            allRecipients = data.recipients || [];
+            renderContacts();
+        })
+        .catch(err => console.error('Alıcılar yüklenemedi:', err));
+}
+
+// Kişi listesini render et
+function renderContacts() {
+    const list = document.getElementById('contactsList');
+    if (!list) return;
+    
+    list.innerHTML = '';
+    
+    // Tüm kişileri birleştir
+    const allContacts = [];
+    const seenIds = new Set();
+    
+    // Önce mesajlaşılan kişileri ekle
+    allThreads.forEach(thread => {
+        if (!seenIds.has(thread.other_id)) {
+            seenIds.add(thread.other_id);
+            allContacts.push({
+                id: thread.other_id,
+                name: thread.other_user,
+                preview: thread.last_message,
+                hasMessages: true
+            });
+        }
+    });
+    
+    // Sonra henüz mesajlaşılmamış alıcıları ekle
+    allRecipients.forEach(recipient => {
+        if (!seenIds.has(recipient.id)) {
+            seenIds.add(recipient.id);
+            allContacts.push({
+                id: recipient.id,
+                name: recipient.name,
+                preview: 'Yeni sohbet başlat',
+                hasMessages: false
+            });
+        }
+    });
+    
+    if (!allContacts.length) {
+        list.innerHTML = '<div class="empty-state">Kişi bulunamadı</div>';
+        return;
+    }
+    
+    allContacts.forEach(contact => {
+        const div = document.createElement('div');
+        div.className = 'contact-item';
+        if (currentUserId && String(currentUserId) === String(contact.id)) {
+            div.classList.add('active');
+        }
+        div.innerHTML = `
+            <div class="contact-name">${contact.name}</div>
+            <div class="contact-preview">${contact.preview || 'Yeni sohbet'}</div>
+        `;
+        div.onclick = function(e) {
+            // Tüm contact'ları pasif yap
+            document.querySelectorAll('.contact-item').forEach(item => item.classList.remove('active'));
+            // Bu contact'ı aktif yap
+            div.classList.add('active');
+            // Konuşmayı aç
+            openConversation(contact.id, contact.name);
+        };
+        list.appendChild(div);
+    });
+}
+
+// Konuşmayı aç
+function openConversation(userId, userName) {
+    currentUserId = userId;
+    
+    // Mobilde sidebar'ı gizle, konuşmayı göster
+    if (window.innerWidth <= 768) {
+        document.getElementById('contactsSidebar').classList.add('hide-mobile');
+        document.getElementById('conversationArea').classList.add('show-mobile');
+    }
+    
+    // Header'ı güncelle
+    const header = document.getElementById('conversationHeader');
+    header.innerHTML = `
+        <div class="d-flex justify-content-between align-items-center w-100">
+            <div class="d-flex align-items-center">
+                <button class="btn btn-sm btn-outline-secondary d-md-none me-2" onclick="backToContacts()">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <h5 class="mb-0">${userName}</h5>
+            </div>
+            <button class="btn btn-sm btn-outline-danger" onclick="clearConversation(${userId}, '${userName}')" title="Geçmişi Temizle">
+                <i class="fas fa-trash"></i>
+            </button>
+        </div>
+    `;
+    
+    // Mesaj input alanını göster
+    document.getElementById('messageInputArea').style.display = 'block';
+    
+    // Aktif kişiyi işaretle
+    document.querySelectorAll('.contact-item').forEach(item => item.classList.remove('active'));
+    // Event'i güvenli şekilde kontrol et
+    if (window.event && window.event.target) {
+        const clickedItem = window.event.target.closest('.contact-item');
+        if (clickedItem) clickedItem.classList.add('active');
+    }
+    
+    // Thread'i yükle
+    loadThread(userId);
+}
+
+// Mobilde geri dön
+function backToContacts() {
+    document.getElementById('contactsSidebar').classList.remove('hide-mobile');
+    document.getElementById('conversationArea').classList.remove('show-mobile');
+}
+
+// Thread mesajlarını yükle
+function loadThread(userId) {
+    const container = document.getElementById('messagesContainer');
+    if (!container) return;
+    
+    // Önce local thread'i kontrol et
+    const localThread = allThreads.find(t => String(t.other_id) === String(userId));
+    if (localThread && localThread.messages && localThread.messages.length > 0) {
+        renderMessages(localThread.messages);
+        return;
+    }
+    
+    // API'den yükle
+    container.innerHTML = '<div class="empty-state">Yükleniyor...</div>';
+    fetch(`/messages/api/thread/${userId}/`)
+        .then(r => {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        })
+        .then(data => {
+            renderMessages(data.messages || []);
+        })
+        .catch(err => {
+            container.innerHTML = '<div class="empty-state" style="color:#dc3545;">Mesajlar yüklenemedi</div>';
+        });
+}
+
+// Mesajları render et
+function renderMessages(messages) {
+    const container = document.getElementById('messagesContainer');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    if (!messages || !messages.length) {
+        container.innerHTML = '<div class="empty-state">Henüz mesaj yok.<br>İlk mesajı gönderin!</div>';
+    } else {
+        messages.forEach(msg => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'message-item' + (msg.is_me ? ' me' : '');
+            
+            const sender = document.createElement('div');
+            sender.className = 'message-sender';
+            sender.textContent = msg.sender_name || (msg.is_me ? 'Ben' : 'Diğer');
+            
+            const bubble = document.createElement('div');
+            bubble.className = 'message-bubble';
+            bubble.textContent = msg.message || msg.text;
+            
+            const time = document.createElement('div');
+            time.className = 'message-time';
+            time.textContent = msg.created_at;
+            
+            wrapper.appendChild(sender);
+            wrapper.appendChild(bubble);
+            wrapper.appendChild(time);
+            container.appendChild(wrapper);
+        });
+    }
+    
+    // En alta scroll
+    setTimeout(() => {
+        container.scrollTop = container.scrollHeight;
+    }, 100);
+}
+
+// HTML escape fonksiyonu
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// Mesaj gönder
+document.addEventListener('DOMContentLoaded', function() {
+    const sendBtn = document.getElementById('sendMessageBtn');
+    const textarea = document.getElementById('messageText');
+    
+    if (sendBtn) {
+        sendBtn.onclick = sendMessage;
+    }
+    
+    if (textarea) {
+        textarea.onkeydown = (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        };
+    }
+});
+
+function sendMessage() {
+    const textarea = document.getElementById('messageText');
+    const text = textarea.value.trim();
+    
+    if (!text || !currentUserId) return;
+    
+    const btn = document.getElementById('sendMessageBtn');
+    btn.disabled = true;
+    
+    fetch('/messages/api/send/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        },
+        body: JSON.stringify({
+            message: text,
+            to: currentUserId
+        })
+    })
+    .then(r => r.json())
+    .then(data => {
+        textarea.value = '';
+        btn.disabled = false;
+        // Önce thread'i yükle, sonra inbox'ı
+        loadThread(currentUserId);
+        setTimeout(() => loadInbox(), 500);
+    })
+    .catch(err => {
+        btn.disabled = false;
+        alert('Mesaj gönderilemedi');
+    });
+}
+
+function getCsrfToken() {
+    const m = document.cookie.match(/csrftoken=([^;]+)/);
+    return m ? m[1] : '';
+}
+
+// Yeni mesaj modal
+function showNewMessageModal() {
+    const container = document.getElementById('messagesContainer');
+    const header = document.getElementById('conversationHeader');
+    const inputArea = document.getElementById('messageInputArea');
+    
+    if (!container || !header || !inputArea) return;
+    
+    currentUserId = null;
+    
+    header.innerHTML = '<h5>Yeni Mesaj</h5>';
+    inputArea.style.display = 'none';
+    
+    container.innerHTML = '<div style="padding:20px;"><h6 style="margin-bottom:15px;">Alıcı Seçin</h6><div id="recipientsListModal"></div></div>';
+    
+    const recipientsList = document.getElementById('recipientsListModal');
+    if (!recipientsList) return;
+    
+    if (!allRecipients.length) {
+        recipientsList.innerHTML = '<p style="color:#999;text-align:center;">Alıcı bulunamadı</p>';
+        return;
+    }
+    
+    allRecipients.forEach(r => {
+        const div = document.createElement('div');
+        div.style.cssText = 'padding:12px;margin-bottom:10px;background:#f8f9fa;border-radius:10px;cursor:pointer;transition:all 0.2s;border-left:4px solid #667eea;';
+        div.innerHTML = `
+            <div style="font-weight:600;color:#333;margin-bottom:4px;">${r.name}</div>
+            <div style="font-size:12px;color:#666;">${r.role || 'Kullanıcı'}</div>
+        `;
+        div.onmouseover = () => {
+            div.style.background = '#e9ecef';
+            div.style.transform = 'translateX(4px)';
+        };
+        div.onmouseout = () => {
+            div.style.background = '#f8f9fa';
+            div.style.transform = 'translateX(0)';
+        };
+        div.onclick = () => {
+            openConversation(r.id, r.name);
+        };
+        recipientsList.appendChild(div);
+    });
+}
+
+// Konuşma geçmişini temizle
+function clearConversation(userId, userName) {
+    if (!confirm(`${userName} ile olan tüm mesaj geçmişini silmek istediğinize emin misiniz?`)) {
+        return;
+    }
+    
+    fetch(`/messages/api/clear/${userId}/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCsrfToken()
+        }
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            alert('Mesaj geçmişi temizlendi');
+            loadInbox();
+            // Mesaj alanını temizle
+            const container = document.getElementById('messagesContainer');
+            if (container) {
+                container.innerHTML = '<div class="empty-state">Mesaj geçmişi temizlendi</div>';
+            }
+        } else {
+            alert('Hata: ' + (data.error || 'Bilinmeyen hata'));
+        }
+    })
+    .catch(err => {
+        alert('Mesajlar temizlenirken hata oluştu');
+        console.error(err);
+    });
+}
+</script>
 {% endblock %}

@@ -3,118 +3,360 @@
 
 {% block title %}📋 Sınavlar{% endblock %}
 
+{% block extra_css %}
+<style>
+    .quiz-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 16px;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+    
+    .quiz-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        border-left: 4px solid #667eea;
+        position: relative;
+    }
+    
+    .quiz-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .quiz-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 0.5rem;
+    }
+    
+    .quiz-description {
+        color: #6b7280;
+        font-size: 0.9rem;
+        margin-bottom: 1rem;
+    }
+    
+    .quiz-meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin-bottom: 1rem;
+    }
+    
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        color: #4b5563;
+        font-size: 0.9rem;
+    }
+    
+    .meta-item i {
+        color: #667eea;
+    }
+    
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-weight: 600;
+        font-size: 0.85rem;
+    }
+    
+    .status-active {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+    }
+    
+    .status-upcoming {
+        background: linear-gradient(135deg, #3b82f6, #2563eb);
+        color: white;
+    }
+    
+    .status-expired {
+        background: linear-gradient(135deg, #ef4444, #dc2626);
+        color: white;
+    }
+    
+    .status-inactive {
+        background: linear-gradient(135deg, #6b7280, #4b5563);
+        color: white;
+    }
+    
+    .quiz-actions {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .btn-modern {
+        border-radius: 20px;
+        padding: 0.5rem 1.25rem;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-modern:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    
+    .empty-state i {
+        font-size: 5rem;
+        color: #e5e7eb;
+        margin-bottom: 2rem;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.5rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin-bottom: 1rem;
+    }
+    
+    .stat-icon.blue { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+    .stat-icon.green { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+    .stat-icon.orange { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1f2937;
+    }
+    
+    .stat-label {
+        color: #6b7280;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container-fluid mt-4">
     <!-- Header -->
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <div>
-            <h2><i class="fas fa-clipboard-list text-warning"></i> Sınav Yönetimi</h2>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'home' %}">Ana Sayfa</a></li>
-                    <li class="breadcrumb-item"><a href="{% url 'teachers:dashboard' %}">Öğretmen Paneli</a></li>
-                    <li class="breadcrumb-item active">Sınavlar</li>
-                </ol>
-            </nav>
-        </div>
-        <div>
-            <a href="{% url 'quiz:question_bank_list' %}" class="btn btn-info text-white">
-                <i class="fas fa-database"></i> Soru Bankaları
-            </a>
+    <div class="quiz-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">
+                    <i class="fas fa-clipboard-list"></i> 
+                    Sınav Yönetimi
+                </h1>
+                <p class="mb-0 opacity-75">
+                    Sınavlarınızı oluşturun, düzenleyin ve yönetin
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <div class="d-flex gap-2 justify-content-md-end">
+                    <a href="{% url 'quiz:quiz_create_default' %}" class="btn btn-success btn-lg">
+                        <i class="fas fa-plus"></i> Sınav Oluştur
+                    </a>
+                    <a href="{% url 'quiz:question_bank_list' %}" class="btn btn-light btn-lg">
+                        <i class="fas fa-database"></i> Soru Bankaları
+                    </a>
+                </div>
+            </div>
         </div>
     </div>
 
     <!-- Stats -->
     <div class="row g-3 mb-4">
         <div class="col-md-4">
-            <div class="card text-white bg-primary h-100 shadow-sm">
-                <div class="card-body d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="card-title mb-0">Toplam Sınav</h6>
-                        <h2 class="mt-2 mb-0">{{ quizzes.count }}</h2>
-                    </div>
-                    <i class="fas fa-clipboard-list fa-3x opacity-50"></i>
+            <div class="stat-card blue">
+                <div class="stat-icon blue">
+                    <i class="fas fa-clipboard-list"></i>
                 </div>
+                <div class="stat-value">{{ quizzes.count }}</div>
+                <div class="stat-label">Toplam Sınav</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card green">
+                <div class="stat-icon green">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div class="stat-value" id="activeCount">0</div>
+                <div class="stat-label">Aktif Sınav</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="stat-card orange">
+                <div class="stat-icon orange">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <div class="stat-value" id="upcomingCount">0</div>
+                <div class="stat-label">Yaklaşan Sınav</div>
             </div>
         </div>
     </div>
 
     <!-- Quiz List -->
-    <div class="card shadow-sm border-0">
-        <div class="card-header bg-white py-3">
-            <h5 class="mb-0 text-primary"><i class="fas fa-list"></i> Sınav Listesi</h5>
-        </div>
-        <div class="card-body p-0">
-            {% if quizzes %}
-            <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
-                        <tr>
-                            <th>Sınav Adı</th>
-                            <th>Ders</th>
-                            <th>Tarih/Saat</th>
-                            <th>Süre</th>
-                            <th>Durum</th>
-                            <th>İşlemler</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for quiz in quizzes %}
-                        <tr>
-                            <td>
-                                <div class="fw-bold">{{ quiz.title }}</div>
-                                <small class="text-muted">{{ quiz.description|truncatewords:5 }}</small>
-                            </td>
-                            <td>
-                                <span class="badge bg-light text-dark border">
-                                    {{ quiz.course_group.course.code }}
-                                </span>
-                                <div class="small text-muted mt-1">{{ quiz.course_group.course.name }}</div>
-                            </td>
-                            <td>
-                                <div><i class="far fa-calendar-alt text-muted me-1"></i> {{ quiz.start_time|date:"d.m.Y
-                                    H:i" }}</div>
-                                <div class="small text-muted"><i class="far fa-calendar-times text-muted me-1"></i> {{
-                                    quiz.end_time|date:"d.m.Y H:i" }}</div>
-                            </td>
-                            <td>
-                                <span class="badge bg-secondary">{{ quiz.duration_minutes }} dk</span>
-                            </td>
-                            <td>
-                                {% if quiz.is_active %}
-                                <span class="badge bg-success">Aktif</span>
-                                {% else %}
-                                <span class="badge bg-secondary">Pasif</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <div class="btn-group" role="group">
-                                    <a href="{% url 'quiz:quiz_detail' quiz.id %}"
-                                        class="btn btn-sm btn-outline-primary" title="Detaylar">
-                                        <i class="fas fa-eye"></i>
-                                    </a>
-                                    <a href="{% url 'quiz:quiz_add_questions' quiz.id %}"
-                                        class="btn btn-sm btn-outline-warning" title="Soru Ekle/Düzenle">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                </div>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+    {% if quizzes %}
+    <div id="quizList">
+        {% for quiz in quizzes %}
+        <div class="quiz-card" data-quiz-id="{{ quiz.id }}">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="quiz-title">{{ quiz.title }}</div>
+                    <div class="quiz-description">{{ quiz.description|default:"Açıklama yok" }}</div>
+                    
+                    <div class="quiz-meta">
+                        <div class="meta-item">
+                            <i class="fas fa-book"></i>
+                            <span>{{ quiz.course_group.course.code }} - {{ quiz.course_group.course.name }}</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-calendar-alt"></i>
+                            <span>{{ quiz.start_time|date:"d.m.Y H:i" }}</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-calendar-times"></i>
+                            <span>{{ quiz.end_time|date:"d.m.Y H:i" }}</span>
+                        </div>
+                        <div class="meta-item">
+                            <i class="fas fa-clock"></i>
+                            <span>{{ quiz.duration_minutes }} dakika</span>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex align-items-center gap-2">
+                        <span class="status-badge" data-start="{{ quiz.start_time|date:'Y-m-d H:i:s' }}" data-end="{{ quiz.end_time|date:'Y-m-d H:i:s' }}" data-active="{{ quiz.is_active|yesno:'true,false' }}">
+                            {% if quiz.is_active %}Aktif{% else %}Pasif{% endif %}
+                        </span>
+                        <span class="text-muted" data-deadline="{{ quiz.end_time|date:'Y-m-d H:i:s' }}">
+                            {{ quiz.end_time|date:"d.m.Y" }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                    <div class="quiz-actions">
+                        <a href="{% url 'quiz:quiz_detail' quiz.id %}" class="btn btn-primary btn-modern">
+                            <i class="fas fa-eye"></i> Detay
+                        </a>
+                        <a href="{% url 'quiz:quiz_add_questions' quiz.id %}" class="btn btn-warning btn-modern">
+                            <i class="fas fa-edit"></i> Düzenle
+                        </a>
+                        <button class="btn btn-danger btn-modern" onclick="deleteQuiz({{ quiz.id }}, '{{ quiz.title }}')">
+                            <i class="fas fa-trash"></i> Sil
+                        </button>
+                    </div>
+                </div>
             </div>
-            {% else %}
-            <div class="text-center py-5">
-                <i class="fas fa-clipboard-list fa-4x text-muted mb-3"></i>
-                <h5 class="text-muted">Henüz sınav oluşturulmamış</h5>
-                <p class="text-muted">Ders detay sayfasından yeni sınav oluşturabilirsiniz.</p>
-                <a href="{% url 'teachers:my_courses' %}" class="btn btn-primary mt-2">
-                    <i class="fas fa-book"></i> Derslere Git
-                </a>
-            </div>
-            {% endif %}
         </div>
+        {% endfor %}
     </div>
+    {% else %}
+    <div class="empty-state">
+        <i class="fas fa-clipboard-list"></i>
+        <h4>Henüz Sınav Yok</h4>
+        <p class="text-muted">Ders detay sayfasından yeni sınav oluşturabilirsiniz.</p>
+        <a href="{% url 'teachers:courses' %}" class="btn btn-primary btn-lg mt-3">
+            <i class="fas fa-book"></i> Derslere Git
+        </a>
+    </div>
+    {% endif %}
 </div>
+
+<script>
+// Update quiz statuses
+document.addEventListener('DOMContentLoaded', function() {
+    const now = new Date();
+    let activeCount = 0;
+    let upcomingCount = 0;
+    
+    document.querySelectorAll('.status-badge').forEach(badge => {
+        const start = new Date(badge.dataset.start);
+        const end = new Date(badge.dataset.end);
+        const isActive = badge.dataset.active === 'true';
+        
+        if (!isActive) {
+            badge.textContent = 'Pasif';
+            badge.className = 'status-badge status-inactive';
+        } else if (now < start) {
+            badge.textContent = 'Yaklaşan';
+            badge.className = 'status-badge status-upcoming';
+            upcomingCount++;
+        } else if (now >= start && now <= end) {
+            badge.textContent = 'Aktif';
+            badge.className = 'status-badge status-active';
+            activeCount++;
+        } else {
+            badge.textContent = 'Süresi Doldu';
+            badge.className = 'status-badge status-expired';
+        }
+    });
+    
+    // Update stats
+    document.getElementById('activeCount').textContent = activeCount;
+    document.getElementById('upcomingCount').textContent = upcomingCount;
+    
+    // Init time remaining
+    if (window.AppUtils && window.AppUtils.initTimeRemainingUpdates) {
+        window.AppUtils.initTimeRemainingUpdates();
+    }
+});
+
+// Delete quiz function
+function deleteQuiz(quizId, quizTitle) {
+    if (window.AppUtils && window.AppUtils.confirmAction) {
+        window.AppUtils.confirmAction(
+            `"${quizTitle}" sınavını silmek istediğinize emin misiniz?`,
+            function() {
+                // Create form and submit
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/quiz/${quizId}/delete/`;
+                
+                const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value || 
+                                 window.AppUtils.getCsrfToken();
+                const csrfInput = document.createElement('input');
+                csrfInput.type = 'hidden';
+                csrfInput.name = 'csrfmiddlewaretoken';
+                csrfInput.value = csrfToken;
+                form.appendChild(csrfInput);
+                
+                document.body.appendChild(form);
+                form.submit();
+            }
+        );
+    } else {
+        if (confirm(`"${quizTitle}" sınavını silmek istediğinize emin misiniz?`)) {
+            window.location.href = `/quiz/${quizId}/delete/`;
+        }
+    }
+}
+</script>
 {% endblock %}

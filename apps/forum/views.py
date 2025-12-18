@@ -159,20 +159,49 @@ def api_inbox(request):
     for msg in qs:
         other = msg.recipient if msg.sender_id == request.user.id else msg.sender
         if other_id := getattr(other, 'id', None):
+            # Kullanıcının gerçek ismini al (Student veya Teacher modelinden)
+            other_name = other.username
+            try:
+                from apps.students.models import Student
+                student = Student.objects.get(user=other)
+                other_name = f"{student.first_name} {student.last_name}".strip()
+            except:
+                try:
+                    from apps.teachers.models import Teacher
+                    teacher = Teacher.objects.get(user=other)
+                    other_name = f"{teacher.first_name} {teacher.last_name}".strip()
+                except:
+                    # Fallback: User modelindeki isim
+                    other_name = f"{other.first_name} {other.last_name}".strip() or other.username
+            
             thread = threads_map.setdefault(
                 other_id,
                 {
                     'other_id': other_id,
-                    'other_user': (f"{other.first_name} {other.last_name}".strip() or other.username),
+                    'other_user': other_name,
                     'last_message': '',
                     'last_date': '',
                     'messages': [],
                 },
             )
+            # Gönderenin gerçek ismini al
+            sender_name = msg.sender.username
+            try:
+                from apps.students.models import Student
+                student = Student.objects.get(user=msg.sender)
+                sender_name = f"{student.first_name} {student.last_name}".strip()
+            except:
+                try:
+                    from apps.teachers.models import Teacher
+                    teacher = Teacher.objects.get(user=msg.sender)
+                    sender_name = f"{teacher.first_name} {teacher.last_name}".strip()
+                except:
+                    sender_name = f"{msg.sender.first_name} {msg.sender.last_name}".strip() or msg.sender.username
+            
             thread['messages'].append({
                 'id': msg.id,
                 'sender_id': msg.sender_id,
-                'sender_name': (f"{msg.sender.first_name} {msg.sender.last_name}".strip() or msg.sender.username),
+                'sender_name': sender_name,
                 'message': msg.message,
                 'text': msg.message,
                 'is_me': (msg.sender_id == request.user.id),
@@ -253,14 +282,15 @@ def api_recipients(request):
     recipients = []
     seen_ids = set()
     
-    # If student, get their teachers
+    # If student, get their teachers AND classmates
     try:
         student = Student.objects.get(user=request.user)
         enrollments = Enrollment.objects.filter(
             student=student,
             status='enrolled'
-        ).select_related('group__teacher__user')
+        ).select_related('group__teacher__user', 'group')
         
+        # Get teachers
         for enrollment in enrollments:
             if enrollment.group.teacher and enrollment.group.teacher.user:
                 user_id = enrollment.group.teacher.user.id
@@ -271,12 +301,31 @@ def api_recipients(request):
                         'name': f"{enrollment.group.teacher.first_name} {enrollment.group.teacher.last_name}",
                         'role': 'Öğretmen'
                     })
+        
+        # Get classmates (other students in same courses)
+        enrolled_groups = [e.group for e in enrollments]
+        classmate_enrollments = Enrollment.objects.filter(
+            group__in=enrolled_groups,
+            status='enrolled'
+        ).exclude(student=student).select_related('student__user').distinct()
+        
+        for enrollment in classmate_enrollments:
+            user_id = enrollment.student.user.id
+            if user_id not in seen_ids:
+                seen_ids.add(user_id)
+                recipients.append({
+                    'id': user_id,
+                    'name': f"{enrollment.student.first_name} {enrollment.student.last_name}",
+                    'role': 'Öğrenci'
+                })
     except Student.DoesNotExist:
         pass
     
-    # If teacher, get their students
+    # If teacher, get their students AND other teachers
     try:
         teacher = Teacher.objects.get(user=request.user)
+        
+        # Get students
         course_groups = CourseGroup.objects.filter(teacher=teacher)
         enrollments = Enrollment.objects.filter(
             group__in=course_groups,
@@ -292,6 +341,19 @@ def api_recipients(request):
                     'name': f"{enrollment.student.first_name} {enrollment.student.last_name}",
                     'role': 'Öğrenci'
                 })
+        
+        # Get other teachers
+        other_teachers = Teacher.objects.exclude(user=request.user).select_related('user')
+        for other_teacher in other_teachers:
+            if other_teacher.user:
+                user_id = other_teacher.user.id
+                if user_id not in seen_ids:
+                    seen_ids.add(user_id)
+                    recipients.append({
+                        'id': user_id,
+                        'name': f"{other_teacher.first_name} {other_teacher.last_name}",
+                        'role': 'Öğretmen'
+                    })
     except Teacher.DoesNotExist:
         pass
     
@@ -313,21 +375,61 @@ def api_thread(request, user_id):
         # Mark received messages from other as read
         DirectMessage.objects.filter(sender=other, recipient=request.user, is_read=False).update(is_read=True)
 
-        data = {
-            'messages': [{
+        messages_list = []
+        for m in qs[-100:]:  # last 100 for performance
+            # Gönderenin gerçek ismini al
+            sender_name = m.sender.username
+            try:
+                from apps.students.models import Student
+                student = Student.objects.get(user=m.sender)
+                sender_name = f"{student.first_name} {student.last_name}".strip()
+            except:
+                try:
+                    from apps.teachers.models import Teacher
+                    teacher = Teacher.objects.get(user=m.sender)
+                    sender_name = f"{teacher.first_name} {teacher.last_name}".strip()
+                except:
+                    sender_name = f"{m.sender.first_name} {m.sender.last_name}".strip() or m.sender.username
+            
+            messages_list.append({
                 'id': m.id,
                 'sender_id': m.sender_id,
-                'sender_name': (f"{m.sender.first_name} {m.sender.last_name}".strip() or m.sender.username),
+                'sender_name': sender_name,
                 'message': m.message,
                 'text': m.message,  # floating chat için kısayol
                 'is_me': (m.sender_id == request.user.id),
                 'created_at': m.created_at.strftime('%d.%m.%Y %H:%M'),
-            } for m in qs[-100:]]  # last 100 for performance
-        }
+            })
+        
+        data = {'messages': messages_list}
         return JsonResponse(data)
     except Exception as e:
         # Herhangi bir hata durumunda bile sohbet penceresini çalışır bırakmak için
         return JsonResponse({
             'messages': [],
             'error': str(e),
+        })
+
+
+@login_required
+@require_http_methods(["POST"])
+def api_clear_conversation(request, user_id):
+    """API: Clear conversation history with a specific user"""
+    try:
+        other = get_object_or_404(User, id=user_id)
+        
+        # Delete all messages between these two users
+        DirectMessage.objects.filter(
+            Q(sender=request.user, recipient=other) |
+            Q(sender=other, recipient=request.user)
+        ).delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': 'Mesaj geçmişi temizlendi'
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
         })

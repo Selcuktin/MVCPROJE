@@ -7,40 +7,38 @@
     .student-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         color: white;
-        border-radius: 12px;
+        border-radius: 15px;
         padding: 2rem;
         margin-bottom: 2rem;
         box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
     
-    .info-box {
-        background: white;
-        border-radius: 8px;
-        padding: 1.5rem;
-        margin-bottom: 1rem;
-        border-left: 4px solid #667eea;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-    
-    .stat-card {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-        border-radius: 12px;
-        padding: 1.5rem;
-        text-align: center;
-        margin-bottom: 1rem;
-        border: none;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
-    }
-    
-    .stat-card h2 {
-        font-size: 2.5rem;
+    .profile-avatar {
+        width: 150px;
+        height: 150px;
+        border-radius: 50%;
+        background: rgba(255,255,255,0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 60px;
         font-weight: bold;
-        margin: 0.5rem 0;
+        border: 5px solid rgba(255,255,255,0.5);
+        margin: 0 auto 20px;
+    }
+    
+    .info-card {
+        background: white;
+        border-radius: 15px;
+        padding: 2rem;
+        margin-bottom: 1.5rem;
+        border: none;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.08);
     }
     
     .info-item {
         display: flex;
-        padding: 0.75rem 0;
+        padding: 1rem 0;
         border-bottom: 1px solid #f0f0f0;
     }
     
@@ -67,248 +65,146 @@
 <div class="container-fluid">
     <!-- Öğrenci Başlığı -->
     <div class="student-header">
-        <div class="d-flex justify-content-between align-items-start">
-            <div>
+        <div class="row align-items-center">
+            <div class="col-md-3 text-center">
+                <div class="profile-avatar">
+                    {{ student.first_name|first }}{{ student.last_name|first }}
+                </div>
+            </div>
+            <div class="col-md-9">
                 <h2 class="mb-2">
                     <i class="fas fa-user-graduate me-2"></i>{{ student.full_name }}
                 </h2>
-                <p class="mb-0 opacity-75">
+                <p class="mb-2 opacity-75">
                     <i class="fas fa-id-card me-2"></i>{{ student.school_number }}
-                    <span class="ms-3">
-                        <i class="fas fa-envelope me-2"></i>{{ student.email }}
-                    </span>
                 </p>
-            </div>
-            <div>
-                <span class="badge bg-{% if student.status == 'active' %}success{% elif student.status == 'graduated' %}info{% else %}warning{% endif %} fs-5">
-                    {{ student.get_status_display }}
-                </span>
+                <p class="mb-0 opacity-75">
+                    <i class="fas fa-envelope me-2"></i>{{ student.email }}
+                </p>
+                <div class="mt-3">
+                    <span class="badge bg-{% if student.status == 'active' %}success{% elif student.status == 'graduated' %}info{% else %}warning{% endif %} fs-5">
+                        {{ student.get_status_display }}
+                    </span>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="row">
-        <!-- Sol Taraf - İstatistikler ve Bilgiler -->
-        <div class="col-md-4">
-            <!-- İstatistikler -->
-            <div class="stat-card bg-primary text-white">
-                <i class="fas fa-book fa-2x mb-2"></i>
-                <h2 class="text-white">{{ enrollments.count }}</h2>
-                <p class="mb-0 fw-bold">Kayıtlı Ders</p>
-            </div>
-            
-            <div class="stat-card bg-info text-white">
-                <i class="fas fa-star fa-2x mb-2"></i>
-                <h2 class="text-white">{{ notes_count|default:0 }}</h2>
-                <p class="mb-0 fw-bold">Girilmiş Not</p>
-            </div>
-            
-            <!-- İşlemler -->
-            {% if user.is_staff or user.userprofile.user_type == 'admin' or user.userprofile.user_type == 'teacher' %}
-            <div class="card shadow-sm mt-3">
-                <div class="card-header bg-warning text-white">
-                    <h6 class="mb-0"><i class="fas fa-cogs me-2"></i>İşlemler</h6>
+        <!-- Kişisel Bilgiler -->
+        <div class="col-md-6">
+            <div class="info-card">
+                <h5 class="mb-4"><i class="fas fa-user me-2 text-primary"></i>Kişisel Bilgiler</h5>
+                <div class="info-item">
+                    <div class="info-label"><i class="fas fa-id-card me-2"></i>Okul Numarası</div>
+                    <div class="info-value">{{ student.school_number }}</div>
                 </div>
-                <div class="card-body d-grid gap-2">
+                <div class="info-item">
+                    <div class="info-label"><i class="fas fa-envelope me-2"></i>E-posta</div>
+                    <div class="info-value">{{ student.email }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label"><i class="fas fa-phone me-2"></i>Telefon</div>
+                    <div class="info-value">{{ student.phone|default:"-" }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label"><i class="fas fa-birthday-cake me-2"></i>Doğum Tarihi</div>
+                    <div class="info-value">{{ student.birth_date|date:"d.m.Y"|default:"-" }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label"><i class="fas fa-venus-mars me-2"></i>Cinsiyet</div>
+                    <div class="info-value">{{ student.get_gender_display|default:"-" }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label"><i class="fas fa-map-marker-alt me-2"></i>Adres</div>
+                    <div class="info-value">{{ student.address|default:"-" }}</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Akademik Bilgiler -->
+        <div class="col-md-6">
+            <div class="info-card">
+                <h5 class="mb-4"><i class="fas fa-graduation-cap me-2 text-success"></i>Akademik Bilgiler</h5>
+                <div class="info-item">
+                    <div class="info-label"><i class="fas fa-calendar-plus me-2"></i>Kayıt Tarihi</div>
+                    <div class="info-value">{{ student.registration_date|date:"d.m.Y"|default:"-" }}</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label"><i class="fas fa-info-circle me-2"></i>Durum</div>
+                    <div class="info-value">
+                        <span class="badge bg-{% if student.status == 'active' %}success{% elif student.status == 'graduated' %}info{% else %}warning{% endif %}">
+                            {{ student.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label"><i class="fas fa-book me-2"></i>Kayıtlı Ders Sayısı</div>
+                    <div class="info-value"><strong>{{ total_courses|default:0 }}</strong> ders</div>
+                </div>
+                <div class="info-item">
+                    <div class="info-label"><i class="fas fa-tasks me-2"></i>Teslim Edilen Ödev</div>
+                    <div class="info-value"><strong>{{ submissions_count|default:0 }}</strong> ödev</div>
+                </div>
+            </div>
+
+            <!-- İşlemler (Sadece Admin) -->
+            {% if user.is_staff or user.userprofile.user_type == 'admin' %}
+            <div class="info-card">
+                <h5 class="mb-3"><i class="fas fa-cogs me-2 text-warning"></i>Yönetim İşlemleri</h5>
+                <div class="d-grid gap-2">
                     <a href="{% url 'students:update' student.pk %}" class="btn btn-warning">
                         <i class="fas fa-edit me-1"></i>Düzenle
                     </a>
                     <a href="{% url 'students:delete' student.pk %}" class="btn btn-danger" 
-                       onclick="return confirm('Bu öğrenciyi silmek istediğinizden emin misiniz?')">
+                       onclick="return AppUtils.confirmAction('Bu öğrenciyi silmek istediğinizden emin misiniz?', () => window.location.href='{% url 'students:delete' student.pk %}')">
                         <i class="fas fa-trash me-1"></i>Sil
-                    </a>
-                    <a href="{% url 'students:list' %}" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left me-1"></i>Listeye Dön
                     </a>
                 </div>
             </div>
             {% endif %}
         </div>
-
-        <!-- Sağ Taraf - Detaylı Bilgiler -->
-        <div class="col-md-8">
-            <!-- Kişisel Bilgiler -->
-            <div class="card shadow-sm mb-3">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-user me-2"></i>Kişisel Bilgiler</h5>
-                </div>
-                <div class="card-body">
-                    <div class="info-item">
-                        <div class="info-label"><i class="fas fa-id-card me-2"></i>Okul Numarası</div>
-                        <div class="info-value">{{ student.school_number }}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label"><i class="fas fa-envelope me-2"></i>E-posta</div>
-                        <div class="info-value">{{ student.email }}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label"><i class="fas fa-phone me-2"></i>Telefon</div>
-                        <div class="info-value">{{ student.phone }}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label"><i class="fas fa-birthday-cake me-2"></i>Doğum Tarihi</div>
-                        <div class="info-value">{{ student.birth_date|date:"d.m.Y" }}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label"><i class="fas fa-venus-mars me-2"></i>Cinsiyet</div>
-                        <div class="info-value">{{ student.get_gender_display }}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label"><i class="fas fa-map-marker-alt me-2"></i>Adres</div>
-                        <div class="info-value">{{ student.address }}</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Akademik Bilgiler -->
-            <div class="card shadow-sm">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="fas fa-graduation-cap me-2"></i>Akademik Bilgiler</h5>
-                </div>
-                <div class="card-body">
-                    <div class="info-item">
-                        <div class="info-label"><i class="fas fa-calendar-plus me-2"></i>Kayıt Tarihi</div>
-                        <div class="info-value">{{ student.registration_date|date:"d.m.Y" }}</div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label"><i class="fas fa-info-circle me-2"></i>Durum</div>
-                        <div class="info-value">
-                            <span class="badge bg-{% if student.status == 'active' %}success{% elif student.status == 'graduated' %}info{% else %}warning{% endif %}">
-                                {{ student.get_status_display }}
-                            </span>
-                        </div>
-                    </div>
-                    <div class="info-item">
-                        <div class="info-label"><i class="fas fa-book me-2 text-primary"></i>Kayıtlı Ders Sayısı</div>
-                        <div class="info-value"><strong class="text-dark">{{ enrollments.count }}</strong> <span class="text-dark">ders</span></div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
-    
-    <!-- Kayıtlı Dersler -->
-    {% if enrollments %}
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5><i class="fas fa-book me-2"></i>Kayıtlı Dersler</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Ders Kodu</th>
-                                    <th>Ders Adı</th>
-                                    <th>Öğretmen</th>
-                                    <th>Dönem</th>
-                                    <th>Durum</th>
-                                    <th>Vize</th>
-                                    <th>Final</th>
-                                    <th>Büt</th>
-                                    <th>Harf Notu</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for enrollment in enrollments %}
-                                <tr>
-                                    <td>{{ enrollment.group.course.code }}</td>
-                                    <td>{{ enrollment.group.course.name }}</td>
-                                    <td>{{ enrollment.group.teacher.full_name }}</td>
-                                    <td>{{ enrollment.group.semester }}</td>
-                                    <td>
-                                        <span class="badge {% if enrollment.status == 'completed' %}bg-success{% elif enrollment.status == 'failed' %}bg-danger{% elif enrollment.status == 'dropped' %}bg-warning{% else %}bg-primary{% endif %}">
-                                            {{ enrollment.get_status_display }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        {% if enrollment.course_notes and enrollment.course_notes.vize %}
-                                            {{ enrollment.course_notes.vize.score }}
-                                        {% else %}
-                                            <span class="text-muted">-</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if enrollment.course_notes and enrollment.course_notes.final %}
-                                            {{ enrollment.course_notes.final.score }}
-                                        {% else %}
-                                            <span class="text-muted">-</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if enrollment.course_notes and enrollment.course_notes.but %}
-                                            {{ enrollment.course_notes.but.score }}
-                                        {% else %}
-                                            <span class="text-muted">-</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {% if enrollment.course_notes and enrollment.course_notes.final %}
-                                            {{ enrollment.course_notes.final.grade }}
-                                        {% elif enrollment.course_notes and enrollment.course_notes.but %}
-                                            {{ enrollment.course_notes.but.grade }}
-                                        {% elif enrollment.course_notes and enrollment.course_notes.vize %}
-                                            {{ enrollment.course_notes.vize.grade }}
-                                        {% else %}
-                                            <span class="text-muted">-</span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    {% endif %}
     
     <!-- Ödev Teslimler -->
     {% if submissions %}
     <div class="row mt-4">
         <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5><i class="fas fa-tasks me-2"></i>Ödev Teslimler</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Ödev</th>
-                                    <th>Ders</th>
-                                    <th>Teslim Tarihi</th>
-                                    <th>Puan</th>
-                                    <th>Durum</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for submission in submissions %}
-                                <tr>
-                                    <td>{{ submission.assignment.title }}</td>
-                                    <td>{{ submission.assignment.group.course.name }}</td>
-                                    <td>{{ submission.submission_date|date:"d.m.Y H:i" }}</td>
-                                    <td>
-                                        {% if submission.score %}
-                                            {{ submission.score }}/{{ submission.assignment.max_score }}
-                                        {% else %}
-                                            <span class="text-muted">Henüz notlandırılmadı</span>
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        <span class="badge {% if submission.status == 'graded' %}bg-success{% elif submission.status == 'late' %}bg-warning{% else %}bg-primary{% endif %}">
-                                            {{ submission.get_status_display }}
-                                        </span>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+            <div class="info-card">
+                <h5 class="mb-4"><i class="fas fa-tasks me-2 text-info"></i>Ödev Teslimler</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Ödev</th>
+                                <th>Ders</th>
+                                <th>Teslim Tarihi</th>
+                                <th>Puan</th>
+                                <th>Durum</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for submission in submissions %}
+                            <tr>
+                                <td>{{ submission.assignment.title }}</td>
+                                <td>{{ submission.assignment.group.course.name }}</td>
+                                <td>{{ submission.submission_date|date:"d.m.Y H:i" }}</td>
+                                <td>
+                                    {% if submission.score %}
+                                        <strong>{{ submission.score }}</strong>/{{ submission.assignment.max_score }}
+                                    {% else %}
+                                        <span class="text-muted">Henüz notlandırılmadı</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge {% if submission.status == 'graded' %}bg-success{% elif submission.status == 'late' %}bg-warning{% else %}bg-primary{% endif %}">
+                                        {{ submission.get_status_display }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -317,10 +213,12 @@
     
     <div class="row mt-4">
         <div class="col-12">
-            <a href="{% url 'students:list' %}" class="btn btn-secondary">
-                <i class="fas fa-arrow-left me-1"></i>Öğrenci Listesine Dön
+            <a href="{% url 'students:list' %}" class="btn btn-secondary btn-lg">
+                <i class="fas fa-arrow-left me-2"></i>Öğrenci Listesine Dön
             </a>
         </div>
     </div>
 </div>
+
+<script src="{% static 'js/app-utils.js' %}"></script>
 {% endblock %}

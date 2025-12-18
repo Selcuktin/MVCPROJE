@@ -3,107 +3,439 @@
 
 {% block title %}Notlandırma - {{ course_group.course.name }}{% endblock %}
 
+{% block extra_css %}
+<style>
+    .gradebook-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+        border-radius: 15px;
+    }
+
+    .stats-card {
+        background: white;
+        border-radius: 15px;
+        padding: 1.5rem;
+        text-align: center;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+
+    .stats-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .stats-icon {
+        font-size: 2.5rem;
+        margin-bottom: 1rem;
+        opacity: 0.8;
+    }
+
+    .stats-number {
+        font-size: 2.5rem;
+        font-weight: 700;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .stats-label {
+        color: #666;
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+
+    .gradebook-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        border: none;
+        overflow: hidden;
+    }
+
+    .gradebook-card-header {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-bottom: 2px solid #dee2e6;
+        padding: 1.5rem;
+    }
+
+    .grade-input {
+        border: 2px solid #e9ecef;
+        border-radius: 8px;
+        text-align: center;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        padding: 0.5rem;
+    }
+
+    .grade-input:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        transform: scale(1.05);
+    }
+
+    .grade-input.saving {
+        background: linear-gradient(135deg, #ffeaa7, #fdcb6e);
+        border-color: #fdcb6e;
+    }
+
+    .grade-input.saved {
+        background: linear-gradient(135deg, #55efc4, #00b894);
+        border-color: #00b894;
+        color: white;
+    }
+
+    .grade-input.error {
+        background: linear-gradient(135deg, #ff7675, #d63031);
+        border-color: #d63031;
+        color: white;
+    }
+
+    .grade-table {
+        margin: 0;
+    }
+
+    .grade-table thead th {
+        background: linear-gradient(135deg, #2d3436, #636e72);
+        color: white;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        padding: 1rem;
+        border: none;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+    }
+
+    .grade-table tbody tr {
+        transition: all 0.3s ease;
+    }
+
+    .grade-table tbody tr:hover {
+        background: #f8f9fa;
+        transform: scale(1.01);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    }
+
+    .grade-table tbody td {
+        padding: 1rem;
+        vertical-align: middle;
+        border-bottom: 1px solid #e9ecef;
+    }
+
+    .student-name {
+        font-weight: 600;
+        color: #2d3436;
+    }
+
+    .student-number {
+        color: #636e72;
+        font-size: 0.9rem;
+    }
+
+    .total-cell {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #667eea;
+        display: inline-block;
+        min-width: 60px;
+        text-align: center;
+        padding: 0.3rem 0.8rem;
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef);
+        border-radius: 10px;
+    }
+
+    .letter-badge {
+        font-size: 1rem;
+        font-weight: 700;
+        padding: 0.5rem 1rem;
+        border-radius: 10px;
+        min-width: 50px;
+        display: inline-block;
+        text-align: center;
+        transition: all 0.3s ease;
+    }
+
+    .letter-badge.grade-AA,
+    .letter-badge.grade-BA,
+    .letter-badge.grade-BB {
+        background: linear-gradient(135deg, #00b894, #55efc4);
+        color: white;
+    }
+
+    .letter-badge.grade-CB,
+    .letter-badge.grade-CC {
+        background: linear-gradient(135deg, #74b9ff, #0984e3);
+        color: white;
+    }
+
+    .letter-badge.grade-DC,
+    .letter-badge.grade-DD {
+        background: linear-gradient(135deg, #fdcb6e, #e17055);
+        color: white;
+    }
+
+    .letter-badge.grade-FF {
+        background: linear-gradient(135deg, #d63031, #ff7675);
+        color: white;
+        animation: pulse-danger 2s infinite;
+    }
+
+    .letter-badge.grade-none {
+        background: #dfe6e9;
+        color: #636e72;
+    }
+
+    @keyframes pulse-danger {
+        0%, 100% {
+            box-shadow: 0 0 0 0 rgba(214, 48, 49, 0.4);
+        }
+        50% {
+            box-shadow: 0 0 0 10px rgba(214, 48, 49, 0);
+        }
+    }
+
+    .info-banner {
+        background: linear-gradient(135deg, #74b9ff, #0984e3);
+        color: white;
+        padding: 1rem 1.5rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 15px rgba(9, 132, 227, 0.3);
+    }
+
+    .info-banner i {
+        font-size: 1.5rem;
+        margin-right: 1rem;
+    }
+
+    .edit-icon {
+        cursor: pointer;
+        color: #667eea;
+        margin-left: 0.5rem;
+        opacity: 0;
+        transition: all 0.3s ease;
+    }
+
+    tr:hover .edit-icon {
+        opacity: 1;
+    }
+
+    .edit-icon:hover {
+        color: #764ba2;
+        transform: scale(1.2);
+    }
+
+    .toast-notification {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background: white;
+        padding: 1rem 1.5rem;
+        border-radius: 10px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        z-index: 9999;
+        display: none;
+        animation: slideInRight 0.3s ease;
+    }
+
+    .toast-notification.show {
+        display: block;
+    }
+
+    .toast-notification.success {
+        border-left: 4px solid #00b894;
+    }
+
+    .toast-notification.error {
+        border-left: 4px solid #d63031;
+    }
+
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 0.5rem;
+        opacity: 0;
+        transition: all 0.3s ease;
+    }
+
+    tr:hover .action-buttons {
+        opacity: 1;
+    }
+
+    .btn-icon {
+        width: 32px;
+        height: 32px;
+        padding: 0;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+    }
+
+    .btn-icon:hover {
+        transform: scale(1.1);
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container-fluid mt-4">
-    <h2><i class="fas fa-clipboard-check"></i> {{ course_group.course.code }} - Notlandırma</h2>
-    <p class="lead">{{ course_group.course.name }} (Grup {{ course_group.name }})</p>
-    
+<!-- Header -->
+<div class="gradebook-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="mb-0"><i class="fas fa-clipboard-check me-2"></i>{{ course_group.course.code }} - Notlandırma</h1>
+                <p class="mb-0 opacity-75">{{ course_group.course.name }}</p>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'gradebook:teacher_default' %}" class="btn btn-light btn-lg">
+                    <i class="fas fa-exchange-alt me-2"></i>Ders Değiştir
+                </a>
+                <button class="btn btn-light btn-lg" onclick="exportToExcel()">
+                    <i class="fas fa-file-excel me-2"></i>Excel'e Aktar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
     <!-- Stats -->
     <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card bg-primary text-white">
-                <div class="card-body text-center">
-                    <h3>{{ stats.total_students }}</h3>
-                    <p>Toplam Öğrenci</p>
+        <div class="col-md-3 mb-3">
+            <div class="stats-card">
+                <div class="stats-icon text-primary">
+                    <i class="fas fa-users"></i>
                 </div>
+                <span class="stats-number text-primary">{{ stats.total_students }}</span>
+                <div class="stats-label">Toplam Öğrenci</div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-success text-white">
-                <div class="card-body text-center">
-                    <h3>{{ stats.graded }}</h3>
-                    <p>Notlandırılmış</p>
+        <div class="col-md-3 mb-3">
+            <div class="stats-card">
+                <div class="stats-icon text-success">
+                    <i class="fas fa-check-circle"></i>
                 </div>
+                <span class="stats-number text-success">{{ stats.graded }}</span>
+                <div class="stats-label">Notlandırılmış</div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-info text-white">
-                <div class="card-body text-center">
-                    <h3>{{ stats.average|floatformat:1 }}</h3>
-                    <p>Sınıf Ortalaması</p>
+        <div class="col-md-3 mb-3">
+            <div class="stats-card">
+                <div class="stats-icon text-info">
+                    <i class="fas fa-chart-line"></i>
                 </div>
+                <span class="stats-number text-info">{{ stats.average|floatformat:1 }}</span>
+                <div class="stats-label">Sınıf Ortalaması</div>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card bg-warning">
-                <div class="card-body text-center">
-                    <h3>{{ categories.count }}</h3>
-                    <p>Kategori</p>
+        <div class="col-md-3 mb-3">
+            <div class="stats-card">
+                <div class="stats-icon text-warning">
+                    <i class="fas fa-graduation-cap"></i>
                 </div>
+                <span class="stats-number text-warning">{{ stats.graded }}/{{ stats.total_students }}</span>
+                <div class="stats-label">Tamamlanma</div>
             </div>
         </div>
     </div>
-    
-    <div class="alert alert-info">
-        <strong>Hızlı Notlandırma:</strong> Vize (%40) + Final (%60). Bütünleme girilirse Final yerine geçer.
-    </div>
-    
-    <!-- Gradebook Table (Quick Entry) -->
-    <div class="card">
-        <div class="card-header">
-            <h5><i class="fas fa-table"></i> Öğrenci Notları</h5>
+
+    <!-- Info Banner -->
+    <div class="info-banner">
+        <div class="d-flex align-items-center">
+            <i class="fas fa-info-circle"></i>
+            <div>
+                <strong>Hızlı Notlandırma:</strong> Vize (%40) + Final (%60). Bütünleme girilirse Final yerine geçer. 
+                Not girişi yaptığınızda toplam ve harf notu otomatik hesaplanır.
+            </div>
         </div>
-        <div class="card-body">
+    </div>
+
+    <!-- Gradebook Table -->
+    <div class="gradebook-card">
+        <div class="gradebook-card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="fas fa-table me-2"></i>Öğrenci Notları</h5>
+                <div>
+                    <input type="text" id="searchStudent" class="form-control" placeholder="Öğrenci ara..." style="width: 250px;">
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-striped table-hover">
-                    <thead class="table-dark">
+                <table class="table grade-table">
+                    <thead>
                         <tr>
-                            <th>Öğrenci No</th>
+                            <th style="width: 120px;">Öğrenci No</th>
                             <th>Ad Soyad</th>
-                            <th style="width: 140px;">Vize</th>
-                            <th style="width: 140px;">Final</th>
-                            <th style="width: 140px;">Bütünleme</th>
-                            <th>Toplam</th>
-                            <th>Harf</th>
+                            <th style="width: 120px;">Vize (40%)</th>
+                            <th style="width: 120px;">Final (60%)</th>
+                            <th style="width: 120px;">Bütünleme</th>
+                            <th style="width: 100px;">Toplam</th>
+                            <th style="width: 100px;">Harf Notu</th>
+                            <th style="width: 80px;">İşlem</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="gradeTableBody">
                         {% for data in gradebook_data %}
-                        <tr>
-                            <td>{{ data.student.school_number }}</td>
-                            <td>{{ data.student.first_name }} {{ data.student.last_name }}</td>
+                        <tr data-student-name="{{ data.student.first_name }} {{ data.student.last_name }}" data-student-id="{{ data.student.id }}">
+                            <td class="student-number">{{ data.student.school_number }}</td>
+                            <td class="student-name">{{ data.student.first_name }} {{ data.student.last_name }}</td>
                             <td>
-                                <input class="form-control form-control-sm grade-input"
+                                <input type="text" 
+                                       class="form-control grade-input"
                                        data-student-id="{{ data.student.id }}"
                                        data-kind="vize"
                                        data-item-id="{{ vize_item_id }}"
-                                       placeholder="-"
                                        value="{% if data.vize_score != None %}{{ data.vize_score|floatformat:0 }}{% endif %}">
                             </td>
                             <td>
-                                <input class="form-control form-control-sm grade-input"
+                                <input type="text" 
+                                       class="form-control grade-input"
                                        data-student-id="{{ data.student.id }}"
                                        data-kind="final"
                                        data-item-id="{{ final_item_id }}"
-                                       placeholder="-"
                                        value="{% if data.final_score != None %}{{ data.final_score|floatformat:0 }}{% endif %}">
                             </td>
                             <td>
-                                <input class="form-control form-control-sm grade-input"
+                                <input type="text" 
+                                       class="form-control grade-input"
                                        data-student-id="{{ data.student.id }}"
                                        data-kind="but"
                                        data-item-id="{{ but_item_id }}"
-                                       placeholder="-"
                                        value="{% if data.but_score != None %}{{ data.but_score|floatformat:0 }}{% endif %}">
                             </td>
-                            <td><strong class="total-cell" data-student-id="{{ data.student.id }}">
-                                {% if data.total_score != None %}{{ data.total_score|floatformat:1 }}{% else %}-{% endif %}
-                            </strong></td>
                             <td>
-                                <span class="badge letter-cell bg-{% if data.letter_grade|slice:':1' == 'A' or data.letter_grade == 'BB' %}success{% elif data.letter_grade == 'FF' %}danger{% else %}warning{% endif %}"
-                                      data-student-id="{{ data.student.id }}">
+                                <span class="total-cell" data-student-id="{{ data.student.id }}">
+                                    {% if data.total_score != None %}{{ data.total_score|floatformat:1 }}{% else %}-{% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="letter-badge grade-{{ data.letter_grade|default:'none' }}" data-student-id="{{ data.student.id }}">
                                     {{ data.letter_grade|default:"-" }}
                                 </span>
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="btn btn-sm btn-icon btn-primary" onclick="clearGrades({{ data.student.id }})" title="Notları Temizle">
+                                        <i class="fas fa-eraser"></i>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -114,56 +446,205 @@
     </div>
 </div>
 
+<!-- Toast Notification -->
+<div id="toastNotification" class="toast-notification">
+    <div class="d-flex align-items-center">
+        <i class="fas fa-check-circle me-2"></i>
+        <span id="toastMessage">Not kaydedildi</span>
+    </div>
+</div>
+
 <script>
+let saveTimeout = null;
+
 document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.grade-input').forEach(inp => {
-        inp.addEventListener('blur', async function() {
-            const studentId = this.dataset.studentId;
-            const kind = this.dataset.kind;
-            const itemId = this.dataset.itemId;
-            const score = this.value.trim();
+    // Grade input handling
+    document.querySelectorAll('.grade-input').forEach(input => {
+        // Save on blur (when user leaves the field)
+        input.addEventListener('blur', function() {
+            saveGrade(this);
+        });
 
-            this.classList.add('bg-warning');
-            const form = new FormData();
-            form.append('student_id', studentId);
-            form.append('kind', kind);
-            form.append('item_id', itemId);
-            form.append('score', score);
-
-            const res = await fetch('{% url "gradebook:course_quick_entry" course_group.id %}', {
-                method: 'POST',
-                headers: {'X-CSRFToken': '{{ csrf_token }}'},
-                body: form
-            });
-            const data = await res.json();
-            this.classList.remove('bg-warning');
-
-            if (!data.success) {
-                this.classList.add('bg-danger', 'text-white');
-                alert(data.message || 'Not kaydedilemedi');
-                setTimeout(() => this.classList.remove('bg-danger', 'text-white'), 1500);
-                return;
+        // Save on Enter key
+        input.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                this.blur();
             }
+        });
 
-            const totalCell = document.querySelector(`.total-cell[data-student-id="${studentId}"]`);
-            const letterCell = document.querySelector(`.letter-cell[data-student-id="${studentId}"]`);
+        // Real-time validation
+        input.addEventListener('input', function() {
+            // Only allow numbers
+            this.value = this.value.replace(/[^0-9]/g, '');
+            const value = parseInt(this.value);
+            if (value < 0) this.value = 0;
+            if (value > 100) this.value = 100;
+        });
+    });
 
-            if (totalCell) totalCell.textContent = (data.total === null || data.total === undefined) ? '-' : Number(data.total).toFixed(1);
-            if (letterCell) {
-                letterCell.textContent = data.letter_grade || '-';
-                letterCell.className = 'badge letter-cell';
-                if (!data.letter_grade) {
-                    letterCell.classList.add('bg-secondary');
-                } else if (data.letter_grade.startsWith('A') || data.letter_grade === 'BB') {
-                    letterCell.classList.add('bg-success');
-                } else if (data.letter_grade === 'FF') {
-                    letterCell.classList.add('bg-danger');
-                } else {
-                    letterCell.classList.add('bg-warning');
-                }
-            }
+    // Search functionality
+    document.getElementById('searchStudent').addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase();
+        document.querySelectorAll('#gradeTableBody tr').forEach(row => {
+            const studentName = row.dataset.studentName.toLowerCase();
+            row.style.display = studentName.includes(searchTerm) ? '' : 'none';
         });
     });
 });
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+async function saveGrade(input) {
+    const studentId = input.dataset.studentId;
+    const kind = input.dataset.kind;
+    const itemId = input.dataset.itemId;
+    const score = input.value.trim();
+
+    console.log('Saving grade:', { studentId, kind, itemId, score });
+
+    // Visual feedback - saving
+    input.classList.add('saving');
+    input.disabled = true;
+
+    const formData = new FormData();
+    formData.append('student_id', studentId);
+    formData.append('kind', kind);
+    formData.append('item_id', itemId);
+    formData.append('score', score);
+
+    const csrftoken = getCookie('csrftoken');
+
+    try {
+        const response = await fetch('{% url "gradebook:course_quick_entry" course_group.id %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': csrftoken
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Server error:', errorText);
+            throw new Error(`Sunucu hatası (${response.status})`);
+        }
+
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.message || 'Not kaydedilemedi');
+        }
+
+        // Visual feedback - saved
+        input.classList.remove('saving');
+        input.classList.add('saved');
+        input.disabled = false;
+
+        // Update total and letter grade
+        updateStudentGrade(studentId, data.total, data.letter_grade);
+
+        // Show success toast
+        showToast('Not başarıyla kaydedildi', 'success');
+
+        // Remove saved class after animation
+        setTimeout(() => {
+            input.classList.remove('saved');
+        }, 1500);
+
+    } catch (error) {
+        // Visual feedback - error
+        input.classList.remove('saving');
+        input.classList.add('error');
+        input.disabled = false;
+
+        showToast(error.message, 'error');
+
+        setTimeout(() => {
+            input.classList.remove('error');
+        }, 2000);
+    }
+}
+
+function updateStudentGrade(studentId, total, letterGrade) {
+    // Update total
+    const totalCell = document.querySelector(`.total-cell[data-student-id="${studentId}"]`);
+    if (totalCell) {
+        totalCell.textContent = (total === null || total === undefined) ? '-' : Number(total).toFixed(1);
+        
+        // Animate total change
+        totalCell.style.transform = 'scale(1.2)';
+        totalCell.style.transition = 'all 0.3s ease';
+        setTimeout(() => {
+            totalCell.style.transform = 'scale(1)';
+        }, 300);
+    }
+
+    // Update letter grade
+    const letterBadge = document.querySelector(`.letter-badge[data-student-id="${studentId}"]`);
+    if (letterBadge) {
+        letterBadge.textContent = letterGrade || '-';
+        
+        // Remove all grade classes
+        letterBadge.className = 'letter-badge';
+        
+        // Add appropriate class
+        if (letterGrade) {
+            letterBadge.classList.add(`grade-${letterGrade}`);
+        } else {
+            letterBadge.classList.add('grade-none');
+        }
+
+        // Animate letter grade change
+        letterBadge.style.transform = 'scale(1.2) rotate(5deg)';
+        letterBadge.style.transition = 'all 0.3s ease';
+        setTimeout(() => {
+            letterBadge.style.transform = 'scale(1) rotate(0deg)';
+        }, 300);
+    }
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toastNotification');
+    const messageEl = document.getElementById('toastMessage');
+    
+    messageEl.textContent = message;
+    toast.className = `toast-notification ${type} show`;
+    
+    setTimeout(() => {
+        toast.classList.remove('show');
+    }, 3000);
+}
+
+async function clearGrades(studentId) {
+    if (!confirm('Bu öğrencinin tüm notlarını silmek istediğinizden emin misiniz?')) {
+        return;
+    }
+
+    const inputs = document.querySelectorAll(`.grade-input[data-student-id="${studentId}"]`);
+    
+    for (const input of inputs) {
+        input.value = '';
+        await saveGrade(input);
+    }
+
+    showToast('Notlar temizlendi', 'success');
+}
+
+function exportToExcel() {
+    showToast('Excel export özelliği yakında eklenecek', 'info');
+}
 </script>
 {% endblock %}

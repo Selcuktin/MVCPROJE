@@ -3,170 +3,406 @@
 
 {% block title %}Öğretmen Ana Sayfa{% endblock %}
 
+{% block extra_css %}
+<style>
+    .dashboard-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 16px;
+        margin-bottom: 2rem;
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 16px;
+        padding: 1.25rem;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        border: none;
+        position: relative;
+        overflow: hidden;
+        height: 100%;
+        cursor: pointer;
+    }
+    
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(180deg, var(--card-color), transparent);
+    }
+    
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+    }
+    
+    .card-arrow {
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        color: rgba(0,0,0,0.2);
+        font-size: 1.5rem;
+        opacity: 0;
+        transition: all 0.3s ease;
+    }
+    
+    .stat-card:hover .card-arrow {
+        opacity: 1;
+        right: 0.75rem;
+    }
+    
+    .stat-card.blue { --card-color: #667eea; }
+    .stat-card.green { --card-color: #10b981; }
+    .stat-card.orange { --card-color: #f59e0b; }
+    .stat-card.purple { --card-color: #8b5cf6; }
+    
+    .stat-icon {
+        width: 60px;
+        height: 60px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 24px;
+        margin-bottom: 1rem;
+    }
+    
+    .stat-icon.blue { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
+    .stat-icon.green { background: linear-gradient(135deg, #10b981, #059669); color: white; }
+    .stat-icon.orange { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
+    .stat-icon.purple { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; }
+    
+    .stat-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin: 0.5rem 0;
+    }
+    
+    .stat-label {
+        color: #6b7280;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    
+    .course-card {
+        background: white;
+        border-radius: 12px;
+        padding: 1.25rem;
+        margin-bottom: 1rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        transition: all 0.3s ease;
+        border-left: 4px solid #667eea;
+    }
+    
+    .course-card:hover {
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        transform: translateX(4px);
+    }
+    
+    .task-item {
+        background: white;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        border-left: 3px solid #f59e0b;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+    
+    .task-item:hover {
+        background: #fef3c7;
+        transform: translateX(4px);
+        box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
+    }
+    
+    .task-item::after {
+        content: '\f061';
+        font-family: 'Font Awesome 6 Free';
+        font-weight: 900;
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        opacity: 0;
+        transition: all 0.3s ease;
+        color: #f59e0b;
+    }
+    
+    .task-item:hover::after {
+        opacity: 1;
+        right: 0.75rem;
+    }
+    
+    .quiz-item {
+        background: white;
+        border-radius: 10px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        border-left: 3px solid #8b5cf6;
+        transition: all 0.2s ease;
+        position: relative;
+    }
+    
+    .quiz-item:hover {
+        background: #ede9fe;
+        transform: translateX(4px);
+        box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
+    }
+    
+    .quiz-item::after {
+        content: '\f061';
+        font-family: 'Font Awesome 6 Free';
+        font-weight: 900;
+        position: absolute;
+        right: 1rem;
+        top: 50%;
+        transform: translateY(-50%);
+        opacity: 0;
+        transition: all 0.3s ease;
+        color: #8b5cf6;
+    }
+    
+    .quiz-item:hover::after {
+        opacity: 1;
+        right: 0.75rem;
+    }
+    
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #1f2937;
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+    
+    .section-title i {
+        color: #667eea;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 2rem 1rem;
+        color: #9ca3af;
+    }
+    
+    .quick-action-btn {
+        background: white;
+        border: 2px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 1rem;
+        text-align: center;
+        transition: all 0.3s ease;
+        color: #1f2937;
+        text-decoration: none;
+        display: block;
+    }
+    
+    .quick-action-btn:hover {
+        border-color: #667eea;
+        background: #f3f4f6;
+        transform: translateY(-2px);
+        color: #667eea;
+    }
+    
+    .quick-action-btn i {
+        font-size: 2rem;
+        margin-bottom: 0.5rem;
+        display: block;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="container mt-4">
-    <h2><i class="fas fa-chalkboard-teacher"></i> Hoş Geldiniz, {{ teacher.first_name }} {{ teacher.last_name }}!</h2>
-    
-    <!-- Quick Stats -->
-    <div class="row mt-4">
-        <div class="col-md-3">
-            <a href="{% url 'teachers:courses' %}" class="text-decoration-none">
-            <div class="card text-white bg-primary mb-3" style="cursor:pointer;">
-                <div class="card-body text-center">
-                    <h2>{{ my_courses_count }}</h2>
-                    <p>Verdiğim Ders</p>
+<div class="container-fluid mt-4">
+    <!-- Welcome Header -->
+    <div class="dashboard-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">
+                    <i class="fas fa-chalkboard-teacher"></i> 
+                    Hoş Geldiniz, {{ teacher.first_name }} {{ teacher.last_name }}!
+                </h1>
+                <p class="mb-0 opacity-75">
+                    <i class="fas fa-calendar-alt"></i> 
+                    Bugün {{ now|date:"d F Y, l" }}
+                </p>
+            </div>
+            <div class="col-md-4 text-md-end">
+                <div class="d-flex justify-content-md-end gap-2">
+                    <a href="{% url 'quiz:question_bank_list' %}" class="btn btn-light">
+                        <i class="fas fa-database"></i> Soru Bankası
+                    </a>
+                    <a href="{% url 'forum:inbox' %}" class="btn btn-light">
+                        <i class="fas fa-envelope"></i> Mesajlar
+                        {% if unread_messages > 0 %}
+                        <span class="badge bg-danger">{{ unread_messages }}</span>
+                        {% endif %}
+                    </a>
                 </div>
             </div>
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="{% url 'teachers:students' %}" class="text-decoration-none">
-            <div class="card text-white bg-success mb-3" style="cursor:pointer;">
-                <div class="card-body text-center">
-                    <h2>{{ total_students }}</h2>
-                    <p>Toplam Öğrenci</p>
-                </div>
-            </div>
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="{% url 'courses:assignment_list' %}?state=active" class="text-decoration-none">
-            <div class="card text-white bg-warning mb-3" style="cursor:pointer;">
-                <div class="card-body text-center">
-                    <h2>{{ pending_grading }}</h2>
-                    <p>Notlandırılacak</p>
-                </div>
-            </div>
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="{% url 'quiz:quiz_list_student' %}" class="text-decoration-none">
-            <div class="card text-white bg-info mb-3" style="cursor:pointer;">
-                <div class="card-body text-center">
-                    <h2>{{ active_quizzes_count }}</h2>
-                    <p>Aktif Quiz</p>
-                </div>
-            </div>
-            </a>
         </div>
     </div>
-    
-    <!-- Quick Actions -->
-    <div class="card mb-3">
-        <div class="card-header bg-dark text-white">
-            <h5 class="mb-0"><i class="fas fa-bolt"></i> Hızlı İşlemler</h5>
+
+    <!-- Stats Cards -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+            <div class="stat-card blue" onclick="window.location.href='{% url 'teachers:courses' %}'">
+                <div class="stat-icon blue">
+                    <i class="fas fa-book-open"></i>
+                </div>
+                <div class="stat-value">{{ my_courses_count }}</div>
+                <div class="stat-label">Verdiğim Ders</div>
+                <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
+            </div>
         </div>
-        <div class="card-body">
-            <a href="{% url 'quiz:question_bank_list' %}" class="btn btn-info me-2">
-                <i class="fas fa-question-circle"></i> Soru Bankası
-            </a>
-            <a href="{% url 'forum:inbox' %}" class="btn btn-warning me-2">
-                <i class="fas fa-envelope"></i> Mesajlar
-                {% if unread_messages > 0 %}
-                <span class="badge bg-danger">{{ unread_messages }}</span>
-                {% endif %}
-            </a>
-            <a href="{% url 'courses:list' %}" class="btn btn-secondary">
-                <i class="fas fa-list"></i> Tüm Derslerim
-            </a>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card green" onclick="window.location.href='{% url 'teachers:students' %}'">
+                <div class="stat-icon green">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <div class="stat-value">{{ total_students }}</div>
+                <div class="stat-label">Toplam Öğrenci</div>
+                <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card orange" onclick="window.location.href='{% url 'courses:assignment_list' %}?state=active'">
+                <div class="stat-icon orange">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <div class="stat-value">{{ pending_grading }}</div>
+                <div class="stat-label">Notlandırılacak</div>
+                <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
+            </div>
+        </div>
+        <div class="col-6 col-lg-3">
+            <div class="stat-card purple" onclick="window.location.href='{% url 'quiz:quiz_list' %}'">
+                <div class="stat-icon purple">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
+                <div class="stat-value">{{ active_quizzes_count }}</div>
+                <div class="stat-label">Aktif Quiz</div>
+                <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
+            </div>
         </div>
     </div>
-    
-    <!-- My Courses -->
-    <div class="card mb-3">
-        <div class="card-header">
-            <h5 class="mb-0"><i class="fas fa-book"></i> Verdiğim Dersler</h5>
-        </div>
-        <div class="card-body">
-            {% if my_courses %}
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead>
-                        <tr>
-                            <th>Ders Kodu</th>
-                            <th>Ders Adı</th>
-                            <th>Grup</th>
-                            <th>Öğrenci Sayısı</th>
-                            <th>İşlemler</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for group in my_courses %}
-                        <tr>
-                            <td>{{ group.course.code }}</td>
-                            <td>{{ group.course.name }}</td>
-                            <td>{{ group.name }}</td>
-                            <td>
-                                <span class="badge bg-primary">{{ group.student_count }} öğrenci</span>
-                            </td>
-                            <td>
-                                <a href="{% url 'courses:group_detail' group.id %}" class="btn btn-sm btn-primary">Detay</a>
-                                <a href="{% url 'gradebook:course_gradebook' group.id %}" class="btn btn-sm btn-success">Notlandırma</a>
-                                <a href="{% url 'quiz:quiz_create' group.id %}" class="btn btn-sm btn-info">Sınav Oluştur</a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+
+    <!-- Quick Access: Quizzes, Assignments & Courses -->
+    <div class="row g-4 mb-4">
+        <!-- Active Quizzes -->
+        <div class="col-lg-4">
+            <div class="section-title">
+                <i class="fas fa-clipboard-list"></i>
+                Aktif Sınavlar
             </div>
+            
+            {% if active_quizzes %}
+            <div id="quizzesList">
+                {% for quiz in active_quizzes %}
+                <div class="quiz-item clickable" onclick="window.location.href='{% url 'quiz:quiz_detail' quiz.id %}'" style="cursor: pointer;">
+                    <div class="fw-bold text-dark">{{ quiz.course_group.course.code }}</div>
+                    <div class="text-muted small">{{ quiz.title }}</div>
+                </div>
+                {% endfor %}
+            </div>
+            <a href="{% url 'quiz:quiz_list' %}" class="btn btn-sm btn-outline-primary w-100 mt-2">
+                Tüm Sınavlar <i class="fas fa-arrow-right"></i>
+            </a>
             {% else %}
-            <p class="text-muted">Henüz ders ataması yapılmamış.</p>
+            <div class="empty-state">
+                <i class="fas fa-clipboard-list"></i>
+                <p>Aktif sınav yok</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Pending Assignments -->
+        <div class="col-lg-4">
+            <div class="section-title">
+                <i class="fas fa-tasks"></i>
+                Notlandırılacak Ödevler
+            </div>
+            
+            {% if pending_assignments %}
+            <div id="tasksList">
+                {% for assignment in pending_assignments %}
+                <div class="task-item clickable" onclick="window.location.href='{% url 'courses:assignment_detail' assignment.id %}#submissions'" style="cursor: pointer;">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <strong class="text-dark">{{ assignment.title }}</strong>
+                        <span class="badge bg-warning">{{ assignment.submission_count }} teslim</span>
+                    </div>
+                    <div class="text-muted small mb-1">{{ assignment.group.course.code }} - {{ assignment.group.course.name }}</div>
+                    {% if assignment.due_date %}
+                    <div class="small">
+                        <i class="fas fa-clock"></i>
+                        <span data-deadline="{{ assignment.due_date|date:'Y-m-d H:i:s' }}">
+                            {{ assignment.due_date|date:"d.m.Y H:i" }}
+                        </span>
+                    </div>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            <a href="{% url 'courses:assignment_list' %}" class="btn btn-sm btn-outline-warning w-100 mt-2">
+                Tüm Ödevler <i class="fas fa-arrow-right"></i>
+            </a>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-check-circle"></i>
+                <p>Notlandırılacak ödev yok</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- My Courses -->
+        <div class="col-lg-4">
+            <div class="section-title">
+                <i class="fas fa-book"></i>
+                Verdiğim Dersler
+            </div>
+            
+            {% if my_courses %}
+            <div id="coursesList">
+                {% for group in my_courses|slice:":3" %}
+                <div class="course-card clickable" onclick="window.location.href='{% url 'courses:group_detail' group.id %}'" style="cursor: pointer;">
+                    <div class="fw-bold text-primary">{{ group.course.code }}</div>
+                    <div class="fw-semibold text-dark small">{{ group.course.name }}</div>
+                    <div class="text-muted small">
+                        <i class="fas fa-users"></i>
+                        {{ group.student_count }} öğrenci
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            <a href="{% url 'teachers:courses' %}" class="btn btn-sm btn-outline-primary w-100 mt-2">
+                Tüm Dersler <i class="fas fa-arrow-right"></i>
+            </a>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-book-open"></i>
+                <p>Henüz ders ataması yapılmamış</p>
+            </div>
             {% endif %}
         </div>
     </div>
-    
-    <!-- Pending Tasks -->
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-warning">
-                    <h6 class="mb-0"><i class="fas fa-tasks"></i> Notlandırılacak Ödevler</h6>
-                </div>
-                <div class="card-body">
-                    {% if pending_assignments %}
-                    <ul class="list-group">
-                        {% for assignment in pending_assignments %}
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            <div class="me-2">
-                                {{ assignment.group.course.code }} - {{ assignment.title }}
-                            </div>
-                            <div class="d-flex align-items-center gap-2">
-                                <span class="badge bg-warning">{{ assignment.submission_count }} teslim</span>
-                                <a class="btn btn-sm btn-outline-warning" href="{% url 'courses:assignment_detail' assignment.id %}#submissions">
-                                    Notlandır
-                                </a>
-                            </div>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                    {% else %}
-                    <p class="text-muted mb-0">Notlandırılacak ödev yok</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-        
-        <div class="col-md-6">
-            <div class="card">
-                <div class="card-header bg-info text-white">
-                    <h6 class="mb-0"><i class="fas fa-clipboard-list"></i> Aktif Sınavlar</h6>
-                </div>
-                <div class="card-body">
-                    {% if active_quizzes %}
-                    <ul class="list-group">
-                        {% for quiz in active_quizzes %}
-                        <li class="list-group-item d-flex justify-content-between align-items-center">
-                            {{ quiz.course_group.course.code }} - {{ quiz.title }}
-                            <a href="{% url 'quiz:quiz_detail' quiz.id %}" class="btn btn-sm btn-info">Yönet</a>
-                        </li>
-                        {% endfor %}
-                    </ul>
-                    {% else %}
-                    <p class="text-muted mb-0">Aktif sınav yok</p>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
 </div>
+
+<script>
+// Kalan süre hesaplama - manuel init
+document.addEventListener('DOMContentLoaded', function() {
+    if (window.AppUtils && window.AppUtils.initTimeRemainingUpdates) {
+        window.AppUtils.initTimeRemainingUpdates();
+    }
+});
+</script>
 {% endblock %}

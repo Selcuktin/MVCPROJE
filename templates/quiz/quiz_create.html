@@ -6,7 +6,7 @@
 {% block content %}
 <div class="container mt-4">
     <h2><i class="fas fa-plus-circle"></i> Yeni Sınav Oluştur</h2>
-    <p class="lead">{{ course_group.course.name }} - Grup {{ course_group.name }}</p>
+    <p class="lead">{{ course_group.course.name }}</p>
     
     <div class="card">
         <div class="card-body">
@@ -49,8 +49,9 @@
                     </div>
                     
                     <div class="col-md-4 mb-3">
-                        <label for="passing_score" class="form-label">Geçme Notu (%)</label>
-                        <input type="number" class="form-control" id="passing_score" name="passing_score" value="60" min="0" max="100">
+                        <label for="passing_score" class="form-label">Maksimum Not</label>
+                        <input type="number" class="form-control" id="passing_score" name="passing_score" value="100" readonly disabled>
+                        <small class="text-muted">Tüm sınavlar 100 puan üzerinden değerlendirilir</small>
                     </div>
                     
                     <div class="col-md-4 mb-3">

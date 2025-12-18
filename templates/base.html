@@ -14,6 +14,8 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- Sidebar CSS -->
     <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    <!-- Modern Cards CSS -->
+    <link rel="stylesheet" href="{% static 'css/modern-cards.css' %}">
 
     {% block extra_css %}{% endblock %}
 
@@ -550,13 +552,16 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container-fluid">
-            {% if user.is_authenticated and user_type == 'teacher' %}
-            <button id="sidebar-toggle-nav" class="btn btn-outline-light me-2" type="button" title="Menü">
+            {% if user.is_authenticated and user_type in 'student,teacher' %}
+            <button id="sidebar-toggle-nav" class="btn btn-outline-light me-2" type="button" title="Menü" style="display: none;">
                 <i class="fas fa-bars"></i>
             </button>
             {% endif %}
-            <a class="navbar-brand" href="{% url 'home' %}">
-                <i class="fas fa-graduation-cap me-2"></i>Yönetim Paneli
+            <a class="navbar-brand" href="{% url 'home' %}" id="navbar-brand-toggle" style="cursor: pointer;">
+                <i class="fas fa-graduation-cap me-2"></i>
+                {% if user_type == 'student' %}Öğrenci Paneli
+                {% elif user_type == 'teacher' %}Öğretmen Paneli
+                {% else %}Yönetim Paneli{% endif %}
             </a>
 
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -735,6 +740,11 @@
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- App Utilities -->
+    <script src="{% static 'js/app-utils.js' %}"></script>
+    <!-- Modern Interactions -->
+    <script src="{% static 'js/modern-interactions.js' %}"></script>
 
     <!-- Sidebar JS -->
     <script src="{% static 'js/sidebar.js' %}"></script>

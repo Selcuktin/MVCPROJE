@@ -376,8 +376,11 @@
     {% if assignments %}
     <div class="row" id="assignments-container">
         {% for assignment in assignments %}
-        <div class="col-md-6 col-lg-4 mb-4 assignment-item lazy-card" data-due-date="{{ assignment.due_date|date:'Y-m-d H:i:s' }}"
-            data-assignment-id="{{ assignment.pk }}" style="opacity: 0;">
+        {% load tz %}
+        <div class="col-md-6 col-lg-4 mb-4 assignment-item lazy-card" 
+            data-due-date="{{ assignment.due_date.isoformat }}"
+            data-assignment-id="{{ assignment.pk }}" 
+            style="opacity: 0;">
             <div class="assignment-card clickable-card" id="card-{{ assignment.pk }}"
                 onclick="window.location.href='{% url 'courses:assignment_detail' assignment.pk %}'"
                 style="cursor: pointer;">
@@ -385,7 +388,7 @@
                 <div class="card-header-custom">
                     <div class="d-flex justify-content-between align-items-center">
                         <span class="course-badge">{{ assignment.group.course.code }}</span>
-                        <span class="status-badge" id="status-{{ assignment.pk }}">Yükleniyor...</span>
+                        <span class="status-badge" id="status-{{ assignment.pk }}">--</span>
                     </div>
                 </div>
 
@@ -503,11 +506,11 @@
 {% block extra_js %}
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Initialize assignment timers and status
+        // Initialize assignment timers and status immediately
         initializeAssignments();
 
-        // Update stats after initialization
-        setTimeout(updateStats, 100);
+        // Update stats immediately
+        updateStats();
 
         // Update timers every second
         setInterval(updateAllTimers, 1000);
@@ -517,17 +520,55 @@
     });
 
     function initializeAssignments() {
+        console.log('=== INITIALIZING ASSIGNMENTS ===');
         const assignments = document.querySelectorAll('.assignment-item');
+        console.log(`Found ${assignments.length} assignments to initialize`);
 
-        assignments.forEach(item => {
+        if (assignments.length === 0) {
+            console.error('NO ASSIGNMENTS FOUND! Check if .assignment-item class exists');
+            return;
+        }
+
+        assignments.forEach((item, index) => {
             const assignmentId = item.dataset.assignmentId;
-            const dueDate = new Date(item.dataset.dueDate);
+            const dueDateStr = item.dataset.dueDate;
+            
+            console.log(`\n--- Assignment ${assignmentId} ---`);
+            console.log(`Due date string: "${dueDateStr}"`);
+            
+            if (!dueDateStr) {
+                console.error(`ERROR: No due date found for assignment ${assignmentId}`);
+                return;
+            }
+            
+            const dueDate = new Date(dueDateStr);
+            console.log(`Parsed date: ${dueDate}`);
+            console.log(`Is valid: ${!isNaN(dueDate.getTime())}`);
+            console.log(`Timestamp: ${dueDate.getTime()}`);
 
-            updateAssignmentStatus(assignmentId, dueDate);
+            if (!isNaN(dueDate.getTime())) {
+                updateAssignmentStatus(assignmentId, dueDate);
+            } else {
+                console.error(`ERROR: Invalid date for assignment ${assignmentId}: ${dueDateStr}`);
+            }
+            
+            // Fade in animation
+            setTimeout(() => {
+                item.style.opacity = '1';
+                item.style.transition = 'opacity 0.5s ease';
+            }, index * 100);
         });
+        
+        console.log('=== INITIALIZATION COMPLETE ===\n');
     }
 
     function updateAssignmentStatus(assignmentId, dueDate) {
+        // Validate date
+        if (!dueDate || isNaN(dueDate.getTime())) {
+            console.error(`Invalid date for assignment ${assignmentId}`);
+            return;
+        }
+
         const now = new Date();
         const timeDiff = dueDate - now;
 
@@ -541,6 +582,9 @@
             console.warn(`Missing elements for assignment ${assignmentId}`);
             return;
         }
+        
+        console.log(`Updating assignment ${assignmentId}: timeDiff = ${timeDiff}ms (${Math.floor(timeDiff / (1000 * 60 * 60 * 24))} days)`);
+
 
         // Calculate time remaining
         const days = Math.floor(timeDiff / (1000 * 60 * 60 * 24));
@@ -639,7 +683,9 @@
             const assignmentId = item.dataset.assignmentId;
             const dueDate = new Date(item.dataset.dueDate);
 
-            updateAssignmentStatus(assignmentId, dueDate);
+            if (!isNaN(dueDate.getTime())) {
+                updateAssignmentStatus(assignmentId, dueDate);
+            }
         });
 
         updateStats();
@@ -655,6 +701,13 @@
         assignments.forEach(item => {
             const assignmentId = item.dataset.assignmentId;
             const dueDate = new Date(item.dataset.dueDate);
+            
+            // Skip invalid dates
+            if (isNaN(dueDate.getTime())) {
+                console.warn(`Skipping invalid date for assignment ${assignmentId}`);
+                return;
+            }
+            
             const now = new Date();
             const timeDiff = dueDate - now;
 
@@ -674,7 +727,7 @@
             }
         });
 
-        // Update stat numbers with debug logging
+        // Update stat numbers
         console.log('Stats calculated:', { activeCount, warningCount, urgentCount, expiredCount });
 
         const activeElement = document.getElementById('active-assignments');
@@ -726,9 +779,9 @@
         });
     }
 
-    // Add CSS animations
-    const style = document.createElement('style');
-    style.textContent = `
+    // Add CSS animations for assignments
+    const assignmentStyle = document.createElement('style');
+    assignmentStyle.textContent = `
     @keyframes fadeIn {
         from { opacity: 0; transform: translateY(10px); }
         to { opacity: 1; transform: translateY(0); }
@@ -747,6 +800,6 @@
         50% { transform: scale(1.05); }
     }
 `;
-    document.head.appendChild(style);
+    document.head.appendChild(assignmentStyle);
 </script>
 {% endblock %}

@@ -57,24 +57,17 @@ class TeacherService:
         try:
             teacher = Teacher.objects.get(user=user)
             
-            # Get teacher's course groups and remove duplicates (course+semester)
-            all_course_groups = CourseGroup.objects.filter(
+            # Get teacher's course groups - HER GRUBU GÖSTER (duplicate kaldırma!)
+            teacher_course_groups = CourseGroup.objects.filter(
                 teacher=teacher, 
                 status='active'
             ).select_related('course').order_by('course__code', 'semester', 'name')
             
-            seen = set()
-            teacher_course_groups = []
-            for group in all_course_groups:
-                key = (group.course.code, group.semester)
-                if key not in seen:
-                    seen.add(key)
-                    teacher_course_groups.append(group)
-            
-            # Calculate total students
-            total_students = 0
-            for group in teacher_course_groups:
-                total_students += group.enrollments.filter(status='enrolled').count()
+            # Calculate total UNIQUE students from all groups
+            total_students = Enrollment.objects.filter(
+                group__in=teacher_course_groups,
+                status='enrolled'
+            ).values('student').distinct().count()
             
             # Get recent assignments and announcements
             recent_assignments = Assignment.objects.filter(
@@ -123,17 +116,19 @@ class TeacherService:
                 unread_messages = 0
             
             # Annotate courses with student count
-            group_ids = [g.id for g in teacher_course_groups]
-            teacher_course_groups_queryset = CourseGroup.objects.filter(id__in=group_ids)
-            teacher_course_groups_annotated = teacher_course_groups_queryset.annotate(
+            teacher_course_groups_annotated = teacher_course_groups.annotate(
                 student_count=Count('enrollments', filter=Q(enrollments__status='enrolled'))
             )
+            
+            # Benzersiz ders sayısını hesapla (aynı dersin farklı gruplarını sayma)
+            unique_course_codes = teacher_course_groups.values_list('course__code', flat=True).distinct()
+            unique_courses_count = len(set(unique_course_codes))
             
             return {
                 'teacher': teacher,
                 'my_courses': teacher_course_groups_annotated,
-                'my_courses_count': len(teacher_course_groups),
-                'teacher_courses': teacher_course_groups_queryset,
+                'my_courses_count': unique_courses_count,  # Benzersiz ders sayısı
+                'teacher_courses': teacher_course_groups,
                 'total_students': total_students,
                 'pending_grading': pending_grading_count,
                 'pending_assignments': pending_assignments_list,
@@ -142,7 +137,7 @@ class TeacherService:
                 'unread_messages': unread_messages,
                 'recent_assignments': list(recent_assignments[:5]),
                 'recent_announcements': list(recent_announcements[:5]),
-                'course_groups': teacher_course_groups_queryset,
+                'course_groups': teacher_course_groups,
                 'now': timezone.now()
             }
             
@@ -150,32 +145,21 @@ class TeacherService:
             return {'error': 'Öğretmen profili bulunamadı.'}
     
     def get_teacher_courses_data(self, user):
-        """Get courses data for teacher - show each course only once (by code)"""
+        """Get courses data for teacher - TÜM GRUPLARI GÖSTER"""
         try:
             teacher = Teacher.objects.get(user=user)
+            
+            # TÜM grupları göster (duplicate kaldırma!)
             course_groups = CourseGroup.objects.filter(
                 teacher=teacher, 
                 status='active'
-            ).select_related('course').order_by('course__code', 'semester', 'name')
-            
-            # Remove duplicates: keep only one group per course code (ignore semester)
-            seen = set()
-            unique_groups = []
-            for group in course_groups:
-                key = group.course.code  # sadece ders koduna göre eşsizleştir
-                if key not in seen:
-                    seen.add(key)
-                    unique_groups.append(group)
-            
-            # student_count anotasyonu
-            group_ids = [g.id for g in unique_groups]
-            annotated_groups = CourseGroup.objects.filter(id__in=group_ids).annotate(
+            ).select_related('course').annotate(
                 student_count=Count('enrollments', filter=Q(enrollments__status='enrolled'))
-            )
+            ).order_by('course__code', 'semester', 'name')
             
             return {
                 'teacher': teacher,
-                'course_groups': annotated_groups,
+                'course_groups': course_groups,
             }
             
         except Teacher.DoesNotExist:
@@ -267,3 +251,65 @@ class TeacherService:
             
         except Teacher.DoesNotExist:
             return {'error': 'Öğrenci verileri alınamadı.'}
+    
+    def get_teacher_assignments_data(self, user):
+        """Get assignments data for teacher"""
+        try:
+            teacher = Teacher.objects.get(user=user)
+            teacher_groups = CourseGroup.objects.filter(teacher=teacher, status='active')
+            
+            # Get all assignments for teacher's courses
+            assignments = Assignment.objects.filter(
+                group__in=teacher_groups
+            ).select_related('group__course').order_by('-create_date')
+            
+            # Calculate statistics
+            total_assignments = assignments.count()
+            active_assignments = assignments.filter(
+                status='active',
+                due_date__gte=timezone.now()
+            ).count()
+            
+            # Pending grading (assignments with ungraded submissions)
+            pending_grading = Assignment.objects.filter(
+                group__in=teacher_groups,
+                status__in=['active', 'published']
+            ).annotate(
+                ungraded_count=Count('submissions', filter=Q(submissions__score__isnull=True))
+            ).filter(ungraded_count__gt=0).count()
+            
+            return {
+                'teacher': teacher,
+                'assignments': assignments,
+                'total_assignments': total_assignments,
+                'active_assignments': active_assignments,
+                'pending_grading': pending_grading,
+                'teacher_groups': teacher_groups,
+            }
+        except Teacher.DoesNotExist:
+            return {'error': 'Öğretmen profili bulunamadı.'}
+    
+    def get_teacher_announcements_data(self, user):
+        """Get announcements data for teacher"""
+        try:
+            teacher = Teacher.objects.get(user=user)
+            teacher_groups = CourseGroup.objects.filter(teacher=teacher, status='active')
+            
+            # Get all announcements for teacher's courses
+            announcements = Announcement.objects.filter(
+                group__in=teacher_groups
+            ).select_related('group__course').order_by('-create_date')
+            
+            # Calculate statistics
+            total_announcements = announcements.count()
+            active_announcements = announcements.filter(status='active').count()
+            
+            return {
+                'teacher': teacher,
+                'announcements': announcements,
+                'total_announcements': total_announcements,
+                'active_announcements': active_announcements,
+                'teacher_groups': teacher_groups,
+            }
+        except Teacher.DoesNotExist:
+            return {'error': 'Öğretmen profili bulunamadı.'}

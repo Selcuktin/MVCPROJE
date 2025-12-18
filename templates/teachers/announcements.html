@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Duyurular - Öğretmen Paneli{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2><i class="fas fa-bullhorn me-2"></i>Duyurular</h2>
+                <a href="{% url 'courses:announcement_create' %}" class="btn btn-primary">
+                    <i class="fas fa-plus me-2"></i>Yeni Duyuru Oluştur
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-4 col-6 mb-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Toplam Duyuru</h6>
+                            <h3 class="mb-0 mt-2">{{ total_announcements|default:0 }}</h3>
+                        </div>
+                        <i class="fas fa-bullhorn fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 col-6 mb-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Aktif Duyuru</h6>
+                            <h3 class="mb-0 mt-2">{{ active_announcements|default:0 }}</h3>
+                        </div>
+                        <i class="fas fa-check-circle fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-4 col-6 mb-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            <h6 class="mb-0">Derslerim</h6>
+                            <h3 class="mb-0 mt-2">{{ teacher_groups.count|default:0 }}</h3>
+                        </div>
+                        <i class="fas fa-book fa-3x opacity-50"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Announcements List -->
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="fas fa-list me-2"></i>Tüm Duyurular</h5>
+                </div>
+                <div class="card-body">
+                    {% if announcements %}
+                    <div class="list-group">
+                        {% for announcement in announcements %}
+                        <div class="list-group-item list-group-item-action">
+                            <div class="d-flex w-100 justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <h5 class="mb-2">
+                                        <i class="fas fa-bullhorn text-primary me-2"></i>
+                                        {{ announcement.title }}
+                                    </h5>
+                                    <p class="mb-2 text-muted">{{ announcement.content|truncatewords:30 }}</p>
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-book me-1"></i>
+                                            {{ announcement.group.course.code }}
+                                        </span>
+                                        <span class="badge bg-info">
+                                            <i class="fas fa-calendar me-1"></i>
+                                            {{ announcement.create_date|date:"d.m.Y H:i" }}
+                                        </span>
+                                        {% if announcement.status == 'active' %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle me-1"></i>
+                                            Aktif
+                                        </span>
+                                        {% else %}
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-pause-circle me-1"></i>
+                                            {{ announcement.get_status_display }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                <div class="btn-group ms-3">
+                                    <a href="{% url 'courses:announcement_detail' announcement.pk %}" 
+                                       class="btn btn-sm btn-info" title="Detay">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'courses:announcement_update' announcement.pk %}" 
+                                       class="btn btn-sm btn-warning" title="Düzenle">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'courses:announcement_delete' announcement.pk %}" 
+                                       class="btn btn-sm btn-danger" title="Sil">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="text-center py-5">
+                        <i class="fas fa-inbox fa-4x text-muted mb-3"></i>
+                        <p class="text-muted">Henüz duyuru oluşturmadınız.</p>
+                        <a href="{% url 'courses:announcement_create' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>İlk Duyuruyu Oluştur
+                        </a>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.list-group-item {
+    border-left: 4px solid transparent;
+    transition: all 0.3s ease;
+}
+
+.list-group-item:hover {
+    border-left-color: #667eea;
+    background-color: #f8f9fa;
+}
+
+.badge {
+    font-weight: 500;
+}
+</style>
+{% endblock %}

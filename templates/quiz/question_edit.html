@@ -1,0 +1,149 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Soruyu Düzenle{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2><i class="fas fa-edit"></i> Soruyu Düzenle</h2>
+    <p class="lead">{{ bank.name }}</p>
+    
+    <div class="card">
+        <div class="card-body">
+            <form method="post" id="questionForm">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label for="question_text" class="form-label">Soru Metni *</label>
+                    <textarea class="form-control" id="question_text" name="question_text" rows="4" required>{{ question.question_text }}</textarea>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label for="question_type" class="form-label">Soru Tipi *</label>
+                        <select class="form-select" id="question_type" name="question_type" required onchange="toggleOptions()">
+                            <option value="multiple_choice" {% if question.question_type == 'multiple_choice' %}selected{% endif %}>Çoktan Seçmeli</option>
+                            <option value="true_false" {% if question.question_type == 'true_false' %}selected{% endif %}>Doğru/Yanlış</option>
+                            <option value="short_answer" {% if question.question_type == 'short_answer' %}selected{% endif %}>Kısa Cevap</option>
+                            <option value="essay" {% if question.question_type == 'essay' %}selected{% endif %}>Essay</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label for="points" class="form-label">Puan *</label>
+                        <input type="number" class="form-control" id="points" name="points" value="{{ question.points }}" min="0" step="0.5" required>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label for="difficulty" class="form-label">Zorluk</label>
+                        <select class="form-select" id="difficulty" name="difficulty">
+                            <option value="easy" {% if question.difficulty == 'easy' %}selected{% endif %}>Kolay</option>
+                            <option value="medium" {% if question.difficulty == 'medium' %}selected{% endif %}>Orta</option>
+                            <option value="hard" {% if question.difficulty == 'hard' %}selected{% endif %}>Zor</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Multiple Choice Options -->
+                <div id="multipleChoiceOptions" style="display: none;">
+                    <h5 class="mb-3">Şıklar</h5>
+                    <div class="mb-3">
+                        <label class="form-label">A)</label>
+                        <input type="text" class="form-control" name="option_a" value="{{ question.option_a }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">B)</label>
+                        <input type="text" class="form-control" name="option_b" value="{{ question.option_b }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">C)</label>
+                        <input type="text" class="form-control" name="option_c" value="{{ question.option_c }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">D)</label>
+                        <input type="text" class="form-control" name="option_d" value="{{ question.option_d }}">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">E)</label>
+                        <input type="text" class="form-control" name="option_e" value="{{ question.option_e }}">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="correct_answer_mc" class="form-label">Doğru Cevap *</label>
+                        <select class="form-select" id="correct_answer_mc" name="correct_answer">
+                            <option value="A" {% if question.correct_answer == 'A' %}selected{% endif %}>A</option>
+                            <option value="B" {% if question.correct_answer == 'B' %}selected{% endif %}>B</option>
+                            <option value="C" {% if question.correct_answer == 'C' %}selected{% endif %}>C</option>
+                            <option value="D" {% if question.correct_answer == 'D' %}selected{% endif %}>D</option>
+                            <option value="E" {% if question.correct_answer == 'E' %}selected{% endif %}>E</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- True/False Options -->
+                <div id="trueFalseOptions" style="display: none;">
+                    <div class="mb-3">
+                        <label for="correct_answer_tf" class="form-label">Doğru Cevap *</label>
+                        <select class="form-select" id="correct_answer_tf" name="correct_answer">
+                            <option value="T" {% if question.correct_answer == 'T' or question.correct_answer == 'Doğru' %}selected{% endif %}>Doğru</option>
+                            <option value="F" {% if question.correct_answer == 'F' or question.correct_answer == 'Yanlış' %}selected{% endif %}>Yanlış</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <!-- Text Answer -->
+                <div id="textAnswer" style="display: none;">
+                    <div class="mb-3">
+                        <label for="correct_answer_text" class="form-label">Doğru Cevap / Cevap Anahtarı *</label>
+                        <textarea class="form-control" id="correct_answer_text" name="correct_answer" rows="3">{{ question.correct_answer }}</textarea>
+                        <small class="text-muted">Kısa cevap soruları için beklenen cevabı, essay soruları için değerlendirme kriterlerini yazın</small>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="explanation" class="form-label">Açıklama (Opsiyonel)</label>
+                    <textarea class="form-control" id="explanation" name="explanation" rows="3">{{ question.explanation }}</textarea>
+                    <small class="text-muted">Doğru cevabın açıklaması</small>
+                </div>
+                
+                <hr>
+                
+                <div class="d-flex justify-content-between">
+                    <a href="{% url 'quiz:question_bank_detail' bank.id %}" class="btn btn-secondary">
+                        <i class="fas fa-arrow-left"></i> İptal
+                    </a>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Kaydet
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleOptions() {
+    const questionType = document.getElementById('question_type').value;
+    const mcOptions = document.getElementById('multipleChoiceOptions');
+    const tfOptions = document.getElementById('trueFalseOptions');
+    const textAnswer = document.getElementById('textAnswer');
+    
+    // Hide all
+    mcOptions.style.display = 'none';
+    tfOptions.style.display = 'none';
+    textAnswer.style.display = 'none';
+    
+    // Show relevant
+    if (questionType === 'multiple_choice') {
+        mcOptions.style.display = 'block';
+    } else if (questionType === 'true_false') {
+        tfOptions.style.display = 'block';
+    } else {
+        textAnswer.style.display = 'block';
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', toggleOptions);
+</script>
+{% endblock %}

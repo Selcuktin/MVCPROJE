@@ -15,5 +15,6 @@ urlpatterns = [
     path('api/inbox/', views.api_inbox, name='api_inbox'),
     path('api/send/', views.api_send_message, name='api_send_message'),
     path('api/thread/<int:user_id>/', views.api_thread, name='api_thread'),
+    path('api/clear/<int:user_id>/', views.api_clear_conversation, name='api_clear_conversation'),
     path('recipients/', views.api_recipients, name='api_recipients'),
 ]

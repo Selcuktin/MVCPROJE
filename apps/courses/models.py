@@ -83,14 +83,13 @@ class CourseGroup(models.Model):
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     
     class Meta:
-        verbose_name = 'Ders Grubu'
-        verbose_name_plural = 'Ders Grupları'
+        verbose_name = 'Ders'
+        verbose_name_plural = 'Dersler'
         unique_together = ['course', 'teacher', 'semester']
     
     def __str__(self):
-        if self.academic_term:
-            return f"{self.course.code} - {self.name} ({self.academic_term.name})"
-        return f"{self.course.code} - {self.name} ({self.semester})"
+        # Sadece ders kodu ve adı göster (grup bilgisi yok)
+        return f"{self.course.code} - {self.course.name}"
     
     def save(self, *args, **kwargs):
         """Auto-generate name if not provided (A, B, C, ...)"""
@@ -160,54 +159,13 @@ class Enrollment(models.Model):
         if not self.final_grade and not self.makeup_grade:
             return 'NA'
         
-        # Büt varsa final yerine onu kullan
-        final_score = self.makeup_grade if self.makeup_grade else self.final_grade
-        
-        # Weighted average: Vize %40, Final/Büt %50, Proje %10
-        total = 0
-        weight = 0
-        
-        if self.midterm_grade is not None:
-            total += self.midterm_grade * 0.4
-            weight += 0.4
-        
-        if final_score is not None:
-            total += final_score * 0.5
-            weight += 0.5
-        
-        if self.project_grade is not None:
-            total += self.project_grade * 0.1
-            weight += 0.1
-        
-        if weight == 0:
-            return 'NA'
-        
-        # Calculate average
-        average = total / weight
-        
-        # Convert to letter grade
-        if average >= 90:
-            return 'AA'
-        elif average >= 85:
-            return 'BA'
-        elif average >= 80:
-            return 'BB'
-        elif average >= 75:
-            return 'CB'
-        elif average >= 70:
-            return 'CC'
-        elif average >= 65:
-            return 'DC'
-        elif average >= 60:
-            return 'DD'
-        elif average >= 50:
-            return 'FD'
-        else:
-            return 'FF'
+        # DEPRECATED: This calculation is now handled by GradebookService
+        # Return existing grade if set, otherwise return 'NA'
+        return self.grade if self.grade else 'NA'
     
     def save(self, *args, **kwargs):
-        """Override save to auto-calculate letter grade"""
-        self.grade = self.calculate_letter_grade()
+        """Override save - grade is now set by GradebookService"""
+        # Don't auto-calculate grade here anymore, it's handled by GradebookService
         super().save(*args, **kwargs)
 
 class Assignment(models.Model):

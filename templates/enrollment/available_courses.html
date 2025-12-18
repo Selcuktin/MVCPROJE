@@ -43,7 +43,6 @@
                             <th>Ders Adı</th>
                             <th>Öğretmen</th>
                             <th>Kredi</th>
-                            <th>Grup</th>
                             <th>İşlem</th>
                         </tr>
                     </thead>
@@ -90,7 +89,6 @@
                             </h5>
                             <p class="card-text">
                                 <strong>Öğretmen:</strong> {{ item.group.teacher.first_name }} {{ item.group.teacher.last_name }}<br>
-                                <strong>Grup:</strong> {{ item.group.name }}<br>
                                 <strong>Kredi:</strong> {{ item.group.course.credits }}<br>
                                 <strong>Sınıf:</strong> {{ item.group.classroom }}<br>
                                 <strong>Program:</strong> {{ item.group.schedule }}<br>

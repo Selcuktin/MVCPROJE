@@ -79,7 +79,7 @@ class StudentService:
             'assignments': assignments,
             'submissions': submissions,
             'notes_by_course': notes_by_course,
-            'total_courses': enrollments.count(),
+            'total_courses': len(enrollments),
             'total_assignments': assignments.count(),
             'notes_count': notes.count(),
             'submissions_count': submissions.count(),
@@ -110,32 +110,49 @@ class StudentService:
             
             enrolled_groups = [enrollment.group for enrollment in enrollments]
             
-            # Get recent assignments
+            # Get recent assignments (son 5 ödev)
             recent_assignments = Assignment.objects.filter(
                 group__in=enrolled_groups,
                 status='active'
             ).select_related('group__course').order_by('-create_date')[:5]
             
-            # Get recent announcements
+            # Get recent announcements (son 5 duyuru)
             recent_announcements = Announcement.objects.filter(
                 group__in=enrolled_groups,
                 status='active'
             ).select_related('group__course').order_by('-create_date')[:5]
             
-            # Get pending submissions count
+            # Get pending submissions count (teslim edilmemiş ödevler)
+            submitted_assignment_ids = Submission.objects.filter(
+                student=student
+            ).values_list('assignment_id', flat=True)
+            
             pending_submissions = Assignment.objects.filter(
                 group__in=enrolled_groups,
-                status='active',
-                due_date__gte=timezone.now()
+                status='active'
             ).exclude(
-                submissions__student=student
+                id__in=submitted_assignment_ids
             ).count()
             
-            # Get grades summary
-            grades_count = GradeCategory.objects.filter(
-                course_group__in=enrolled_groups,
-                is_active=True
+            # Get grades count (not kategorileri)
+            from apps.notes.models import Note
+            grades_count = Note.objects.filter(
+                student=user
             ).count()
+            
+            # Get GPA (ortalama)
+            notes = Note.objects.filter(student=user)
+            total_score = 0
+            count = 0
+            for note in notes:
+                try:
+                    score = float(note.score)
+                    total_score += score
+                    count += 1
+                except (ValueError, TypeError):
+                    pass
+            
+            gpa = round(total_score / count, 2) if count > 0 else 0.0
             
             return {
                 'student': student,
@@ -145,6 +162,7 @@ class StudentService:
                 'recent_announcements': recent_announcements,
                 'pending_submissions': pending_submissions,
                 'grades_count': grades_count,
+                'gpa': gpa,
                 'now': timezone.now()
             }
             

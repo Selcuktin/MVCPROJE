@@ -1,0 +1,119 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Ders Seçimi - Notlandırma{% endblock %}
+
+{% block extra_css %}
+<style>
+    .select-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 3rem 0;
+        margin-bottom: 3rem;
+        border-radius: 15px;
+        text-align: center;
+    }
+
+    .course-card {
+        background: white;
+        border-radius: 20px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+        transition: all 0.3s ease;
+        border: none;
+        overflow: hidden;
+        cursor: pointer;
+        height: 100%;
+    }
+
+    .course-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 15px 40px rgba(0, 0, 0, 0.2);
+    }
+
+    .course-card-header {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .course-code {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+    }
+
+    .course-name {
+        font-size: 1.1rem;
+        opacity: 0.9;
+    }
+
+    .course-card-body {
+        padding: 2rem;
+        text-align: center;
+    }
+
+    .course-icon {
+        font-size: 4rem;
+        color: #667eea;
+        margin-bottom: 1rem;
+    }
+
+    .btn-select {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        border: none;
+        padding: 0.8rem 2rem;
+        border-radius: 25px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+    }
+
+    .btn-select:hover {
+        transform: scale(1.05);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Header -->
+<div class="select-header">
+    <div class="container">
+        <h1 class="mb-2"><i class="fas fa-chalkboard-teacher me-2"></i>Notlandırma - Ders Seçimi</h1>
+        <p class="mb-0 opacity-75">Notlandırmak istediğiniz dersi seçin</p>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row">
+        {% for group in course_groups %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="course-card" onclick="window.location.href='{% url 'gradebook:course_gradebook' group.id %}'">
+                <div class="course-card-header">
+                    <div class="course-code">{{ group.course.code }}</div>
+                    <div class="course-name">{{ group.course.name }}</div>
+                </div>
+                <div class="course-card-body">
+                    <div class="course-icon">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <div class="mb-3">
+                        <div class="text-muted mb-2">
+                            <i class="fas fa-users me-2"></i>{{ group.enrollments.count }} Öğrenci
+                        </div>
+                        <div class="text-muted">
+                            <i class="fas fa-calendar me-2"></i>{{ group.semester }}. Dönem
+                        </div>
+                    </div>
+                    <a href="{% url 'gradebook:course_gradebook' group.id %}" class="btn btn-select">
+                        <i class="fas fa-clipboard-check me-2"></i>Notlandır
+                    </a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

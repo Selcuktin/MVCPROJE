@@ -23,8 +23,9 @@ def question_bank_list(request):
         messages.error(request, 'Öğretmen profili bulunamadı')
         return redirect('users:dashboard')
     
+    # SADECE kendi oluşturduğu bankaları göster (shared olanları gösterme)
     banks = QuestionBank.objects.filter(
-        Q(created_by=request.user) | Q(is_shared=True)
+        created_by=request.user
     ).prefetch_related('questions')
     
     context = {
@@ -301,13 +302,15 @@ def quiz_add_questions(request, quiz_id):
     """Teacher: Add questions to quiz from question bank"""
     quiz = get_object_or_404(Quiz, id=quiz_id)
     
-    # Check permission
+    # Check permission - SADECE kendi sınavına soru ekleyebilir
     if quiz.course_group.teacher.user != request.user:
         messages.error(request, 'Bu sınava soru ekleme yetkiniz yok')
-        return redirect('courses:dashboard')
+        return redirect('teachers:dashboard')
     
     if request.method == 'POST':
         question_ids = request.POST.getlist('questions')
+        
+        print(f"DEBUG: Received question_ids: {question_ids}")  # Debug log
         
         if not question_ids:
             messages.error(request, 'Lütfen en az bir soru seçin!')
@@ -322,56 +325,64 @@ def quiz_add_questions(request, quiz_id):
             }
             return render(request, 'quiz/quiz_add_questions.html', context)
         
-        # Check if random questions mode
+        # Check if random questions mode - no minimum requirement anymore
         if quiz.use_random_questions:
-            # For random mode, we need at least pool_size questions
-            if len(question_ids) < quiz.random_question_pool_size:
-                messages.error(request, f'Rastgele soru modu için en az {quiz.random_question_pool_size} soru seçmelisiniz!')
-                banks = QuestionBank.objects.filter(
-                    Q(created_by=request.user) | Q(is_shared=True)
-                ).prefetch_related('questions')
-                added_question_ids = quiz.questions.filter(assigned_to_student__isnull=True).values_list('question_id', flat=True)
-                context = {
-                    'quiz': quiz,
-                    'banks': banks,
-                    'added_question_ids': list(added_question_ids)
-                }
-                return render(request, 'quiz/quiz_add_questions.html', context)
+            # Just check if we have at least as many questions as random_question_count
+            if len(question_ids) < quiz.random_question_count:
+                messages.warning(request, f'Uyarı: Rastgele soru modu için {quiz.random_question_count} soru gerekiyor, ancak sadece {len(question_ids)} soru seçtiniz. Öğrenciler daha az soru görebilir.')
         
-        order = 1
+        order = quiz.questions.filter(assigned_to_student__isnull=True).count() + 1
         added_count = 0
+        skipped_count = 0
         
         for question_id in question_ids:
             try:
                 question = Question.objects.get(id=question_id)
-                # For random mode, don't assign to specific student yet (will be done when student starts)
-                # For normal mode, assigned_to_student is None
-                if not QuizQuestion.objects.filter(quiz=quiz, question=question, assigned_to_student__isnull=True).exists():
-                    QuizQuestion.objects.create(
-                        quiz=quiz,
-                        question=question,
-                        order=order,
-                        points=float(request.POST.get(f'points_{question_id}', question.points)),
-                        assigned_to_student=None  # Will be assigned when student starts if random mode
-                    )
-                    order += 1
-                    added_count += 1
+                # Check if already exists
+                if QuizQuestion.objects.filter(quiz=quiz, question=question, assigned_to_student__isnull=True).exists():
+                    skipped_count += 1
+                    print(f"DEBUG: Question {question_id} already exists, skipping")
+                    continue
+                
+                # Create new quiz question
+                QuizQuestion.objects.create(
+                    quiz=quiz,
+                    question=question,
+                    order=order,
+                    points=float(request.POST.get(f'points_{question_id}', question.points)),
+                    assigned_to_student=None
+                )
+                order += 1
+                added_count += 1
+                print(f"DEBUG: Added question {question_id}")
             except Question.DoesNotExist:
+                print(f"DEBUG: Question {question_id} not found")
                 continue
+            except Exception as e:
+                print(f"DEBUG: Error adding question {question_id}: {str(e)}")
+                continue
+        
+        print(f"DEBUG: Added {added_count} questions, skipped {skipped_count}")
         
         if added_count > 0:
             if quiz.use_random_questions:
-                messages.success(request, f'{added_count} soru havuzu oluşturuldu! Her öğrenci sınava başladığında rastgele {quiz.random_question_count} soru alacak.')
+                messages.success(request, f'✓ {added_count} soru havuza eklendi! Her öğrenci sınava başladığında rastgele {quiz.random_question_count} soru alacak.')
             else:
-                messages.success(request, f'{added_count} soru başarıyla eklendi!')
+                messages.success(request, f'✓ {added_count} soru başarıyla sınava eklendi!')
+            
+            if skipped_count > 0:
+                messages.info(request, f'{skipped_count} soru zaten sınava eklenmiş olduğu için atlandı.')
         else:
-            messages.warning(request, 'Seçilen sorular zaten sınava eklenmiş.')
+            if skipped_count > 0:
+                messages.warning(request, 'Seçilen tüm sorular zaten sınava eklenmiş.')
+            else:
+                messages.error(request, 'Hiçbir soru eklenemedi. Lütfen tekrar deneyin.')
         
         return redirect('quiz:quiz_detail', quiz_id=quiz.id)
     
-    # Get available question banks
+    # Get available question banks - SADECE kendi bankaları
     banks = QuestionBank.objects.filter(
-        Q(created_by=request.user) | Q(is_shared=True)
+        created_by=request.user
     ).prefetch_related('questions')
     
     # Already added questions (only unassigned ones)
@@ -387,13 +398,13 @@ def quiz_add_questions(request, quiz_id):
 
 @login_required
 def quiz_detail(request, quiz_id):
-    """Teacher: View quiz details and manage"""
+    """Teacher: View quiz details and manage - SADECE kendi sınavı"""
     quiz = get_object_or_404(Quiz, id=quiz_id)
     
-    # Check permission
+    # Check permission - SADECE kendi sınavını görebilir
     if quiz.course_group.teacher.user != request.user:
-        messages.error(request, 'Bu quiz\'e erişim yetkiniz yok')
-        return redirect('courses:dashboard')
+        messages.error(request, 'Bu sınava erişim yetkiniz yok')
+        return redirect('teachers:dashboard')
     
     # Get all questions (including pool questions for random mode)
     questions = quiz.questions.filter(assigned_to_student__isnull=True).select_related('question__bank')
@@ -614,10 +625,17 @@ def quiz_list_student(request):
     quiz_data = []
     for quiz in quizzes:
         quiz_attempts = [a for a in my_attempts if a.quiz_id == quiz.id]
+        
+        # En yüksek puanlı denemeyi bul
+        best_attempt = quiz.get_student_best_score(request.user)
+        
         quiz_data.append({
             'quiz': quiz,
             'attempts': quiz_attempts,
-            'can_take': len(quiz_attempts) < quiz.max_attempts
+            'can_take': len(quiz_attempts) < quiz.max_attempts,
+            'best_attempt': best_attempt,
+            'attempts_used': len(quiz_attempts),
+            'max_attempts': quiz.max_attempts
         })
     
     context = {
@@ -628,19 +646,137 @@ def quiz_list_student(request):
 
 @login_required
 def quiz_list(request):
-    """Teacher: List all quizzes"""
+    """Teacher: List all quizzes - SADECE kendi sınavları"""
     try:
         teacher = Teacher.objects.get(user=request.user)
     except Teacher.DoesNotExist:
         messages.error(request, 'Öğretmen profili bulunamadı')
         return redirect('users:dashboard')
     
+    # SADECE bu öğretmenin derslerindeki sınavlar
     quizzes = Quiz.objects.filter(
         course_group__teacher=teacher
-    ).select_related('course_group').order_by('-created_at')
+    ).select_related('course_group__course').order_by('-created_at')
     
     context = {
         'quizzes': quizzes,
         'teacher': teacher
     }
     return render(request, 'quiz/quiz_list.html', context)
+
+
+@login_required
+@require_POST
+def quiz_delete(request, quiz_id):
+    """Teacher: Delete a quiz"""
+    quiz = get_object_or_404(Quiz, id=quiz_id)
+    
+    # Check permission
+    if quiz.course_group.teacher.user != request.user:
+        messages.error(request, 'Bu sınavı silme yetkiniz yok')
+        return redirect('quiz:quiz_list')
+    
+    quiz_title = quiz.title
+    quiz.delete()
+    messages.success(request, f'{quiz_title} sınavı başarıyla silindi')
+    return redirect('quiz:quiz_list')
+
+
+@login_required
+def question_preview(request, question_id):
+    """Teacher: Preview a question (AJAX) - SADECE kendi sorusu"""
+    question = get_object_or_404(Question, id=question_id)
+    
+    # Check permission - SADECE kendi sorusunu görebilir
+    if question.bank.created_by != request.user:
+        return JsonResponse({'success': False, 'error': 'Bu soruya erişim yetkiniz yok'})
+    
+    data = {
+        'success': True,
+        'question': {
+            'id': question.id,
+            'question_text': question.question_text,
+            'question_type': question.question_type,
+            'type_display': question.get_question_type_display(),
+            'points': float(question.points),
+            'option_a': question.option_a,
+            'option_b': question.option_b,
+            'option_c': question.option_c,
+            'option_d': question.option_d,
+            'option_e': question.option_e,
+            'correct_answer': question.correct_answer,
+            'explanation': question.explanation,
+        }
+    }
+    
+    return JsonResponse(data)
+
+
+@login_required
+def question_edit(request, question_id):
+    """Teacher: Edit a question"""
+    question = get_object_or_404(Question, id=question_id)
+    
+    # Check permission
+    if question.bank.created_by != request.user:
+        messages.error(request, 'Bu soruyu düzenleme yetkiniz yok')
+        return redirect('quiz:question_bank_list')
+    
+    if request.method == 'POST':
+        question.question_text = request.POST.get('question_text')
+        question.question_type = request.POST.get('question_type')
+        question.points = request.POST.get('points', 1)
+        question.difficulty = request.POST.get('difficulty', 'medium')
+        question.correct_answer = request.POST.get('correct_answer', '')
+        question.explanation = request.POST.get('explanation', '')
+        
+        # Update options for multiple choice
+        if question.question_type in ['multiple_choice', 'true_false']:
+            question.option_a = request.POST.get('option_a', '')
+            question.option_b = request.POST.get('option_b', '')
+            question.option_c = request.POST.get('option_c', '')
+            question.option_d = request.POST.get('option_d', '')
+            question.option_e = request.POST.get('option_e', '')
+        
+        question.save()
+        messages.success(request, 'Soru başarıyla güncellendi!')
+        return redirect('quiz:question_bank_detail', bank_id=question.bank.id)
+    
+    context = {
+        'question': question,
+        'bank': question.bank
+    }
+    return render(request, 'quiz/question_edit.html', context)
+
+
+@login_required
+def quiz_edit(request, quiz_id):
+    """Teacher: Edit a quiz"""
+    quiz = get_object_or_404(Quiz, id=quiz_id)
+    
+    # Check permission
+    if quiz.course_group.teacher.user != request.user:
+        messages.error(request, 'Bu sınavı düzenleme yetkiniz yok')
+        return redirect('quiz:quiz_list')
+    
+    if request.method == 'POST':
+        quiz.title = request.POST.get('title')
+        quiz.description = request.POST.get('description', '')
+        quiz.start_time = request.POST.get('start_time')
+        quiz.end_time = request.POST.get('end_time')
+        quiz.duration_minutes = int(request.POST.get('duration_minutes', 60))
+        quiz.max_attempts = int(request.POST.get('max_attempts', 1))
+        quiz.shuffle_questions = request.POST.get('shuffle_questions') == 'on'
+        quiz.shuffle_options = request.POST.get('shuffle_options') == 'on'
+        quiz.show_results_immediately = request.POST.get('show_results_immediately') == 'on'
+        quiz.auto_submit = request.POST.get('auto_submit') == 'on'
+        
+        quiz.save()
+        messages.success(request, 'Sınav başarıyla güncellendi!')
+        return redirect('quiz:quiz_detail', quiz_id=quiz.id)
+    
+    context = {
+        'quiz': quiz,
+        'course_group': quiz.course_group
+    }
+    return render(request, 'quiz/quiz_edit.html', context)

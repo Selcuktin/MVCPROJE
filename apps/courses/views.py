@@ -29,7 +29,6 @@ class CourseListView(LoginRequiredMixin, TemplateView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        controller = CourseController()
         
         # Get filters from request
         filters = {
@@ -38,8 +37,38 @@ class CourseListView(LoginRequiredMixin, TemplateView):
             'semester': self.request.GET.get('semester')
         }
         
-        courses = controller.get_course_list(self.request, filters)
-        context['courses'] = courses
+        # Öğretmen ise SADECE kendi derslerini göster
+        if hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type == 'teacher':
+            try:
+                teacher = Teacher.objects.get(user=self.request.user)
+                # Öğretmenin ders gruplarından dersleri al
+                course_ids = CourseGroup.objects.filter(
+                    teacher=teacher,
+                    status='active'
+                ).values_list('course_id', flat=True).distinct()
+                
+                courses = Course.objects.filter(id__in=course_ids)
+                
+                # Apply filters
+                if filters.get('search'):
+                    courses = courses.filter(
+                        Q(name__icontains=filters['search']) |
+                        Q(code__icontains=filters['search'])
+                    )
+                if filters.get('department'):
+                    courses = courses.filter(department__icontains=filters['department'])
+                if filters.get('semester'):
+                    courses = courses.filter(semester=filters['semester'])
+                
+                context['courses'] = courses.order_by('code')
+            except Teacher.DoesNotExist:
+                context['courses'] = Course.objects.none()
+        else:
+            # Admin veya öğrenci için tüm dersler
+            controller = CourseController()
+            courses = controller.get_course_list(self.request, filters)
+            context['courses'] = courses
+        
         return context
 
 # Quiz Views
@@ -189,7 +218,19 @@ class CourseGroupListView(LoginRequiredMixin, ListView):
     paginate_by = 20
     
     def get_queryset(self):
-        return CourseGroup.objects.select_related('course', 'teacher').filter(status='active')
+        # Öğretmen ise SADECE kendi ders gruplarını göster
+        if hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type == 'teacher':
+            try:
+                teacher = Teacher.objects.get(user=self.request.user)
+                return CourseGroup.objects.filter(
+                    teacher=teacher,
+                    status='active'
+                ).select_related('course', 'teacher')
+            except Teacher.DoesNotExist:
+                return CourseGroup.objects.none()
+        else:
+            # Admin veya öğrenci için tüm gruplar
+            return CourseGroup.objects.select_related('course', 'teacher').filter(status='active')
 
 class CourseGroupDetailView(LoginRequiredMixin, DetailView):
     model = CourseGroup
@@ -328,9 +369,11 @@ class AssignmentListView(LoginRequiredMixin, ListView):
         group_id = self.request.GET.get('group')
         if hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type == 'student':
             student = Student.objects.get(user=self.request.user)
+            # Öğrenci SADECE kayıtlı olduğu gruplardaki ödevleri görebilir
             qs_base = qs_base.filter(group__enrollments__student=student)
         elif hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type == 'teacher':
             teacher = Teacher.objects.get(user=self.request.user)
+            # Öğretmen SADECE kendi derslerindeki ödevleri görebilir
             qs_base = qs_base.filter(group__teacher=teacher)
 
         # Apply group filter only after teacher/student scoping
@@ -511,11 +554,20 @@ class AnnouncementListView(LoginRequiredMixin, ListView):
     def get_queryset(self):
         if hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type == 'student':
             student = Student.objects.get(user=self.request.user)
+            # Öğrenci SADECE kayıtlı olduğu gruplardaki duyuruları görebilir
             return Announcement.objects.filter(
                 group__enrollments__student=student,
                 status='active'
             ).select_related('group__course', 'teacher').order_by('-create_date')
+        elif hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type == 'teacher':
+            teacher = Teacher.objects.get(user=self.request.user)
+            # Öğretmen SADECE kendi derslerindeki duyuruları görebilir
+            return Announcement.objects.filter(
+                teacher=teacher,
+                status='active'
+            ).select_related('group__course', 'teacher').order_by('-create_date')
         else:
+            # Admin tüm duyuruları görebilir
             return Announcement.objects.filter(status='active').select_related('group__course', 'teacher').order_by('-create_date')
     
     def get_context_data(self, **kwargs):

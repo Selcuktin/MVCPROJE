@@ -134,7 +134,7 @@ def gradebook_view(request, group_id):
 def teacher_default_gradebook(request):
     """
     Teacher: shortcut from sidebar to a gradebook page.
-    Finds the first active course group for this teacher and redirects to its gradebook.
+    Shows course selection if teacher has multiple courses, otherwise redirects to the only course.
     """
     try:
         teacher = Teacher.objects.get(user=request.user)
@@ -142,75 +142,108 @@ def teacher_default_gradebook(request):
         messages.error(request, 'Öğretmen profili bulunamadı')
         return redirect('users:dashboard')
 
-    course_group = CourseGroup.objects.filter(
+    course_groups = CourseGroup.objects.filter(
         teacher=teacher,
         status='active'
-    ).order_by('course__code', 'semester', 'name').first()
+    ).select_related('course').order_by('course__code')
 
-    if not course_group:
+    if not course_groups.exists():
         messages.error(request, 'Aktif ders bulunamadı, önce bir ders oluşturun veya atanmasını isteyin.')
         return redirect('teachers:dashboard')
-
-    return redirect('gradebook:course_gradebook', group_id=course_group.id)
+    
+    # If only one course, redirect directly
+    if course_groups.count() == 1:
+        return redirect('gradebook:course_gradebook', group_id=course_groups.first().id)
+    
+    # Multiple courses - show selection page
+    return render(request, 'gradebook/select_course.html', {
+        'course_groups': course_groups,
+        'teacher': teacher
+    })
 
 @login_required
 @require_POST
 def quick_grade_entry_view(request, group_id):
     """Teacher: quick grade entry for Vize/Final/Bütünleme with live recalculation"""
-    course_group = get_object_or_404(CourseGroup, id=group_id)
+    try:
+        course_group = get_object_or_404(CourseGroup, id=group_id)
 
-    if not hasattr(request.user, 'userprofile') or request.user.userprofile.user_type != 'teacher':
-        return JsonResponse({'success': False, 'message': 'Yetki yok'}, status=403)
+        if not hasattr(request.user, 'userprofile') or request.user.userprofile.user_type != 'teacher':
+            return JsonResponse({'success': False, 'message': 'Yetki yok'}, status=403)
 
-    if not getattr(course_group, 'teacher_id', None) or course_group.teacher.user_id != request.user.id:
-        return JsonResponse({'success': False, 'message': 'Yetki yok'}, status=403)
+        if not getattr(course_group, 'teacher_id', None) or course_group.teacher.user_id != request.user.id:
+            return JsonResponse({'success': False, 'message': 'Yetki yok'}, status=403)
 
-    student_id = request.POST.get('student_id')
-    kind = (request.POST.get('kind') or '').strip().lower()
-    score_raw = (request.POST.get('score') or '').strip()
+        student_id = request.POST.get('student_id')
+        kind = (request.POST.get('kind') or '').strip().lower()
+        score_raw = (request.POST.get('score') or '').strip()
 
-    if kind not in {'vize', 'final', 'but'}:
-        return JsonResponse({'success': False, 'message': 'Geçersiz not türü'}, status=400)
+        if kind not in {'vize', 'final', 'but'}:
+            return JsonResponse({'success': False, 'message': 'Geçersiz not türü'}, status=400)
 
-    student = get_object_or_404(Student, id=student_id)
-    enrollment = Enrollment.objects.filter(group=course_group, student=student, status='enrolled').first()
-    if not enrollment:
-        return JsonResponse({'success': False, 'message': 'Öğrenci bu grupta kayıtlı değil'}, status=400)
+        student = get_object_or_404(Student, id=student_id)
+        enrollment = Enrollment.objects.filter(group=course_group, student=student, status='enrolled').first()
+        if not enrollment:
+            return JsonResponse({'success': False, 'message': 'Öğrenci bu grupta kayıtlı değil'}, status=400)
 
-    # Find item id from POST (template already has these), fallback to name-based search
-    item_id = request.POST.get('item_id')
-    if not item_id:
-        name_map = {'vize': 'Vize Sınavı', 'final': 'Final Sınavı', 'but': 'Bütünleme Sınavı'}
-        item = GradeItem.objects.filter(category__course_group=course_group, name=name_map[kind]).first()
-    else:
-        item = get_object_or_404(GradeItem, id=item_id)
+        # Find item id from POST (template already has these), fallback to name-based search
+        item_id = request.POST.get('item_id')
+        if not item_id:
+            name_map = {'vize': 'Vize Sınavı', 'final': 'Final Sınavı', 'but': 'Bütünleme Sınavı'}
+            item = GradeItem.objects.filter(category__course_group=course_group, name=name_map[kind]).first()
+        else:
+            try:
+                item = GradeItem.objects.get(id=item_id)
+            except GradeItem.DoesNotExist:
+                return JsonResponse({'success': False, 'message': 'Not kategorisi bulunamadı'}, status=400)
+        
+        if not item:
+            return JsonResponse({'success': False, 'message': 'Not kategorisi bulunamadı'}, status=400)
 
-    score_val = None
-    if score_raw != '':
-        try:
-            score_val = float(score_raw)
-        except ValueError:
-            return JsonResponse({'success': False, 'message': 'Puan sayısal olmalı'}, status=400)
+        score_val = None
+        if score_raw != '':
+            try:
+                score_val = Decimal(str(score_raw))
+            except (ValueError, TypeError):
+                return JsonResponse({'success': False, 'message': 'Puan sayısal olmalı'}, status=400)
 
-        if score_val < 0 or score_val > float(item.max_score):
-            return JsonResponse({'success': False, 'message': f'Puan 0-{item.max_score} aralığında olmalı'}, status=400)
+            if score_val < 0 or score_val > item.max_score:
+                return JsonResponse({'success': False, 'message': f'Puan 0-{item.max_score} aralığında olmalı'}, status=400)
 
-    Grade.objects.update_or_create(
-        student=student,
-        item=item,
-        defaults={'score': score_val, 'enrollment': enrollment},
-    )
+        Grade.objects.update_or_create(
+            student=student,
+            item=item,
+            defaults={'score': score_val, 'enrollment': enrollment},
+        )
 
-    service = GradebookService()
-    result = service.calculate_student_course_grade(student, course_group)
-    if result.get('letter_grade'):
-        service.update_enrollment_grades(enrollment)
+        service = GradebookService()
+        result = service.calculate_student_course_grade(student, course_group)
+        if result.get('letter_grade'):
+            service.update_enrollment_grades(enrollment)
 
-    return JsonResponse({
-        'success': True,
-        'total': result.get('total'),
-        'letter_grade': result.get('letter_grade'),
-    })
+        return JsonResponse({
+            'success': True,
+            'total': result.get('total'),
+            'letter_grade': result.get('letter_grade'),
+        })
+    
+    except Exception as e:
+        import traceback
+        import sys
+        error_details = traceback.format_exc()
+        print("="*80)
+        print(f"ERROR in quick_grade_entry_view:")
+        print(f"Error type: {type(e).__name__}")
+        print(f"Error message: {str(e)}")
+        print(f"Full traceback:")
+        print(error_details)
+        print("="*80)
+        sys.stdout.flush()
+        return JsonResponse({
+            'success': False,
+            'message': f'Sunucu hatası: {str(e)}',
+            'traceback': error_details if True else None  # Debug mode
+        }, status=500)
 
 
 @login_required

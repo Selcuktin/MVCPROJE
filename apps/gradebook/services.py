@@ -60,10 +60,14 @@ class GradebookService:
             for item in category_items:
                 grade = grades.filter(item=item).first()
                 if grade and grade.score is not None:
-                    # Weighted score in category
-                    item_percentage = (grade.score / item.max_score) * 100
-                    weighted = item_percentage * (item.weight_in_category / 100)
-                    category_total += Decimal(str(weighted))
+                    # Weighted score in category - ensure all values are Decimal
+                    score = Decimal(str(grade.score))
+                    max_score = Decimal(str(item.max_score))
+                    weight_in_category = Decimal(str(item.weight_in_category))
+                    
+                    item_percentage = (score / max_score) * Decimal('100')
+                    weighted = item_percentage * (weight_in_category / Decimal('100'))
+                    category_total += weighted
             
             # Apply category weight to course
             category_contribution = category_total * (category.weight / 100)
@@ -86,8 +90,10 @@ class GradebookService:
         for item in extra_items:
             grade = grades.filter(item=item).first()
             if grade and grade.score is not None:
-                item_percentage = (grade.score / item.max_score) * 100
-                extra_credit += Decimal(str(item_percentage))
+                score = Decimal(str(grade.score))
+                max_score = Decimal(str(item.max_score))
+                item_percentage = (score / max_score) * Decimal('100')
+                extra_credit += item_percentage
         
         total_score += extra_credit
         
@@ -144,7 +150,8 @@ class GradebookService:
             enrollment.group
         )
         
-        enrollment.final_grade = result['letter_grade']
+        # Update the grade field (not final_grade)
+        enrollment.grade = result['letter_grade']
         enrollment.save()
         
         return result
@@ -173,13 +180,14 @@ class GradebookService:
                 course_group
             )
             
-            if result['total'] > 0:
+            if result['total'] is not None and result['total'] > 0:
                 graded_count += 1
                 total_sum += Decimal(str(result['total']))
                 
                 # Count by letter grade
                 letter = result['letter_grade']
-                stats['grade_distribution'][letter] = stats['grade_distribution'].get(letter, 0) + 1
+                if letter:
+                    stats['grade_distribution'][letter] = stats['grade_distribution'].get(letter, 0) + 1
         
         stats['graded'] = graded_count
         if graded_count > 0:
@@ -209,6 +217,41 @@ class GradebookService:
                 enrollment.group
             )
             
+            # Get individual exam scores
+            vize_score = None
+            final_score = None
+            resit_score = None
+            
+            try:
+                vize_item = GradeItem.objects.filter(
+                    category__course_group=enrollment.group,
+                    name='Vize Sınavı'
+                ).first()
+                if vize_item:
+                    vize_grade = Grade.objects.filter(student=student, item=vize_item).first()
+                    if vize_grade:
+                        vize_score = vize_grade.score
+                
+                final_item = GradeItem.objects.filter(
+                    category__course_group=enrollment.group,
+                    name='Final Sınavı'
+                ).first()
+                if final_item:
+                    final_grade = Grade.objects.filter(student=student, item=final_item).first()
+                    if final_grade:
+                        final_score = final_grade.score
+                
+                resit_item = GradeItem.objects.filter(
+                    category__course_group=enrollment.group,
+                    name='Bütünleme Sınavı'
+                ).first()
+                if resit_item:
+                    resit_grade = Grade.objects.filter(student=student, item=resit_item).first()
+                    if resit_grade:
+                        resit_score = resit_grade.score
+            except:
+                pass
+            
             credits = enrollment.group.course.credits
             letter = result['letter_grade']
             points = grade_points.get(letter, 0.0)
@@ -221,7 +264,10 @@ class GradebookService:
                 'letter_grade': letter,
                 'credits': credits,
                 'grade_points': points,
-                'status': enrollment.status
+                'status': enrollment.status,
+                'midterm_score': vize_score,
+                'final_score': final_score,
+                'resit_score': resit_score
             })
             
             if letter != 'FF':  # Only count passing grades

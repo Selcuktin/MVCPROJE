@@ -129,12 +129,19 @@ class Quiz(models.Model):
     )
     
     # Settings
-    max_attempts = models.IntegerField(default=1)
+    max_attempts = models.IntegerField(
+        default=2,
+        help_text='Maksimum giriş hakkı (varsayılan: 2)'
+    )
     passing_score = models.DecimalField(
         max_digits=5,
         decimal_places=2,
         default=60,
         help_text='Minimum percentage to pass'
+    )
+    use_best_attempt = models.BooleanField(
+        default=True,
+        help_text='En yüksek puanlı denemeyi not olarak kullan (False ise son deneme)'
     )
     
     # Features
@@ -188,6 +195,32 @@ class Quiz(models.Model):
         now = timezone.now()
         return (self.is_active and 
                 self.start_time <= now <= self.end_time)
+    
+    def get_student_attempts_count(self, student):
+        """Get number of attempts for a student"""
+        return self.attempts.filter(student=student).count()
+    
+    def can_student_attempt(self, student):
+        """Check if student can make another attempt"""
+        attempts_count = self.get_student_attempts_count(student)
+        return attempts_count < self.max_attempts
+    
+    def get_student_best_score(self, student):
+        """Get student's best score from all attempts"""
+        attempts = self.attempts.filter(
+            student=student,
+            status__in=['submitted', 'auto_submitted']
+        ).exclude(score__isnull=True)
+        
+        if not attempts.exists():
+            return None
+        
+        if self.use_best_attempt:
+            # En yüksek puanlı deneme
+            return attempts.order_by('-score').first()
+        else:
+            # Son deneme
+            return attempts.order_by('-submitted_at').first()
     
     @property
     def total_points(self):

@@ -216,7 +216,9 @@ class Grade(models.Model):
     def percentage(self):
         """Calculate percentage score"""
         if self.score is not None and self.item.max_score > 0:
-            return (self.score / self.item.max_score) * 100
+            score = Decimal(str(self.score))
+            max_score = Decimal(str(self.item.max_score))
+            return float((score / max_score) * Decimal('100'))
         return None
     
     @property
@@ -230,15 +232,17 @@ class Grade(models.Model):
             return Decimal('0')
         
         # Weight in category * category weight in course
-        item_weight = self.item.weight_in_category / 100
-        category_weight = self.item.category.weight / 100
+        item_weight = Decimal(str(self.item.weight_in_category)) / Decimal('100')
+        category_weight = Decimal(str(self.item.category.weight)) / Decimal('100')
         
-        return Decimal(str(percentage)) * Decimal(str(item_weight)) * Decimal(str(category_weight))
+        return Decimal(str(percentage)) * item_weight * category_weight
     
     def clean(self):
         """Validation"""
         if self.score is not None and self.item.max_score:
-            if self.score > self.item.max_score:
+            score = Decimal(str(self.score))
+            max_score = Decimal(str(self.item.max_score))
+            if score > max_score:
                 raise ValidationError({
                     'score': f'Not maksimum puandan ({self.item.max_score}) büyük olamaz'
                 })

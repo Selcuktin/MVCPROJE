@@ -8,14 +8,55 @@
     <h2><i class="fas fa-question-circle"></i> Soru Ekle: {{ quiz.title }}</h2>
     <p class="lead">{{ quiz.course_group.course.name }}</p>
     
+    <!-- Messages -->
+    {% if messages %}
+    <div class="messages-container mb-3">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+            {% if message.tags == 'success' %}
+                <i class="fas fa-check-circle"></i>
+            {% elif message.tags == 'error' %}
+                <i class="fas fa-exclamation-circle"></i>
+            {% elif message.tags == 'warning' %}
+                <i class="fas fa-exclamation-triangle"></i>
+            {% else %}
+                <i class="fas fa-info-circle"></i>
+            {% endif %}
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    
     <div class="alert {% if quiz.use_random_questions %}alert-warning{% else %}alert-info{% endif %}">
         <i class="fas fa-info-circle"></i> 
         {% if quiz.use_random_questions %}
-            <strong>Rastgele Soru Modu Aktif:</strong> En az <strong>{{ quiz.random_question_pool_size }}</strong> soru seçmelisiniz. 
-            Her öğrenci bu havuzdan rastgele <strong>{{ quiz.random_question_count }}</strong> soru alacak.
+            <strong>Rastgele Soru Modu Aktif:</strong> Her öğrenci sınava başladığında rastgele <strong>{{ quiz.random_question_count }}</strong> soru alacak.
+            Soru havuzuna istediğiniz kadar soru ekleyebilirsiniz.
         {% else %}
             Soru bankalarından soruları seçerek sınava ekleyin.
         {% endif %}
+    </div>
+    
+    <!-- Selected Questions Counter -->
+    <div class="card mb-3 border-success" id="selectedCounter" style="display: none;">
+        <div class="card-body bg-light">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0">
+                        <i class="fas fa-check-circle text-success"></i> 
+                        Seçilen Soru Sayısı: <span id="selectedCount" class="text-success fw-bold">0</span>
+                    </h5>
+                    {% if quiz.use_random_questions %}
+                    <small class="text-muted">Her öğrenci {{ quiz.random_question_count }} soru alacak</small>
+                    {% endif %}
+                </div>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="clearAllSelections()">
+                    <i class="fas fa-times"></i> Tümünü Temizle
+                </button>
+            </div>
+        </div>
     </div>
     
     <form method="post" id="questionForm">
@@ -64,7 +105,7 @@
             <a href="{% url 'quiz:quiz_detail' quiz.id %}" class="btn btn-secondary">
                 <i class="fas fa-arrow-left"></i> Atla
             </a>
-            <button type="submit" class="btn btn-success" id="submitBtn" onclick="return validateQuestionSelection()">
+            <button type="submit" class="btn btn-success btn-lg" id="submitBtn">
                 <i class="fas fa-check"></i> Soruları Ekle ve Bitir
             </button>
         </div>
@@ -100,35 +141,116 @@ function toggleBankSelection(bankId) {
 }
 
 // Validate question selection before submit
-function validateQuestionSelection() {
+function validateQuestionSelection(event) {
+    console.log('Form submit triggered');
+    event.preventDefault();
+    
     const checkboxes = document.querySelectorAll('input[name="questions"]:checked');
+    console.log(`Selected ${checkboxes.length} questions`);
+    
     if (checkboxes.length === 0) {
-        alert('Lütfen en az bir soru seçin!');
+        console.log('No questions selected, showing error');
+        if (typeof AppUtils !== 'undefined' && AppUtils.showToast) {
+            AppUtils.showToast('Lütfen en az bir soru seçin!', 'error');
+        } else {
+            alert('Lütfen en az bir soru seçin!');
+        }
         return false;
     }
+    
+    // No minimum requirement for random mode anymore
+    
+    console.log('Validation passed, submitting form');
+    
+    // Show loading state
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Ekleniyor...';
+    
+    // Show loading toast
+    if (typeof AppUtils !== 'undefined' && AppUtils.showToast) {
+        AppUtils.showToast('Sorular ekleniyor, lütfen bekleyin...', 'info');
+    }
+    
+    // Log selected question IDs
+    const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+    console.log('Selected question IDs:', selectedIds);
+    
+    // Submit form
+    const form = document.getElementById('questionForm');
+    console.log('Submitting form...');
+    form.submit();
+    
     return true;
 }
 
-// Update submit button state
+// Update submit button state and counter
 function updateSubmitButton() {
     const checkboxes = document.querySelectorAll('input[name="questions"]:checked');
     const submitBtn = document.getElementById('submitBtn');
-    if (checkboxes.length === 0) {
+    const selectedCount = document.getElementById('selectedCount');
+    const selectedCounter = document.getElementById('selectedCounter');
+    
+    const count = checkboxes.length;
+    
+    // Update counter
+    if (selectedCount) {
+        selectedCount.textContent = count;
+    }
+    
+    // Show/hide counter card
+    if (selectedCounter) {
+        selectedCounter.style.display = count > 0 ? 'block' : 'none';
+    }
+    
+    // Update submit button
+    if (count === 0) {
         submitBtn.disabled = true;
         submitBtn.classList.add('disabled');
+        submitBtn.innerHTML = '<i class="fas fa-check"></i> Soruları Ekle ve Bitir';
     } else {
         submitBtn.disabled = false;
         submitBtn.classList.remove('disabled');
+        submitBtn.innerHTML = '<i class="fas fa-check"></i> ' + count + ' Soru Ekle ve Bitir';
     }
+}
+
+// Clear all selections
+function clearAllSelections() {
+    const checkboxes = document.querySelectorAll('input[name="questions"]');
+    checkboxes.forEach(cb => cb.checked = false);
+    updateSubmitButton();
 }
 
 // Add event listeners to all checkboxes
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Quiz Add Questions: Page loaded');
+    
     const checkboxes = document.querySelectorAll('input[name="questions"]');
+    console.log(`Found ${checkboxes.length} question checkboxes`);
+    
     checkboxes.forEach(cb => {
-        cb.addEventListener('change', updateSubmitButton);
+        cb.addEventListener('change', function() {
+            console.log(`Checkbox ${this.value} changed to ${this.checked}`);
+            updateSubmitButton();
+        });
     });
     updateSubmitButton();
+    
+    // Add form submit validation
+    const form = document.getElementById('questionForm');
+    if (form) {
+        console.log('Form found, adding submit listener');
+        form.addEventListener('submit', validateQuestionSelection);
+    } else {
+        console.error('Form not found!');
+    }
+    
+    // Check if there are any messages
+    const messages = document.querySelectorAll('.alert');
+    if (messages.length > 0) {
+        console.log(`${messages.length} message(s) displayed`);
+    }
 });
 </script>
 {% endblock %}
