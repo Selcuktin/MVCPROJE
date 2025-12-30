@@ -335,6 +335,10 @@ def quiz_add_questions(request, quiz_id):
         added_count = 0
         skipped_count = 0
         
+        # Otomatik puan hesaplama: 100 puan / toplam soru sayısı
+        total_questions_after = order - 1 + len(question_ids)
+        points_per_question = round(100.0 / total_questions_after, 2) if total_questions_after > 0 else 1.0
+        
         for question_id in question_ids:
             try:
                 question = Question.objects.get(id=question_id)
@@ -344,17 +348,17 @@ def quiz_add_questions(request, quiz_id):
                     print(f"DEBUG: Question {question_id} already exists, skipping")
                     continue
                 
-                # Create new quiz question
+                # Create new quiz question with auto-calculated points
                 QuizQuestion.objects.create(
                     quiz=quiz,
                     question=question,
                     order=order,
-                    points=float(request.POST.get(f'points_{question_id}', question.points)),
+                    points=points_per_question,  # Otomatik hesaplanan puan
                     assigned_to_student=None
                 )
                 order += 1
                 added_count += 1
-                print(f"DEBUG: Added question {question_id}")
+                print(f"DEBUG: Added question {question_id} with {points_per_question} points")
             except Question.DoesNotExist:
                 print(f"DEBUG: Question {question_id} not found")
                 continue
@@ -362,7 +366,16 @@ def quiz_add_questions(request, quiz_id):
                 print(f"DEBUG: Error adding question {question_id}: {str(e)}")
                 continue
         
-        print(f"DEBUG: Added {added_count} questions, skipped {skipped_count}")
+        # Tüm soruların puanlarını yeniden hesapla (eşit dağıt)
+        all_questions = quiz.questions.filter(assigned_to_student__isnull=True).order_by('order')
+        total_count = all_questions.count()
+        if total_count > 0:
+            points_per_question = round(100.0 / total_count, 2)
+            for qq in all_questions:
+                qq.points = points_per_question
+                qq.save()
+        
+        print(f"DEBUG: Added {added_count} questions, skipped {skipped_count}, {total_count} total questions, {points_per_question} points each")
         
         if added_count > 0:
             if quiz.use_random_questions:
@@ -492,12 +505,44 @@ def quiz_attempt(request, attempt_id):
         messages.warning(request, 'Süre dolduğu için quiz otomatik teslim edildi')
         return redirect('quiz:quiz_attempt_review', attempt_id=attempt.id)
     
+    # Get questions - if random mode, only get questions assigned to this student
+    if attempt.quiz.use_random_questions:
+        questions = QuizQuestion.objects.filter(
+            quiz=attempt.quiz,
+            assigned_to_student=request.user
+        ).select_related('question').order_by('order')
+        
+        # If no questions assigned yet, assign them from the pool
+        if not questions.exists():
+            import random
+            pool = list(attempt.quiz.questions.filter(assigned_to_student__isnull=True))
+            if pool:
+                count = min(len(pool), attempt.quiz.random_question_count)
+                selected = random.sample(pool, count)
+                for i, pq in enumerate(selected):
+                    QuizQuestion.objects.create(
+                        quiz=attempt.quiz,
+                        question=pq.question,
+                        order=i + 1,
+                        points=pq.points,
+                        assigned_to_student=request.user
+                    )
+                # Refresh questions
+                questions = QuizQuestion.objects.filter(
+                    quiz=attempt.quiz,
+                    assigned_to_student=request.user
+                ).select_related('question').order_by('order')
+    else:
+        questions = attempt.quiz.questions.filter(assigned_to_student__isnull=True).select_related('question').order_by('order')
+
     if request.method == 'POST':
         # Save answers
         for key, value in request.POST.items():
             if key.startswith('question_'):
                 quiz_question_id = key.replace('question_', '')
-                quiz_question = QuizQuestion.objects.get(id=quiz_question_id)
+                quiz_question = questions.filter(id=quiz_question_id).first()
+                if not quiz_question:
+                    continue
                 
                 answer, created = QuizAnswer.objects.get_or_create(
                     attempt=attempt,
@@ -523,22 +568,13 @@ def quiz_attempt(request, attempt_id):
                 total_score += answer.points_earned
         
         attempt.score = total_score
-        # Calculate percentage based on actual questions answered
+        # Calculate percentage based on actual questions
         actual_total = sum(q.points for q in questions)
         attempt.percentage = (total_score / actual_total * 100) if actual_total > 0 else 0
         attempt.save()
         
         messages.success(request, 'Quiz teslim edildi!')
         return redirect('quiz:quiz_attempt_review', attempt_id=attempt.id)
-    
-    # Get questions - if random mode, only get questions assigned to this student
-    if attempt.quiz.use_random_questions:
-        questions = QuizQuestion.objects.filter(
-            quiz=attempt.quiz,
-            assigned_to_student=request.user
-        ).select_related('question').order_by('order')
-    else:
-        questions = attempt.quiz.questions.filter(assigned_to_student__isnull=True).select_related('question').order_by('order')
     
     # Get existing answers
     existing_answers = {

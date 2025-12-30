@@ -10,7 +10,7 @@
         <p class="lead">{{ student.first_name }} {{ student.last_name }}</p>
         <p>Öğrenci No: {{ student.school_number }}</p>
     </div>
-    
+
     <!-- Summary -->
     <div class="row mb-4">
         <div class="col-md-4">
@@ -38,11 +38,11 @@
             </div>
         </div>
     </div>
-    
+
     <!-- Courses by Term -->
     {% if transcript %}
     {% regroup transcript by term as terms_list %}
-    
+
     {% for term_group in terms_list %}
     <div class="card mb-4">
         <div class="card-header bg-primary text-white">
@@ -73,14 +73,17 @@
                             <td>{% if course.midterm_score %}{{ course.midterm_score|floatformat:1 }}{% else %}-{% endif %}</td>
                             <td>{% if course.final_score %}{{ course.final_score|floatformat:1 }}{% else %}-{% endif %}</td>
                             <td>{% if course.resit_score %}{{ course.resit_score|floatformat:1 }}{% else %}-{% endif %}</td>
-                            <td>{{ course.score|floatformat:1 }}</td>
+                            <td>{{ course.score|floatformat:1|default:"-" }}</td>
                             <td>
-                                <span class="badge bg-{% if course.letter_grade == 'FF' %}danger{% elif course.letter_grade == 'DC' or course.letter_grade == 'DD' %}warning{% else %}success{% endif %}">
-                                    {{ course.letter_grade }}
+                                <span
+                                    class="badge bg-{% if not course.letter_grade %}secondary{% elif course.letter_grade == 'FF' %}danger{% elif course.letter_grade == 'DC' or course.letter_grade == 'DD' %}warning{% else %}success{% endif %}">
+                                    {{ course.letter_grade|default:"-" }}
                                 </span>
                             </td>
                             <td>
-                                {% if course.letter_grade == 'FF' %}
+                                {% if not course.letter_grade %}
+                                -
+                                {% elif course.letter_grade == 'FF' %}
                                 <span class="badge bg-danger">Kaldı</span>
                                 {% elif course.letter_grade == 'DC' or course.letter_grade == 'DD' %}
                                 <span class="badge bg-warning">Şartlı Geçti</span>
@@ -99,7 +102,7 @@
     {% else %}
     <div class="alert alert-info">Henüz tamamlanmış dersiniz bulunmamaktadır.</div>
     {% endif %}
-    
+
     <!-- Actions -->
     <div class="text-center mt-4">
         <button class="btn btn-primary" onclick="window.print()">
@@ -112,8 +115,13 @@
 </div>
 
 <style>
-@media print {
-    .btn, nav, .breadcrumb { display: none; }
-}
+    @media print {
+
+        .btn,
+        nav,
+        .breadcrumb {
+            display: none;
+        }
+    }
 </style>
 {% endblock %}

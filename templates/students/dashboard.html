@@ -14,36 +14,39 @@
         margin-bottom: 2rem;
         box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
     }
-    
+
     .stat-card {
         background: white;
         border-radius: 16px;
         padding: 1.25rem;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
         transition: all 0.3s ease;
         border: none;
         position: relative;
         overflow: hidden;
         height: 100%;
     }
-    
+
     @media (max-width: 768px) {
         .stat-card {
             padding: 1rem;
         }
+
         .stat-icon {
             width: 50px;
             height: 50px;
             font-size: 20px;
         }
+
         .stat-value {
             font-size: 1.5rem;
         }
+
         .stat-label {
             font-size: 0.75rem;
         }
     }
-    
+
     .stat-card::before {
         content: '';
         position: absolute;
@@ -53,33 +56,44 @@
         height: 100%;
         background: linear-gradient(180deg, var(--card-color), transparent);
     }
-    
+
     .stat-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
     }
-    
+
     .card-arrow {
         position: absolute;
         right: 1rem;
         top: 50%;
         transform: translateY(-50%);
-        color: rgba(0,0,0,0.2);
+        color: rgba(0, 0, 0, 0.2);
         font-size: 1.5rem;
         opacity: 0;
         transition: all 0.3s ease;
     }
-    
+
     .stat-card:hover .card-arrow {
         opacity: 1;
         right: 0.75rem;
     }
-    
-    .stat-card.blue { --card-color: #667eea; }
-    .stat-card.green { --card-color: #10b981; }
-    .stat-card.orange { --card-color: #f59e0b; }
-    .stat-card.purple { --card-color: #8b5cf6; }
-    
+
+    .stat-card.blue {
+        --card-color: #667eea;
+    }
+
+    .stat-card.green {
+        --card-color: #10b981;
+    }
+
+    .stat-card.orange {
+        --card-color: #f59e0b;
+    }
+
+    .stat-card.purple {
+        --card-color: #8b5cf6;
+    }
+
     .stat-icon {
         width: 60px;
         height: 60px;
@@ -90,57 +104,72 @@
         font-size: 24px;
         margin-bottom: 1rem;
     }
-    
-    .stat-icon.blue { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
-    .stat-icon.green { background: linear-gradient(135deg, #10b981, #059669); color: white; }
-    .stat-icon.orange { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
-    .stat-icon.purple { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; }
-    
+
+    .stat-icon.blue {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+    }
+
+    .stat-icon.green {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+    }
+
+    .stat-icon.orange {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+    }
+
+    .stat-icon.purple {
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        color: white;
+    }
+
     .stat-value {
         font-size: 2rem;
         font-weight: 700;
         color: #1f2937;
         margin: 0.5rem 0;
     }
-    
+
     .stat-label {
         color: #6b7280;
         font-size: 0.875rem;
         font-weight: 500;
     }
-    
+
     .course-card {
         background: white;
         border-radius: 12px;
         padding: 1.25rem;
         margin-bottom: 1rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         transition: all 0.3s ease;
         border-left: 4px solid #667eea;
     }
-    
+
     .course-card:hover {
-        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
         transform: translateX(4px);
     }
-    
+
     .course-code {
         font-weight: 700;
         color: #667eea;
         font-size: 0.875rem;
     }
-    
+
     .course-name {
         font-weight: 600;
         color: #1f2937;
         margin: 0.25rem 0;
     }
-    
+
     .course-teacher {
         color: #6b7280;
         font-size: 0.875rem;
     }
-    
+
     .assignment-item {
         background: white;
         border-radius: 10px;
@@ -150,13 +179,13 @@
         transition: all 0.2s ease;
         position: relative;
     }
-    
+
     .assignment-item:hover {
         background: #fef3c7;
         transform: translateX(4px);
         box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
     }
-    
+
     .assignment-item::after {
         content: '\f061';
         font-family: 'Font Awesome 6 Free';
@@ -169,12 +198,12 @@
         transition: all 0.3s ease;
         color: #f59e0b;
     }
-    
+
     .assignment-item:hover::after {
         opacity: 1;
         right: 0.75rem;
     }
-    
+
     .announcement-item {
         background: white;
         border-radius: 10px;
@@ -184,13 +213,13 @@
         transition: all 0.2s ease;
         position: relative;
     }
-    
+
     .announcement-item:hover {
         background: #d1fae5;
         transform: translateX(4px);
         box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
     }
-    
+
     .announcement-item::after {
         content: '\f061';
         font-family: 'Font Awesome 6 Free';
@@ -203,12 +232,12 @@
         transition: all 0.3s ease;
         color: #10b981;
     }
-    
+
     .announcement-item:hover::after {
         opacity: 1;
         right: 0.75rem;
     }
-    
+
     .quiz-item {
         background: white;
         border-radius: 10px;
@@ -218,13 +247,13 @@
         transition: all 0.2s ease;
         position: relative;
     }
-    
+
     .quiz-item:hover {
         background: #ede9fe;
         transform: translateX(4px);
         box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
     }
-    
+
     .quiz-item::after {
         content: '\f061';
         font-family: 'Font Awesome 6 Free';
@@ -237,12 +266,12 @@
         transition: all 0.3s ease;
         color: #8b5cf6;
     }
-    
+
     .quiz-item:hover::after {
         opacity: 1;
         right: 0.75rem;
     }
-    
+
     .section-title {
         font-size: 1.25rem;
         font-weight: 700;
@@ -252,23 +281,23 @@
         align-items: center;
         gap: 0.5rem;
     }
-    
+
     .section-title i {
         color: #667eea;
     }
-    
+
     .empty-state {
         text-align: center;
         padding: 3rem 1rem;
         color: #9ca3af;
     }
-    
+
     .empty-state i {
         font-size: 3rem;
         margin-bottom: 1rem;
         opacity: 0.5;
     }
-    
+
     .quick-action-btn {
         background: white;
         border: 2px solid #e5e7eb;
@@ -280,20 +309,20 @@
         text-decoration: none;
         display: block;
     }
-    
+
     .quick-action-btn:hover {
         border-color: #667eea;
         background: #f3f4f6;
         transform: translateY(-2px);
         color: #667eea;
     }
-    
+
     .quick-action-btn i {
         font-size: 2rem;
         margin-bottom: 0.5rem;
         display: block;
     }
-    
+
     /* Progress Bar */
     .progress-custom {
         height: 8px;
@@ -301,34 +330,50 @@
         background: #e5e7eb;
         overflow: hidden;
     }
-    
+
     .progress-bar-custom {
         height: 100%;
         background: linear-gradient(90deg, #667eea, #764ba2);
         border-radius: 10px;
         transition: width 1s ease;
     }
-    
+
     /* Animations */
     @keyframes fadeInUp {
         from {
             opacity: 0;
             transform: translateY(20px);
         }
+
         to {
             opacity: 1;
             transform: translateY(0);
         }
     }
-    
+
     .animate-in {
         animation: fadeInUp 0.6s ease forwards;
     }
-    
-    .animate-delay-1 { animation-delay: 0.1s; opacity: 0; }
-    .animate-delay-2 { animation-delay: 0.2s; opacity: 0; }
-    .animate-delay-3 { animation-delay: 0.3s; opacity: 0; }
-    .animate-delay-4 { animation-delay: 0.4s; opacity: 0; }
+
+    .animate-delay-1 {
+        animation-delay: 0.1s;
+        opacity: 0;
+    }
+
+    .animate-delay-2 {
+        animation-delay: 0.2s;
+        opacity: 0;
+    }
+
+    .animate-delay-3 {
+        animation-delay: 0.3s;
+        opacity: 0;
+    }
+
+    .animate-delay-4 {
+        animation-delay: 0.4s;
+        opacity: 0;
+    }
 </style>
 {% endblock %}
 
@@ -339,11 +384,11 @@
         <div class="row align-items-center">
             <div class="col-md-8">
                 <h1 class="mb-2">
-                    <i class="fas fa-hand-sparkles"></i> 
+                    <i class="fas fa-hand-sparkles"></i>
                     Hoş Geldin, {{ student.first_name }}!
                 </h1>
                 <p class="mb-0 opacity-75">
-                    <i class="fas fa-calendar-alt"></i> 
+                    <i class="fas fa-calendar-alt"></i>
                     Bugün {{ now|date:"d F Y, l" }}
                 </p>
             </div>
@@ -363,7 +408,8 @@
     <!-- Stats Cards -->
     <div class="row g-3 mb-4">
         <div class="col-6 col-lg-3">
-            <div class="stat-card blue animate-in animate-delay-1 clickable" onclick="window.location.href='{% url 'students:courses' %}'" style="cursor: pointer;">
+            <div class="stat-card blue animate-in animate-delay-1 clickable"
+                onclick="window.location.href='{% url 'students:courses' %}'" style="cursor: pointer;">
                 <div class="stat-icon blue">
                     <i class="fas fa-book-open"></i>
                 </div>
@@ -373,7 +419,8 @@
             </div>
         </div>
         <div class="col-6 col-lg-3">
-            <div class="stat-card green animate-in animate-delay-2 clickable" onclick="window.location.href='{% url 'gradebook:my_grades' %}'" style="cursor: pointer;">
+            <div class="stat-card green animate-in animate-delay-2 clickable"
+                onclick="window.location.href='{% url 'gradebook:my_grades' %}'" style="cursor: pointer;">
                 <div class="stat-icon green">
                     <i class="fas fa-star"></i>
                 </div>
@@ -383,7 +430,8 @@
             </div>
         </div>
         <div class="col-6 col-lg-3">
-            <div class="stat-card orange animate-in animate-delay-3 clickable" onclick="window.location.href='{% url 'courses:assignment_list' %}'" style="cursor: pointer;">
+            <div class="stat-card orange animate-in animate-delay-3 clickable"
+                onclick="window.location.href='{% url 'courses:assignment_list' %}'" style="cursor: pointer;">
                 <div class="stat-icon orange">
                     <i class="fas fa-tasks"></i>
                 </div>
@@ -393,12 +441,13 @@
             </div>
         </div>
         <div class="col-6 col-lg-3">
-            <div class="stat-card purple animate-in animate-delay-4 clickable" onclick="window.location.href='{% url 'quiz:quiz_list_student' %}'" style="cursor: pointer;">
+            <div class="stat-card purple animate-in animate-delay-4 clickable"
+                onclick="window.location.href='{% url 'quiz:quiz_list_student' %}'" style="cursor: pointer;">
                 <div class="stat-icon purple">
                     <i class="fas fa-clipboard-list"></i>
                 </div>
-                <div class="stat-value" id="quizzesCount">0</div>
-                <div class="stat-label">Aktif Quiz</div>
+                <div class="stat-value" id="quizzesCount">{{ active_quizzes_count|default:0 }}</div>
+                <div class="stat-label">Aktif Sınav</div>
                 <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
             </div>
         </div>
@@ -412,14 +461,35 @@
                 <i class="fas fa-clipboard-list"></i>
                 Aktif Sınavlar
             </div>
-            
+
+            {% if active_quizzes_sidebar %}
             <div id="quizzesList">
-                <!-- Quizzes will be loaded here -->
-                <div class="empty-state">
-                    <i class="fas fa-clipboard-list"></i>
-                    <p>Henüz aktif sınav yok</p>
+                {% for quiz in active_quizzes_sidebar %}
+                <div class="assignment-item clickable"
+                    onclick="window.location.href='{% url 'quiz:quiz_take' quiz.id %}'"
+                    style="cursor: pointer;">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <strong class="text-dark">{{ quiz.title }}</strong>
+                        <small class="text-muted">
+                            <i class="fas fa-clock"></i>
+                            {{ quiz.end_time|date:"d.m H:i" }}
+                        </small>
+                    </div>
+                    <small class="text-muted">
+                        {{ quiz.course_group.course.code }}
+                    </small>
                 </div>
+                {% endfor %}
             </div>
+            <a href="{% url 'quiz:quiz_list_student' %}" class="btn btn-sm btn-outline-primary w-100 mt-2">
+                Tüm Sınavlar <i class="fas fa-arrow-right"></i>
+            </a>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-clipboard-list"></i>
+                <p>Henüz aktif sınav yok</p>
+            </div>
+            {% endif %}
         </div>
 
         <!-- Assignments -->
@@ -428,11 +498,13 @@
                 <i class="fas fa-clipboard-check"></i>
                 Son Ödevler
             </div>
-            
+
             {% if recent_assignments %}
             <div id="assignmentsList">
                 {% for assignment in recent_assignments %}
-                <div class="assignment-item clickable" onclick="window.location.href='{% url 'courses:assignment_detail' assignment.pk %}'" style="cursor: pointer;">
+                <div class="assignment-item clickable"
+                    onclick="window.location.href='{% url 'courses:assignment_detail' assignment.pk %}'"
+                    style="cursor: pointer;">
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <strong class="text-dark">{{ assignment.title }}</strong>
                         {% if assignment.due_date %}
@@ -467,7 +539,7 @@
                 <i class="fas fa-bullhorn"></i>
                 Duyurular
             </div>
-            
+
             {% if recent_announcements %}
             <div id="announcementsList">
                 {% for announcement in recent_announcements %}
@@ -497,37 +569,37 @@
 </div>
 
 <script>
-// Animate numbers on load
-document.addEventListener('DOMContentLoaded', function() {
-    animateValue('coursesCount', 0, {{ enrolled_count }}, 1000);
+    // Animate numbers on load
+    document.addEventListener('DOMContentLoaded', function () {
+        animateValue('coursesCount', 0, {{ enrolled_count }}, 1000);
     animateValue('gradesCount', 0, {{ grades_count }}, 1200);
     animateValue('assignmentsCount', 0, {{ pending_submissions }}, 1400);
-    animateValue('quizzesCount', 0, 0, 1600);
+    animateValue('quizzesCount', 0, {{ active_quizzes_count|default:0 }}, 1600);
 });
 
-function animateValue(id, start, end, duration) {
-    const element = document.getElementById(id);
-    if (!element) return;
-    
-    const range = end - start;
-    const increment = range / (duration / 16);
-    let current = start;
-    
-    const timer = setInterval(() => {
-        current += increment;
-        if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
-            current = end;
-            clearInterval(timer);
-        }
-        element.textContent = Math.floor(current);
-    }, 16);
-}
+    function animateValue(id, start, end, duration) {
+        const element = document.getElementById(id);
+        if (!element) return;
 
-// Kalan süre hesaplama - manuel init
-document.addEventListener('DOMContentLoaded', function() {
-    if (window.AppUtils && window.AppUtils.initTimeRemainingUpdates) {
-        window.AppUtils.initTimeRemainingUpdates();
+        const range = end - start;
+        const increment = range / (duration / 16);
+        let current = start;
+
+        const timer = setInterval(() => {
+            current += increment;
+            if ((increment > 0 && current >= end) || (increment < 0 && current <= end)) {
+                current = end;
+                clearInterval(timer);
+            }
+            element.textContent = Math.floor(current);
+        }, 16);
     }
-});
+
+    // Kalan süre hesaplama - manuel init
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.AppUtils && window.AppUtils.initTimeRemainingUpdates) {
+            window.AppUtils.initTimeRemainingUpdates();
+        }
+    });
 </script>
 {% endblock %}

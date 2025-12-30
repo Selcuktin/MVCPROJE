@@ -185,3 +185,19 @@ SIMPLE_JWT = {
 
 # External API Keys (from environment or .env)
 GEMINI_API_KEY = config('GEMINI_API_KEY', default=os.environ.get('GEMINI_API_KEY', ''))
+
+# Email Configuration
+# Production: SMTP backend (Gmail)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
+EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = f'Uzaktan Eğitim Sistemi <{EMAIL_HOST_USER}>'
+
+# Development: Console backend (uncomment for testing)
+# EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+
+# Password Reset Settings
+PASSWORD_RESET_TIMEOUT = 86400  # 24 hours in seconds

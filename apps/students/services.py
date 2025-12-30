@@ -154,6 +154,19 @@ class StudentService:
             
             gpa = round(total_score / count, 2) if count > 0 else 0.0
             
+            # Get active quiz count for enrolled courses
+            from apps.quiz.models import Quiz
+            now = timezone.now()
+            
+            # Get all quizzes for enrolled groups
+            all_quizzes = Quiz.objects.filter(
+                course_group__in=enrolled_groups,
+                is_active=True
+            )
+            
+            # Filter by time range
+            active_quizzes_count = sum(1 for q in all_quizzes if q.is_available)
+            
             return {
                 'student': student,
                 'enrollments': enrollments,
@@ -163,6 +176,7 @@ class StudentService:
                 'pending_submissions': pending_submissions,
                 'grades_count': grades_count,
                 'gpa': gpa,
+                'active_quizzes_count': active_quizzes_count,
                 'now': timezone.now()
             }
             

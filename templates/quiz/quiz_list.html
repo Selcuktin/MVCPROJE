@@ -266,7 +266,7 @@
                         <a href="{% url 'quiz:quiz_detail' quiz.id %}" class="btn btn-primary btn-modern">
                             <i class="fas fa-eye"></i> Detay
                         </a>
-                        <a href="{% url 'quiz:quiz_add_questions' quiz.id %}" class="btn btn-warning btn-modern">
+                        <a href="{% url 'quiz:quiz_edit' quiz.id %}" class="btn btn-warning btn-modern">
                             <i class="fas fa-edit"></i> Düzenle
                         </a>
                         <button class="btn btn-danger btn-modern" onclick="deleteQuiz({{ quiz.id }}, '{{ quiz.title }}')">

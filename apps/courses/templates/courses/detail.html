@@ -289,7 +289,7 @@
                 </p>
             </div>
             <div>
-                <span class="badge bg-{% if course.is_elective %}warning{% else %}light{% endif %} fs-6 me-2">
+                <span class="badge bg-{% if course.is_elective %}warning text-dark{% else %}primary text-white{% endif %} fs-6 me-2">
                     {% if course.is_elective %}Seçmeli{% else %}Zorunlu{% endif %}
                 </span>
                 <span class="badge bg-success fs-6">{{ course.get_status_display }}</span>

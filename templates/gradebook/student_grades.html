@@ -3,158 +3,252 @@
 
 {% block title %}Notlarım{% endblock %}
 
+{% block extra_css %}
+<style>
+    .grades-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem;
+        border-radius: 15px;
+        margin-bottom: 2rem;
+    }
+    
+    .grades-table {
+        background: white;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    
+    .grades-table table {
+        margin-bottom: 0;
+    }
+    
+    .grades-table thead {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+    }
+    
+    .grades-table thead th {
+        border: none;
+        padding: 1rem;
+        font-weight: 600;
+    }
+    
+    .grades-table tbody tr {
+        border-bottom: 1px solid #e9ecef;
+        transition: all 0.2s ease;
+    }
+    
+    .grades-table tbody tr:hover {
+        background: #f8f9fa;
+        transform: scale(1.01);
+    }
+    
+    .grades-table tbody td {
+        padding: 1rem;
+        vertical-align: middle;
+    }
+    
+    .course-name {
+        font-weight: 600;
+        color: #2c3e50;
+    }
+    
+    .course-code {
+        color: #667eea;
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    
+    .grade-badge {
+        font-size: 1.2rem;
+        padding: 0.5rem 1rem;
+        border-radius: 8px;
+        font-weight: 700;
+    }
+    
+    .score-badge {
+        font-size: 1rem;
+        padding: 0.4rem 0.8rem;
+        border-radius: 6px;
+    }
+    
+    .category-pills {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .category-pill {
+        background: #f8f9fa;
+        border: 1px solid #dee2e6;
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.85rem;
+    }
+    
+    .expand-btn {
+        cursor: pointer;
+        color: #667eea;
+        transition: all 0.2s ease;
+    }
+    
+    .expand-btn:hover {
+        color: #764ba2;
+        transform: scale(1.1);
+    }
+    
+    .details-row {
+        background: #f8f9fa;
+        display: none;
+    }
+    
+    .details-row.show {
+        display: table-row;
+    }
+    
+    .details-content {
+        padding: 1.5rem;
+    }
+    
+    .stat-card {
+        background: white;
+        border-radius: 8px;
+        padding: 1rem;
+        text-align: center;
+        border: 2px solid #e9ecef;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #667eea;
+    }
+    
+    .stat-label {
+        font-size: 0.85rem;
+        color: #6c757d;
+        margin-top: 0.25rem;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="container mt-4">
-    <h2><i class="fas fa-graduation-cap"></i> Notlarım</h2>
-    <p class="lead">{{ student.first_name }} {{ student.last_name }} ({{ student.school_number }})</p>
+    <div class="grades-header">
+        <h2><i class="fas fa-graduation-cap"></i> Notlarım</h2>
+        <p class="mb-0">{{ student.first_name }} {{ student.last_name }} ({{ student.school_number }})</p>
+    </div>
     
     {% if course_grades %}
-    {% for course in course_grades %}
-    <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0">
-                {{ course.enrollment.group.course.code }} - {{ course.enrollment.group.course.name }}
-                <span class="badge bg-light text-dark ms-2">{{ course.enrollment.group.name }}</span>
-            </h5>
-        </div>
-        <div class="card-body">
-            <!-- Not Kategorileri Detayı -->
-            {% if course.result.breakdown %}
-            <h6 class="mb-3"><i class="fas fa-list"></i> Not Dağılımı</h6>
-            <div class="row mb-4">
-                {% for category_name, cat_data in course.result.breakdown.items %}
-                <div class="col-md-4 mb-3">
-                    <div class="card border-info">
-                        <div class="card-body">
-                            <h6 class="card-title">{{ category_name }}</h6>
-                            <div class="d-flex justify-content-between align-items-center">
-                                <div>
-                                    <span class="badge bg-secondary" style="font-size: 1.5rem;">
-                                        {{ cat_data.score|floatformat:0 }}/100
-                                    </span>
-                                </div>
-                                <div class="text-end">
-                                    <small class="text-muted">Ağırlık: {{ cat_data.weight }}%</small><br>
-                                    <small class="text-muted">Katkı: {{ cat_data.contribution|floatformat:2 }}</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {% endfor %}
-            </div>
-            {% endif %}
-            
-            <!-- Genel Ortalama ve Harf Notu -->
-            {% if course.result.letter_grade %}
-            <div class="alert alert-{{ course.result.letter_grade|slice:':1'|lower|default:'info' }} d-flex justify-content-between align-items-center" style="padding: 1.5rem;">
-                <div>
-                    <h4 class="mb-0">
-                        <i class="fas fa-calculator"></i> Genel Ortalama
-                    </h4>
-                    <p class="mb-0 mt-2">
+    <div class="grades-table">
+        <table class="table table-hover mb-0">
+            <thead>
+                <tr>
+                    <th style="width: 5%;"></th>
+                    <th style="width: 35%;">Ders</th>
+                    <th style="width: 20%;">Not Kategorileri</th>
+                    <th style="width: 15%;" class="text-center">Ortalama</th>
+                    <th style="width: 15%;" class="text-center">Harf Notu</th>
+                    <th style="width: 10%;" class="text-center">Durum</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for course in course_grades %}
+                <tr>
+                    <td class="text-center">
                         {% if course.result.breakdown %}
-                        <small class="text-muted">
-                            Hesaplama: 
-                            {% for category_name, cat_data in course.result.breakdown.items %}
-                                {{ category_name }} ({{ cat_data.score|floatformat:1 }} × {{ cat_data.weight }}%){% if not forloop.last %} + {% endif %}
-                            {% endfor %}
-                        </small>
+                        <i class="fas fa-chevron-down expand-btn" onclick="toggleDetails({{ forloop.counter0 }})"></i>
                         {% endif %}
-                    </p>
-                </div>
-                <div class="text-end">
-                    <h1 class="mb-0">
-                        <span class="badge bg-{% if course.result.letter_grade|slice:':1' == 'A' or course.result.letter_grade == 'BB' %}success{% elif course.result.letter_grade == 'FF' %}danger{% else %}warning{% endif %}" style="font-size: 2.5rem;">
+                    </td>
+                    <td>
+                        <div class="course-code">{{ course.enrollment.group.course.code }}</div>
+                        <div class="course-name">{{ course.enrollment.group.course.name }}</div>
+                        <small class="text-muted">{{ course.enrollment.group.teacher.first_name }} {{ course.enrollment.group.teacher.last_name }}</small>
+                    </td>
+                    <td>
+                        {% if course.result.breakdown %}
+                        <div class="category-pills">
+                            {% for category_name, cat_data in course.result.breakdown.items %}
+                            <span class="category-pill">
+                                {{ category_name }}: <strong>{{ cat_data.score|floatformat:0 }}</strong>
+                            </span>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if course.result.total %}
+                        <span class="badge score-badge bg-{% if course.result.total >= 85 %}success{% elif course.result.total >= 70 %}primary{% elif course.result.total >= 60 %}warning{% else %}danger{% endif %}">
                             {{ course.result.total|floatformat:1 }}
                         </span>
-                    </h1>
-                    <h2 class="mb-0 mt-2">
-                        <span class="badge bg-dark" style="font-size: 1.8rem;">
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if course.result.letter_grade %}
+                        <span class="badge grade-badge bg-{% if course.result.letter_grade|slice:':1' == 'A' or course.result.letter_grade == 'BB' %}success{% elif course.result.letter_grade == 'FF' %}danger{% else %}warning{% endif %}">
                             {{ course.result.letter_grade }}
                         </span>
-                    </h2>
-                </div>
-            </div>
-            {% else %}
-            <div class="alert alert-secondary">
-                <i class="fas fa-info-circle"></i> Bu ders için henüz not girilmedi.
-            </div>
-            {% endif %}
-            
-            <!-- Not Açıklaması -->
-            <div class="alert alert-info">
-                <h6><i class="fas fa-info-circle"></i> Not Durumu</h6>
-                <p class="mb-0">
-                    {% if not course.result.letter_grade %}
-                    Not henüz girilmedi.
-                    {% elif course.result.letter_grade == 'AA' %}
-                    <strong>Mükemmel!</strong> (4.00) - Dersten AA ile geçtiniz.
-                    {% elif course.result.letter_grade == 'BA' %}
-                    <strong>Çok İyi!</strong> (3.50) - Dersten BA ile geçtiniz.
-                    {% elif course.result.letter_grade == 'BB' %}
-                    <strong>İyi!</strong> (3.00) - Dersten BB ile geçtiniz.
-                    {% elif course.result.letter_grade == 'CB' %}
-                    <strong>Orta</strong> (2.50) - Dersten CB ile geçtiniz.
-                    {% elif course.result.letter_grade == 'CC' %}
-                    <strong>Yeterli</strong> (2.00) - Dersten CC ile geçtiniz.
-                    {% elif course.result.letter_grade == 'DC' %}
-                    <strong>Şartlı Geçer</strong> (1.50) - Dersten geçtiniz ancak genel ortalama için yeterli değil.
-                    {% elif course.result.letter_grade == 'DD' %}
-                    <strong>Şartlı Geçer</strong> (1.00) - Dersten geçtiniz ancak genel ortalama için yeterli değil.
-                    {% elif course.result.letter_grade == 'FF' %}
-                    <strong>Başarısız</strong> (0.00) - Dersten kaldınız.
-                    {% else %}
-                    Not henüz girilmedi.
-                    {% endif %}
-                </p>
-            </div>
-            
-            <!-- Detaylı Örnek Açıklama -->
-            {% if course.result.breakdown %}
-            <div class="card bg-light">
-                <div class="card-body">
-                    <h6><i class="fas fa-calculator"></i> Not Hesaplama Detayı</h6>
-                    <p class="mb-2"><strong>Örnek:</strong></p>
-                    <ul class="mb-0">
-                        {% for category_name, cat_data in course.result.breakdown.items %}
-                        <li>
-                            <strong>{{ category_name }}:</strong> 
-                            {{ cat_data.score|floatformat:1 }} puan × %{{ cat_data.weight }} ağırlık = 
-                            <span class="text-primary">{{ cat_data.contribution|floatformat:2 }} katkı</span>
-                        </li>
-                        {% endfor %}
-                        <li class="mt-2">
-                            <strong>TOPLAM:</strong> 
-                            <span class="text-success">{{ course.result.total|floatformat:1 }}</span> → 
-                            <span class="badge bg-dark">{{ course.result.letter_grade }}</span>
-                        </li>
-                    </ul>
-                </div>
-            </div>
-            {% endif %}
-            
-            {% if course.result.extra_credit > 0 %}
-            <div class="alert alert-success mt-3">
-                <i class="fas fa-star"></i> Ekstra Kredi: +{{ course.result.extra_credit|floatformat:1 }}
-            </div>
-            {% endif %}
-        </div>
-        <div class="card-footer">
-            <small class="text-muted">
-                Dönem: {{ course.enrollment.group.academic_term.name }} | 
-                Öğretmen: {{ course.enrollment.group.teacher.first_name }} {{ course.enrollment.group.teacher.last_name }}
-            </small>
-        </div>
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        {% if course.result.letter_grade %}
+                            {% if course.result.letter_grade == 'FF' %}
+                            <i class="fas fa-times-circle text-danger" title="Başarısız"></i>
+                            {% elif course.result.letter_grade == 'DC' or course.result.letter_grade == 'DD' %}
+                            <i class="fas fa-exclamation-circle text-warning" title="Şartlı Geçer"></i>
+                            {% else %}
+                            <i class="fas fa-check-circle text-success" title="Geçer"></i>
+                            {% endif %}
+                        {% else %}
+                        <span class="text-muted">-</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% if course.result.breakdown %}
+                <tr class="details-row" id="details-{{ forloop.counter0 }}">
+                    <td colspan="6">
+                        <div class="details-content">
+                            <div class="row">
+                                {% for category_name, cat_data in course.result.breakdown.items %}
+                                <div class="col-md-4 mb-3">
+                                    <div class="stat-card">
+                                        <div class="stat-value">{{ cat_data.score|floatformat:1 }}</div>
+                                        <div class="stat-label">{{ category_name }}</div>
+                                        <small class="text-muted">Ağırlık: %{{ cat_data.weight }} | Katkı: {{ cat_data.contribution|floatformat:2 }}</small>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <div class="alert alert-info mb-0">
+                                <strong><i class="fas fa-calculator"></i> Hesaplama:</strong>
+                                {% for category_name, cat_data in course.result.breakdown.items %}
+                                    {{ category_name }} ({{ cat_data.score|floatformat:1 }} × %{{ cat_data.weight }}){% if not forloop.last %} + {% endif %}
+                                {% endfor %}
+                                = <strong>{{ course.result.total|floatformat:1 }}</strong>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
-    {% endfor %}
     
     <div class="text-center mt-4">
         <a href="{% url 'gradebook:transcript' %}" class="btn btn-primary">
-            <i class="fas fa-file-alt"></i> Transkriptimi Görüntüle
+            <i class="fas fa-file-alt"></i> Transkript
         </a>
         <a href="{% url 'students:dashboard' %}" class="btn btn-secondary">
-            <i class="fas fa-arrow-left"></i> Dashboard'a Dön
+            <i class="fas fa-arrow-left"></i> Dashboard
         </a>
     </div>
     {% else %}
@@ -164,11 +258,20 @@
     {% endif %}
 </div>
 
-<style>
-.alert-a { background-color: #d4edda; border-color: #c3e6cb; color: #155724; }
-.alert-b { background-color: #d1ecf1; border-color: #bee5eb; color: #0c5460; }
-.alert-c { background-color: #fff3cd; border-color: #ffeeba; color: #856404; }
-.alert-d { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; }
-.alert-f { background-color: #f8d7da; border-color: #f5c6cb; color: #721c24; }
-</style>
+<script>
+function toggleDetails(index) {
+    const detailsRow = document.getElementById('details-' + index);
+    const icon = event.target;
+    
+    if (detailsRow.classList.contains('show')) {
+        detailsRow.classList.remove('show');
+        icon.classList.remove('fa-chevron-up');
+        icon.classList.add('fa-chevron-down');
+    } else {
+        detailsRow.classList.add('show');
+        icon.classList.remove('fa-chevron-down');
+        icon.classList.add('fa-chevron-up');
+    }
+}
+</script>
 {% endblock %}

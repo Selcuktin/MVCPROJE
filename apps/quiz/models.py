@@ -224,18 +224,8 @@ class Quiz(models.Model):
     
     @property
     def total_points(self):
-        """Calculate total points"""
-        from django.db.models import Sum, Avg
-        # For random mode, calculate based on random_question_count
-        if self.use_random_questions:
-            # Get average points per question from pool
-            pool_questions = self.questions.filter(assigned_to_student__isnull=True)
-            if pool_questions.exists():
-                avg_points = pool_questions.aggregate(avg=Avg('points'))['avg'] or Decimal('0')
-                return avg_points * self.random_question_count
-        return self.questions.filter(assigned_to_student__isnull=True).aggregate(
-            total=Sum('points')
-        )['total'] or Decimal('0')
+        """Calculate total points - always 100"""
+        return Decimal('100.00')
 
 
 class QuizQuestion(models.Model):

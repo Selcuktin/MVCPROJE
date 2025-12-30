@@ -5,7 +5,6 @@ Bu dosya kullanıcı işlemleri için template render işlemlerini yapar.
 from django.shortcuts import render, redirect
 from django.views.generic import TemplateView, CreateView
 from django.contrib.auth.views import LoginView, LogoutView
-from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.decorators import login_required
 from django.views.decorators.csrf import csrf_exempt
@@ -22,6 +21,7 @@ except ImportError:
 
 from .models import User, UserProfile
 from .controllers import UserController
+from .forms import CustomUserCreationForm
 
 class HomeView(TemplateView):
     template_name = 'users/home.html'
@@ -108,18 +108,43 @@ class RegisterView(TemplateView):
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        controller = UserController()
-        context.update(controller.handle_user_registration(self.request))
-        context['form'] = UserCreationForm()
+        context['form'] = CustomUserCreationForm()
         return context
     
     def post(self, request, *args, **kwargs):
-        form = UserCreationForm(request.POST)
+        form = CustomUserCreationForm(request.POST)
         if form.is_valid():
-            controller = UserController()
-            result = controller.handle_user_registration(request, form.cleaned_data)
-            if result.get('success'):
-                return redirect('users:login')
+            user = form.save()
+            
+            # Create UserProfile as student
+            from .models import UserProfile
+            from apps.students.models import Student
+            from datetime import date
+            
+            # Create UserProfile
+            user_profile, created = UserProfile.objects.get_or_create(
+                user=user,
+                defaults={'user_type': 'student'}
+            )
+            
+            # Create Student profile
+            Student.objects.get_or_create(
+                user=user,
+                defaults={
+                    'first_name': user.first_name or user.username,
+                    'last_name': user.last_name or '',
+                    'email': user.email or f'{user.username}@example.com',
+                    'school_number': f'STD{user.id:06d}',  # Auto-generate student number
+                    'birth_date': date(2000, 1, 1),  # Default birth date
+                    'phone': '0000000000',
+                    'gender': 'M',
+                    'address': 'Adres bilgisi girilmedi',
+                }
+            )
+            
+            from django.contrib import messages
+            messages.success(request, 'Kayıt başarılı! Öğrenci hesabınız oluşturuldu. Şimdi giriş yapabilirsiniz.')
+            return redirect('users:login')
         
         context = self.get_context_data(**kwargs)
         context['form'] = form

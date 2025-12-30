@@ -4,6 +4,7 @@ Web: Session-based authentication
 API: JWT token-based authentication (geçici olarak devre dışı - paket yüklenmesi gerekiyor)
 """
 from django.urls import path
+from django.contrib.auth import views as auth_views
 # from rest_framework_simplejwt.views import TokenRefreshView  # Geçici olarak devre dışı
 from .views import HomeView, CustomLoginView, CustomLogoutView, RegisterView, NotificationsView, ProfileView, mark_notification_read, get_unread_notification_count
 # from . import api_views  # Geçici olarak devre dışı
@@ -20,6 +21,32 @@ urlpatterns = [
     path('notifications/', NotificationsView.as_view(), name='notifications'),
     path('notifications/mark-read/', mark_notification_read, name='mark_notification_read'),
     path('api/notifications/unread-count/', get_unread_notification_count, name='api_unread_count'),
+    
+    # Password Reset
+    path('password-reset/', 
+         auth_views.PasswordResetView.as_view(
+             template_name='users/password_reset.html',
+             email_template_name='users/password_reset_email.html',
+             subject_template_name='users/password_reset_subject.txt',
+             success_url='/password-reset/done/'
+         ), 
+         name='password_reset'),
+    path('password-reset/done/', 
+         auth_views.PasswordResetDoneView.as_view(
+             template_name='users/password_reset_done.html'
+         ), 
+         name='password_reset_done'),
+    path('password-reset-confirm/<uidb64>/<token>/', 
+         auth_views.PasswordResetConfirmView.as_view(
+             template_name='users/password_reset_confirm.html',
+             success_url='/password-reset-complete/'
+         ), 
+         name='password_reset_confirm'),
+    path('password-reset-complete/', 
+         auth_views.PasswordResetCompleteView.as_view(
+             template_name='users/password_reset_complete.html'
+         ), 
+         name='password_reset_complete'),
     
     # JWT API Endpoints - Geçici olarak devre dışı
     # JWT paketini aktif etmek için:

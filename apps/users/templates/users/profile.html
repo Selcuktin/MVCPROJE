@@ -262,10 +262,6 @@
             <i class="fas fa-home"></i>
             Ana Sayfaya Dön
         </a>
-        <a href="/admin/" class="action-btn action-btn-secondary">
-            <i class="fas fa-cog"></i>
-            Yönetim Paneli
-        </a>
         {% if user_profile.user_type == 'student' %}
         <a href="{% url 'students:courses' %}" class="action-btn action-btn-secondary">
             <i class="fas fa-book"></i>

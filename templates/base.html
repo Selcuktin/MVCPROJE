@@ -578,13 +578,7 @@
                         </a>
                     </li>
 
-                    {% if user.is_staff or user.is_superuser %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="/admin/">
-                            <i class="fas fa-cog me-1"></i>Yönetim Paneli
-                        </a>
-                    </li>
-                    {% endif %}
+
 
                     {% if user_type == 'teacher' %}
                     <li class="nav-item">

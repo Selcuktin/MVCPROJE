@@ -13,12 +13,12 @@
         margin-bottom: 2rem;
         box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
     }
-    
+
     .stat-card {
         background: white;
         border-radius: 16px;
         padding: 1.25rem;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
         transition: all 0.3s ease;
         border: none;
         position: relative;
@@ -26,7 +26,7 @@
         height: 100%;
         cursor: pointer;
     }
-    
+
     .stat-card::before {
         content: '';
         position: absolute;
@@ -36,33 +36,44 @@
         height: 100%;
         background: linear-gradient(180deg, var(--card-color), transparent);
     }
-    
+
     .stat-card:hover {
         transform: translateY(-5px);
-        box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
     }
-    
+
     .card-arrow {
         position: absolute;
         right: 1rem;
         top: 50%;
         transform: translateY(-50%);
-        color: rgba(0,0,0,0.2);
+        color: rgba(0, 0, 0, 0.2);
         font-size: 1.5rem;
         opacity: 0;
         transition: all 0.3s ease;
     }
-    
+
     .stat-card:hover .card-arrow {
         opacity: 1;
         right: 0.75rem;
     }
-    
-    .stat-card.blue { --card-color: #667eea; }
-    .stat-card.green { --card-color: #10b981; }
-    .stat-card.orange { --card-color: #f59e0b; }
-    .stat-card.purple { --card-color: #8b5cf6; }
-    
+
+    .stat-card.blue {
+        --card-color: #667eea;
+    }
+
+    .stat-card.green {
+        --card-color: #10b981;
+    }
+
+    .stat-card.orange {
+        --card-color: #f59e0b;
+    }
+
+    .stat-card.purple {
+        --card-color: #8b5cf6;
+    }
+
     .stat-icon {
         width: 60px;
         height: 60px;
@@ -73,40 +84,55 @@
         font-size: 24px;
         margin-bottom: 1rem;
     }
-    
-    .stat-icon.blue { background: linear-gradient(135deg, #667eea, #764ba2); color: white; }
-    .stat-icon.green { background: linear-gradient(135deg, #10b981, #059669); color: white; }
-    .stat-icon.orange { background: linear-gradient(135deg, #f59e0b, #d97706); color: white; }
-    .stat-icon.purple { background: linear-gradient(135deg, #8b5cf6, #7c3aed); color: white; }
-    
+
+    .stat-icon.blue {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+    }
+
+    .stat-icon.green {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+    }
+
+    .stat-icon.orange {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+    }
+
+    .stat-icon.purple {
+        background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+        color: white;
+    }
+
     .stat-value {
         font-size: 2rem;
         font-weight: 700;
         color: #1f2937;
         margin: 0.5rem 0;
     }
-    
+
     .stat-label {
         color: #6b7280;
         font-size: 0.875rem;
         font-weight: 500;
     }
-    
+
     .course-card {
         background: white;
         border-radius: 12px;
         padding: 1.25rem;
         margin-bottom: 1rem;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         transition: all 0.3s ease;
         border-left: 4px solid #667eea;
     }
-    
+
     .course-card:hover {
-        box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
         transform: translateX(4px);
     }
-    
+
     .task-item {
         background: white;
         border-radius: 10px;
@@ -116,13 +142,13 @@
         transition: all 0.2s ease;
         position: relative;
     }
-    
+
     .task-item:hover {
         background: #fef3c7;
         transform: translateX(4px);
         box-shadow: 0 4px 12px rgba(245, 158, 11, 0.2);
     }
-    
+
     .task-item::after {
         content: '\f061';
         font-family: 'Font Awesome 6 Free';
@@ -135,12 +161,12 @@
         transition: all 0.3s ease;
         color: #f59e0b;
     }
-    
+
     .task-item:hover::after {
         opacity: 1;
         right: 0.75rem;
     }
-    
+
     .quiz-item {
         background: white;
         border-radius: 10px;
@@ -150,13 +176,13 @@
         transition: all 0.2s ease;
         position: relative;
     }
-    
+
     .quiz-item:hover {
         background: #ede9fe;
         transform: translateX(4px);
         box-shadow: 0 4px 12px rgba(139, 92, 246, 0.2);
     }
-    
+
     .quiz-item::after {
         content: '\f061';
         font-family: 'Font Awesome 6 Free';
@@ -169,12 +195,12 @@
         transition: all 0.3s ease;
         color: #8b5cf6;
     }
-    
+
     .quiz-item:hover::after {
         opacity: 1;
         right: 0.75rem;
     }
-    
+
     .section-title {
         font-size: 1.25rem;
         font-weight: 700;
@@ -184,17 +210,17 @@
         align-items: center;
         gap: 0.5rem;
     }
-    
+
     .section-title i {
         color: #667eea;
     }
-    
+
     .empty-state {
         text-align: center;
         padding: 2rem 1rem;
         color: #9ca3af;
     }
-    
+
     .quick-action-btn {
         background: white;
         border: 2px solid #e5e7eb;
@@ -206,14 +232,14 @@
         text-decoration: none;
         display: block;
     }
-    
+
     .quick-action-btn:hover {
         border-color: #667eea;
         background: #f3f4f6;
         transform: translateY(-2px);
         color: #667eea;
     }
-    
+
     .quick-action-btn i {
         font-size: 2rem;
         margin-bottom: 0.5rem;
@@ -229,11 +255,11 @@
         <div class="row align-items-center">
             <div class="col-md-8">
                 <h1 class="mb-2">
-                    <i class="fas fa-chalkboard-teacher"></i> 
+                    <i class="fas fa-chalkboard-teacher"></i>
                     Hoş Geldiniz, {{ teacher.first_name }} {{ teacher.last_name }}!
                 </h1>
                 <p class="mb-0 opacity-75">
-                    <i class="fas fa-calendar-alt"></i> 
+                    <i class="fas fa-calendar-alt"></i>
                     Bugün {{ now|date:"d F Y, l" }}
                 </p>
             </div>
@@ -276,7 +302,8 @@
             </div>
         </div>
         <div class="col-6 col-lg-3">
-            <div class="stat-card orange" onclick="window.location.href='{% url 'courses:assignment_list' %}?state=active'">
+            <div class="stat-card orange"
+                onclick="window.location.href='{% url 'courses:assignment_list' %}?state=active'">
                 <div class="stat-icon orange">
                     <i class="fas fa-tasks"></i>
                 </div>
@@ -291,7 +318,7 @@
                     <i class="fas fa-clipboard-list"></i>
                 </div>
                 <div class="stat-value">{{ active_quizzes_count }}</div>
-                <div class="stat-label">Aktif Quiz</div>
+                <div class="stat-label">Aktif Sınav</div>
                 <div class="card-arrow"><i class="fas fa-arrow-right"></i></div>
             </div>
         </div>
@@ -305,11 +332,12 @@
                 <i class="fas fa-clipboard-list"></i>
                 Aktif Sınavlar
             </div>
-            
+
             {% if active_quizzes %}
             <div id="quizzesList">
                 {% for quiz in active_quizzes %}
-                <div class="quiz-item clickable" onclick="window.location.href='{% url 'quiz:quiz_detail' quiz.id %}'" style="cursor: pointer;">
+                <div class="quiz-item clickable" onclick="window.location.href='{% url 'quiz:quiz_detail' quiz.id %}'"
+                    style="cursor: pointer;">
                     <div class="fw-bold text-dark">{{ quiz.course_group.course.code }}</div>
                     <div class="text-muted small">{{ quiz.title }}</div>
                 </div>
@@ -332,16 +360,19 @@
                 <i class="fas fa-tasks"></i>
                 Notlandırılacak Ödevler
             </div>
-            
+
             {% if pending_assignments %}
             <div id="tasksList">
                 {% for assignment in pending_assignments %}
-                <div class="task-item clickable" onclick="window.location.href='{% url 'courses:assignment_detail' assignment.id %}#submissions'" style="cursor: pointer;">
+                <div class="task-item clickable"
+                    onclick="window.location.href='{% url 'courses:assignment_detail' assignment.id %}#submissions'"
+                    style="cursor: pointer;">
                     <div class="d-flex justify-content-between align-items-start mb-2">
                         <strong class="text-dark">{{ assignment.title }}</strong>
                         <span class="badge bg-warning">{{ assignment.submission_count }} teslim</span>
                     </div>
-                    <div class="text-muted small mb-1">{{ assignment.group.course.code }} - {{ assignment.group.course.name }}</div>
+                    <div class="text-muted small mb-1">{{ assignment.group.course.code }} - {{
+                        assignment.group.course.name }}</div>
                     {% if assignment.due_date %}
                     <div class="small">
                         <i class="fas fa-clock"></i>
@@ -370,11 +401,12 @@
                 <i class="fas fa-book"></i>
                 Verdiğim Dersler
             </div>
-            
+
             {% if my_courses %}
             <div id="coursesList">
                 {% for group in my_courses|slice:":3" %}
-                <div class="course-card clickable" onclick="window.location.href='{% url 'courses:group_detail' group.id %}'" style="cursor: pointer;">
+                <div class="course-card clickable"
+                    onclick="window.location.href='{% url 'courses:group_detail' group.id %}'" style="cursor: pointer;">
                     <div class="fw-bold text-primary">{{ group.course.code }}</div>
                     <div class="fw-semibold text-dark small">{{ group.course.name }}</div>
                     <div class="text-muted small">
@@ -398,11 +430,11 @@
 </div>
 
 <script>
-// Kalan süre hesaplama - manuel init
-document.addEventListener('DOMContentLoaded', function() {
-    if (window.AppUtils && window.AppUtils.initTimeRemainingUpdates) {
-        window.AppUtils.initTimeRemainingUpdates();
-    }
-});
+    // Kalan süre hesaplama - manuel init
+    document.addEventListener('DOMContentLoaded', function () {
+        if (window.AppUtils && window.AppUtils.initTimeRemainingUpdates) {
+            window.AppUtils.initTimeRemainingUpdates();
+        }
+    });
 </script>
 {% endblock %}

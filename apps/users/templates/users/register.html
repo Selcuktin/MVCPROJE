@@ -274,7 +274,7 @@
                             {% csrf_token %}
                             
                             <div class="form-floating">
-                                <input type="text" class="form-control" id="{{ form.username.id_for_label }}" name="{{ form.username.name }}" placeholder=" " {% if form.username.value %}value="{{ form.username.value }}"{% endif %}>
+                                <input type="text" class="form-control" id="{{ form.username.id_for_label }}" name="{{ form.username.name }}" placeholder=" " {% if form.username.value %}value="{{ form.username.value }}"{% endif %} required>
                                 <label for="{{ form.username.id_for_label }}">
                                     <i class="fas fa-user me-2"></i>Kullanıcı Adı
                                 </label>
@@ -290,6 +290,44 @@
                                         {% endfor %}
                                     </div>
                                 {% endif %}
+                            </div>
+                            
+                            <div class="form-floating">
+                                <input type="email" class="form-control" id="{{ form.email.id_for_label }}" name="{{ form.email.name }}" placeholder=" " {% if form.email.value %}value="{{ form.email.value }}"{% endif %} required>
+                                <label for="{{ form.email.id_for_label }}">
+                                    <i class="fas fa-envelope me-2"></i>E-posta Adresi
+                                </label>
+                                {% if form.email.help_text %}
+                                    <div class="help-text">
+                                        <i class="fas fa-info-circle me-1"></i>{{ form.email.help_text }}
+                                    </div>
+                                {% endif %}
+                                {% if form.email.errors %}
+                                    <div class="error-text">
+                                        {% for error in form.email.errors %}
+                                            <i class="fas fa-exclamation-circle me-1"></i>{{ error }}
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="{{ form.first_name.id_for_label }}" name="{{ form.first_name.name }}" placeholder=" " {% if form.first_name.value %}value="{{ form.first_name.value }}"{% endif %}>
+                                        <label for="{{ form.first_name.id_for_label }}">
+                                            <i class="fas fa-id-card me-2"></i>Ad (Opsiyonel)
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="form-floating">
+                                        <input type="text" class="form-control" id="{{ form.last_name.id_for_label }}" name="{{ form.last_name.name }}" placeholder=" " {% if form.last_name.value %}value="{{ form.last_name.value }}"{% endif %}>
+                                        <label for="{{ form.last_name.id_for_label }}">
+                                            <i class="fas fa-id-card me-2"></i>Soyad (Opsiyonel)
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                             
                             <div class="form-floating">
