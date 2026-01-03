@@ -1,0 +1,58 @@
+{% load i18n admin_urls %}
+
+<fieldset class="module aligned {{ fieldset.classes }}">
+    {% if fieldset.name %}<h2>{{ fieldset.name }}</h2>{% endif %}
+    {% if fieldset.description %}
+    <div class="description">{{ fieldset.description|safe }}</div>
+    {% endif %}
+    {% for line in fieldset %}
+    <div class="form-row{% if line.fields|length == 1 and line.fields.0.is_checkbox %} checkbox-row{% endif %}{% if line.errors %} errors{% endif %}{% for field in line %}{% if field.field.name %} field-{{ field.field.name }}{% endif %}{% endfor %}">
+        {% if line.fields|length == 1 %}
+            {% for field in line %}
+                {% if field.is_readonly %}
+                    <div class="readonly">
+                        <label>{{ field.label }}:</label>
+                        <div class="readonly-value">{{ field.contents }}</div>
+                    </div>
+                {% else %}
+                    {% if field.field.name %}
+                        <label{% if field.field.id_for_label %} for="{{ field.field.id_for_label }}"{% endif %}{% if field.is_checkbox %} class="vCheckboxLabel"{% endif %}>
+                            {{ field.label }}{% if field.field.field.required %}<span class="required">*</span>{% endif %}
+                        </label>
+                    {% endif %}
+                    {{ field.field }}
+                    {% if field.field.help_text %}
+                    <p class="help">{{ field.field.help_text|safe }}</p>
+                    {% endif %}
+                {% endif %}
+            {% endfor %}
+        {% else %}
+            {% for field in line %}
+            <div class="field-box{% if field.field.name %} field-{{ field.field.name }}{% endif %}{% if not field.is_readonly and field.errors %} errors{% endif %}{% if field.field.is_hidden %} hidden{% endif %}">
+                {% if field.is_readonly %}
+                    <label>{{ field.label }}:</label>
+                    <div class="readonly-value">{{ field.contents }}</div>
+                {% else %}
+                    {% if field.field.name %}
+                        <label{% if field.field.id_for_label %} for="{{ field.field.id_for_label }}"{% endif %}{% if field.is_checkbox %} class="vCheckboxLabel"{% endif %}>
+                            {{ field.label }}{% if field.field.field.required %}<span class="required">*</span>{% endif %}
+                        </label>
+                    {% endif %}
+                    {{ field.field }}
+                    {% if field.field.help_text %}
+                    <p class="help">{{ field.field.help_text|safe }}</p>
+                    {% endif %}
+                {% endif %}
+            </div>
+            {% endfor %}
+        {% endif %}
+        {% if line.errors %}
+        <ul class="errorlist">
+            {% for error in line.errors %}
+            <li>{{ error }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+    </div>
+    {% endfor %}
+</fieldset>

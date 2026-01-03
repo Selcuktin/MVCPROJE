@@ -205,6 +205,7 @@ def api_inbox(request):
                 'message': msg.message,
                 'text': msg.message,
                 'is_me': (msg.sender_id == request.user.id),
+                'is_read': msg.is_read,
                 'created_at': msg.created_at.strftime('%d.%m.%Y %H:%M'),
             })
             # Son mesaj bilgilerini güncelle
@@ -398,6 +399,7 @@ def api_thread(request, user_id):
                 'message': m.message,
                 'text': m.message,  # floating chat için kısayol
                 'is_me': (m.sender_id == request.user.id),
+                'is_read': m.is_read,
                 'created_at': m.created_at.strftime('%d.%m.%Y %H:%M'),
             })
         

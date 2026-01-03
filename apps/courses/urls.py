@@ -19,6 +19,9 @@ urlpatterns = [
     # Enrollments
     path('enroll/<int:group_id>/', views.EnrollmentCreateView.as_view(), name='enroll'),
     path('enrollments/', views.EnrollmentListView.as_view(), name='enrollment_list'),
+    path('enrollments/add/', views.enrollment_add, name='enrollment_add'),
+    path('enrollments/update/', views.enrollment_update, name='enrollment_update'),
+    path('enrollments/delete/', views.enrollment_delete, name='enrollment_delete'),
     path('enrollments/<int:pk>/grade/', views.GradeUpdateView.as_view(), name='grade_update'),
     
     # Assignments

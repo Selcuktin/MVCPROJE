@@ -18,13 +18,25 @@ class UserService:
     """User business logic service"""
     
     def get_home_statistics(self):
-        """Get statistics for home page"""
-        return {
-            'total_courses': Course.objects.filter(status='active').count(),
-            'total_students': Student.objects.filter(status='active').count(),
-            'total_teachers': Teacher.objects.filter(status='active').count(),
-            'total_enrollments': Enrollment.objects.filter(status='enrolled').count()
-        }
+        """Get statistics for home page - cached for performance"""
+        from django.core.cache import cache
+        
+        # Try to get from cache first
+        cache_key = 'home_statistics'
+        stats = cache.get(cache_key)
+        
+        if stats is None:
+            # Calculate statistics
+            stats = {
+                'total_courses': Course.objects.filter(status='active').count(),
+                'total_students': Student.objects.filter(status='active').count(),
+                'total_teachers': Teacher.objects.filter(status='active').count(),
+                'total_enrollments': Enrollment.objects.filter(status='enrolled').count()
+            }
+            # Cache for 5 minutes
+            cache.set(cache_key, stats, 300)
+        
+        return stats
     
     def create_user_with_profile(self, form_data, user_type='student'):
         """Create user with profile"""
@@ -42,6 +54,11 @@ class UserService:
                 return 'students:dashboard'
             elif user.userprofile.user_type == 'teacher':
                 return 'teachers:dashboard'
+            elif user.userprofile.user_type == 'admin':
+                return 'admin:index'
+        # Staff/superuser da admin'e yönlensin
+        if user.is_staff or user.is_superuser:
+            return 'admin:index'
         return 'home'
     
     def get_control_panel_statistics(self, user):
@@ -452,6 +469,7 @@ class UserService:
                     'time': time_str,
                     'type': 'assignment',
                     'is_read': notification_status.is_read,
+                    'url': f'/courses/assignments/{assignment.id}/',  # Ödev detay sayfası
                     'icon': 'fas fa-tasks',
                     'color': 'danger' if is_urgent else 'primary'
                 })
@@ -489,6 +507,7 @@ class UserService:
                     'time': time_str,
                     'type': 'announcement',
                     'is_read': notification_status.is_read,
+                    'url': f'/courses/group/{announcement.group.id}/',  # Grup/ders sayfası
                     'icon': 'fas fa-bullhorn',
                     'color': 'info'
                 })

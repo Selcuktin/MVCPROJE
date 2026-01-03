@@ -381,7 +381,12 @@
     function goToQuestion(index) {
         // Hide current
         document.getElementById(`q-card-${currentStep}`).style.display = 'none';
-        document.getElementById(`q-btn-${currentStep}`).classList.remove('active');
+        const prevBtn = document.getElementById(`q-btn-${currentStep}`);
+        prevBtn.classList.remove('active');
+        // Eğer cevaplandıysa answered class'ını koru
+        if (answeredQuestions.has(currentStep)) {
+            prevBtn.classList.add('answered');
+        }
 
         // Update step
         currentStep = index;
@@ -416,9 +421,7 @@
     function markAnswered(questionIndex) {
         answeredQuestions.add(questionIndex);
         const btn = document.getElementById(`q-btn-${questionIndex}`);
-        if (!btn.classList.contains('active')) {
-            btn.classList.add('answered');
-        }
+        btn.classList.add('answered');
     }
 
     function submitQuiz() {

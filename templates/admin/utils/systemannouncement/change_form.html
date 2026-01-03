@@ -1,0 +1,259 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block title %}Duyuru Ekle{% endblock %}
+
+{% block content %}
+<style>
+    .announcement-form {
+        max-width: 700px;
+        margin: 0 auto;
+    }
+    
+    .form-card {
+        background: white;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        overflow: hidden;
+    }
+    
+    .form-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 1.5rem 2rem;
+    }
+    
+    .form-header h2 {
+        margin: 0;
+        font-size: 1.25rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .form-body {
+        padding: 2rem;
+    }
+    
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    
+    .form-group label {
+        display: block;
+        font-weight: 600;
+        color: #374151;
+        margin-bottom: 0.5rem;
+        font-size: 0.9rem;
+    }
+    
+    .form-group label .required {
+        color: #ef4444;
+    }
+    
+    .form-control {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e5e7eb;
+        border-radius: 10px;
+        font-size: 0.95rem;
+        transition: all 0.2s;
+        background: white;
+    }
+    
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        outline: none;
+    }
+    
+    textarea.form-control {
+        min-height: 120px;
+        resize: vertical;
+    }
+    
+    .form-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 1rem;
+    }
+    
+    .quick-options {
+        display: flex;
+        gap: 0.5rem;
+        flex-wrap: wrap;
+        margin-top: 0.5rem;
+    }
+    
+    .quick-btn {
+        padding: 6px 12px;
+        border: 2px solid #e5e7eb;
+        border-radius: 20px;
+        background: white;
+        font-size: 0.8rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .quick-btn:hover {
+        border-color: #667eea;
+        background: #f3f4ff;
+    }
+    
+    .quick-btn.active {
+        border-color: #667eea;
+        background: #667eea;
+        color: white;
+    }
+    
+    .form-actions {
+        display: flex;
+        gap: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid #e5e7eb;
+    }
+    
+    .btn-submit {
+        flex: 1;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        padding: 14px 28px;
+        border-radius: 10px;
+        font-weight: 600;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-submit:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    .btn-cancel {
+        padding: 14px 28px;
+        border: 2px solid #e5e7eb;
+        border-radius: 10px;
+        background: white;
+        color: #6b7280;
+        font-weight: 600;
+        text-decoration: none;
+        transition: all 0.2s;
+    }
+    
+    .btn-cancel:hover {
+        border-color: #ef4444;
+        color: #ef4444;
+    }
+    
+    .help-text {
+        font-size: 0.8rem;
+        color: #6b7280;
+        margin-top: 0.25rem;
+    }
+</style>
+
+<div class="announcement-form">
+    <div class="form-card">
+        <div class="form-header">
+            <h2><i class="fas fa-bullhorn"></i> Yeni Duyuru Yayınla</h2>
+        </div>
+        
+        <div class="form-body">
+            <form method="post" id="announcement-form">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label>Başlık <span class="required">*</span></label>
+                    <input type="text" name="title" class="form-control" placeholder="Duyuru başlığını yazın..." required
+                           value="{{ adminform.form.title.value|default:'' }}">
+                </div>
+                
+                <div class="form-group">
+                    <label>İçerik <span class="required">*</span></label>
+                    <textarea name="content" class="form-control" placeholder="Duyuru içeriğini yazın..." required>{{ adminform.form.content.value|default:'' }}</textarea>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Öncelik</label>
+                        <select name="priority" class="form-control">
+                            <option value="low">Düşük</option>
+                            <option value="normal" selected>Normal</option>
+                            <option value="high">Yüksek</option>
+                            <option value="urgent">Acil</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Hedef Kitle</label>
+                        <select name="target_audience" class="form-control">
+                            <option value="all" selected>Tüm Kullanıcılar</option>
+                            <option value="students">Sadece Öğrenciler</option>
+                            <option value="teachers">Sadece Öğretmenler</option>
+                            <option value="admins">Sadece Adminler</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Başlangıç Tarihi <span class="required">*</span></label>
+                        <input type="datetime-local" name="start_date" class="form-control" required>
+                        <div class="quick-options">
+                            <button type="button" class="quick-btn" onclick="setNow()">Şimdi</button>
+                            <button type="button" class="quick-btn" onclick="setTomorrow()">Yarın</button>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Bitiş Tarihi</label>
+                        <input type="datetime-local" name="end_date" class="form-control">
+                        <p class="help-text">Boş bırakılırsa süresiz yayınlanır</p>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Durum</label>
+                    <select name="status" class="form-control">
+                        <option value="draft">Taslak</option>
+                        <option value="active" selected>Aktif (Hemen Yayınla)</option>
+                    </select>
+                </div>
+                
+                <div class="form-actions">
+                    <a href="{% url 'admin:utils_systemannouncement_changelist' %}" class="btn-cancel">İptal</a>
+                    <button type="submit" name="_save" class="btn-submit">
+                        <i class="fas fa-paper-plane me-2"></i> Duyuruyu Yayınla
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function setNow() {
+    const now = new Date();
+    const formatted = now.toISOString().slice(0, 16);
+    document.querySelector('input[name="start_date"]').value = formatted;
+}
+
+function setTomorrow() {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    tomorrow.setHours(9, 0, 0, 0);
+    const formatted = tomorrow.toISOString().slice(0, 16);
+    document.querySelector('input[name="start_date"]').value = formatted;
+}
+
+// Set default to now
+document.addEventListener('DOMContentLoaded', function() {
+    if (!document.querySelector('input[name="start_date"]').value) {
+        setNow();
+    }
+});
+</script>
+{% endblock %}

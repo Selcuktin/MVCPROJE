@@ -1,0 +1,61 @@
+{% extends "admin/base.html" %}
+{% load i18n admin_urls %}
+
+{% block content %}
+<div class="page-header">
+    <div class="breadcrumbs">
+        <a href="{% url 'admin:index' %}">Ana Sayfa</a> &rsaquo;
+        <a href="{% url opts|admin_urlname:'changelist' %}">{{ opts.verbose_name_plural|capfirst }}</a> &rsaquo;
+        <a href="{% url opts|admin_urlname:'change' object.pk|admin_urlquote %}">{{ object|truncatewords:"18" }}</a> &rsaquo;
+        Geçmiş
+    </div>
+    <h1><i class="fas fa-history"></i> Değişiklik Geçmişi</h1>
+</div>
+
+<div class="content-card">
+    <div class="content-card-body">
+        {% if action_list %}
+        <div class="table-responsive">
+            <table style="width: 100%; border-collapse: collapse;">
+                <thead>
+                    <tr style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+                        <th style="padding: 12px 16px; color: white; text-align: left; font-weight: 600;">Tarih/Saat</th>
+                        <th style="padding: 12px 16px; color: white; text-align: left; font-weight: 600;">Kullanıcı</th>
+                        <th style="padding: 12px 16px; color: white; text-align: left; font-weight: 600;">İşlem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for action in action_list %}
+                    <tr style="border-bottom: 1px solid #f3f4f6;">
+                        <td style="padding: 12px 16px; color: #374151;">{{ action.action_time|date:"d.m.Y H:i:s" }}</td>
+                        <td style="padding: 12px 16px; color: #374151;">{{ action.user.get_username }}{% if action.user.get_full_name %} ({{ action.user.get_full_name }}){% endif %}</td>
+                        <td style="padding: 12px 16px; color: #374151;">
+                            {% if action.is_addition %}
+                            <span style="background: #d1fae5; color: #065f46; padding: 4px 10px; border-radius: 4px; font-size: 0.85rem;">
+                                <i class="fas fa-plus"></i> Eklendi
+                            </span>
+                            {% elif action.is_change %}
+                            <span style="background: #fef3c7; color: #92400e; padding: 4px 10px; border-radius: 4px; font-size: 0.85rem;">
+                                <i class="fas fa-edit"></i> {{ action.get_change_message }}
+                            </span>
+                            {% elif action.is_deletion %}
+                            <span style="background: #fee2e2; color: #991b1b; padding: 4px 10px; border-radius: 4px; font-size: 0.85rem;">
+                                <i class="fas fa-trash"></i> Silindi
+                            </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div style="text-align: center; padding: 3rem;">
+            <i class="fas fa-history" style="font-size: 3rem; color: #d1d5db; margin-bottom: 1rem;"></i>
+            <h5 style="color: #6b7280;">Geçmiş kaydı yok</h5>
+            <p style="color: #9ca3af;">Bu kayıt için henüz değişiklik geçmişi bulunmuyor.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -16,6 +16,469 @@
     <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
     <!-- Modern Cards CSS -->
     <link rel="stylesheet" href="{% static 'css/modern-cards.css' %}">
+    
+    <!-- Botpress AI Chatbot - LEFT BOTTOM -->
+    <!-- https://botpress.com/ -->
+    
+    {% if user.is_authenticated %}
+    <!-- Botpress Widget Button -->
+    <button id="botpress-chat-btn" title="AI Asistan">
+        <i class="fas fa-robot"></i>
+    </button>
+    
+    <!-- Botpress Widget Container -->
+    <div id="botpress-chat-widget">
+        <div id="botpress-chat-header">
+            <span>🤖 Öğrenci İşleri Asistanı</span>
+            <button id="botpress-chat-close">&times;</button>
+        </div>
+        <!-- iframe'e unique key ekleyerek her kullanıcı için yeni instance oluştur -->
+        <iframe 
+            id="botpress-iframe"
+            key="botpress-{{ user.id }}-{{ user.username }}"
+            src=""
+            sandbox="allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox"
+            style="width: 100%; height: calc(100% - 60px); border: none; border-radius: 0 0 15px 15px;"
+        ></iframe>
+    </div>
+    
+    <style>
+        /* Botpress Button - Sol Alt */
+        #botpress-chat-btn {
+            position: fixed !important;
+            left: 24px !important;
+            bottom: 24px !important;
+            z-index: 99997 !important;
+            width: 56px !important;
+            height: 56px !important;
+            border-radius: 50% !important;
+            background: linear-gradient(135deg, #4CAF50, #45a049) !important;
+            color: #fff !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            cursor: pointer !important;
+            box-shadow: 0 4px 18px rgba(76, 175, 80, 0.4) !important;
+            border: none !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        #botpress-chat-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 24px rgba(76, 175, 80, 0.5) !important;
+        }
+        
+        /* Botpress Widget - Sol Alt */
+        #botpress-chat-widget {
+            position: fixed !important;
+            left: 24px !important;
+            bottom: 90px !important;
+            z-index: 99996 !important;
+            width: 380px !important;
+            height: 550px !important;
+            background: white !important;
+            border-radius: 15px !important;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2) !important;
+            display: none !important;
+            flex-direction: column !important;
+            overflow: hidden !important;
+        }
+        
+        #botpress-chat-widget.active {
+            display: flex !important;
+        }
+        
+        #botpress-chat-header {
+            background: linear-gradient(135deg, #4CAF50, #45a049) !important;
+            color: white !important;
+            padding: 15px 20px !important;
+            display: flex !important;
+            justify-content: space-between !important;
+            align-items: center !important;
+            border-radius: 15px 15px 0 0 !important;
+        }
+        
+        #botpress-chat-close {
+            background: none !important;
+            border: none !important;
+            color: white !important;
+            font-size: 24px !important;
+            cursor: pointer !important;
+            line-height: 1 !important;
+            transition: all 0.3s ease !important;
+        }
+        
+        #botpress-chat-close:hover {
+            transform: rotate(90deg);
+        }
+        
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            #botpress-chat-btn {
+                left: 16px !important;
+                bottom: 16px !important;
+                width: 52px !important;
+                height: 52px !important;
+            }
+            
+            #botpress-chat-widget {
+                left: 16px !important;
+                bottom: 80px !important;
+                width: calc(100vw - 32px) !important;
+                height: 480px !important;
+            }
+        }
+    </style>
+    
+    <script>
+        (function() {
+            // Kullanıcıya özel benzersiz session ID oluştur
+            const userId = '{{ user.id }}';
+            const username = '{{ user.username }}';
+            const userType = '{{ user.userprofile.user_type|default:"student" }}';
+            const fullName = '{{ user.get_full_name|default:user.username }}';
+            
+            // HER LOGIN İÇİN TAMAMEN BENZERSİZ userId
+            // Login zamanını session'dan al, yoksa şimdiyi kullan
+            let loginTimestamp = sessionStorage.getItem('user_login_timestamp');
+            if (!loginTimestamp) {
+                loginTimestamp = new Date().getTime();
+                sessionStorage.setItem('user_login_timestamp', loginTimestamp);
+            }
+            
+            const randomStr = Math.random().toString(36).substring(2, 15);
+            
+            // BOTPRESS İÇİN KULLANICI ID - Her login'de farklı
+            const botpressUserId = 'bp_user_' + userId + '_login_' + loginTimestamp + '_' + randomStr;
+            
+            // Bizim tracking için session ID
+            const sessionId = 'user_' + userId + '_' + randomStr;
+            
+            // Conversation ID
+            const conversationId = 'conv_' + userId + '_' + loginTimestamp + '_' + randomStr;
+            
+            console.log('=== BOTPRESS BAŞLATILIYOR ===');
+            console.log('Kullanıcı ID:', userId);
+            console.log('Kullanıcı Adı:', fullName);
+            console.log('Login Timestamp:', loginTimestamp);
+            console.log('Botpress User ID:', botpressUserId);
+            console.log('Session ID:', sessionId);
+            console.log('Conversation ID:', conversationId);
+            
+            // Önceki kullanıcıyı kontrol et
+            const previousUserId = localStorage.getItem('botpress_current_user_id');
+            const previousLoginTime = localStorage.getItem('botpress_login_timestamp');
+            let isNewUser = previousUserId !== userId;
+            let isNewLogin = previousLoginTime !== loginTimestamp;
+            
+            // Reload flag kontrolü - sonsuz döngüyü önle
+            const reloadFlag = sessionStorage.getItem('botpress_reload_done');
+            
+            if ((isNewUser || isNewLogin) && !reloadFlag) {
+                console.log('🔄 YENİ KULLANICI VEYA YENİ LOGIN TESPİT EDİLDİ!');
+                console.log('Önceki kullanıcı:', previousUserId);
+                console.log('Yeni kullanıcı:', userId);
+                console.log('Önceki login:', previousLoginTime);
+                console.log('Yeni login:', loginTimestamp);
+                
+                // BOTPRESS'İN KULLANDIĞI TÜM STORAGE'I AGRESİF TEMİZLE
+                try {
+                    // 1. LocalStorage - TÜM anahtarları temizle
+                    const allKeys = Object.keys(localStorage);
+                    let cleanedCount = 0;
+                    allKeys.forEach(key => {
+                        // Botpress'in kullandığı tüm key pattern'leri
+                        if (key.includes('botpress') || 
+                            key.includes('bp-') || 
+                            key.includes('bp_') ||
+                            key.startsWith('bp') ||
+                            key.includes('webchat') ||
+                            key.includes('conversation') ||
+                            key.includes('conv-') ||
+                            key.includes('messaging') ||
+                            key.includes('chat')) {
+                            localStorage.removeItem(key);
+                            cleanedCount++;
+                            console.log('🗑️ Temizlendi:', key);
+                        }
+                    });
+                    console.log('✅ LocalStorage temizlendi:', cleanedCount, 'anahtar');
+                    
+                    // 2. SessionStorage - Botpress anahtarlarını temizle (login timestamp hariç)
+                    const sessionKeys = Object.keys(sessionStorage);
+                    sessionKeys.forEach(key => {
+                        if (key !== 'user_login_timestamp' && 
+                            (key.includes('botpress') || 
+                            key.includes('bp-') || 
+                            key.includes('bp_') ||
+                            key.startsWith('bp') ||
+                            key.includes('webchat') ||
+                            key.includes('conversation') ||
+                            key.includes('messaging') ||
+                            key.includes('chat'))) {
+                            sessionStorage.removeItem(key);
+                            console.log('🗑️ SessionStorage temizlendi:', key);
+                        }
+                    });
+                    
+                    // 3. Cookies - Botpress cookie'lerini agresif temizle
+                    const cookies = document.cookie.split(";");
+                    cookies.forEach(function(c) {
+                        const cookieName = c.split("=")[0].trim();
+                        if (cookieName.includes('botpress') || 
+                            cookieName.includes('bp-') || 
+                            cookieName.includes('bp_') ||
+                            cookieName.startsWith('bp') ||
+                            cookieName.includes('webchat')) {
+                            // Cookie'yi tüm path'ler ve domain'ler için sil
+                            const domains = [
+                                window.location.hostname,
+                                '.' + window.location.hostname,
+                                '.botpress.cloud',
+                                '.bpcontent.cloud'
+                            ];
+                            const paths = ['/', '/webchat', '/chat'];
+                            
+                            domains.forEach(domain => {
+                                paths.forEach(path => {
+                                    document.cookie = cookieName + "=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=" + path + ";domain=" + domain;
+                                });
+                            });
+                            console.log('🗑️ Cookie silindi:', cookieName);
+                        }
+                    });
+                    console.log('✅ Cookies temizlendi');
+                    
+                    // 4. IndexedDB - Botpress veritabanlarını sil
+                    if (window.indexedDB && window.indexedDB.databases) {
+                        indexedDB.databases().then(databases => {
+                            databases.forEach(db => {
+                                if (db.name && (db.name.includes('botpress') || 
+                                               db.name.includes('bp-') || 
+                                               db.name.includes('webchat'))) {
+                                    indexedDB.deleteDatabase(db.name);
+                                    console.log('🗑️ IndexedDB silindi:', db.name);
+                                }
+                            });
+                        }).catch(e => console.log('IndexedDB temizlenemedi:', e));
+                    }
+                    
+                    // Reload flag'i ayarla (sonsuz döngüyü önle)
+                    sessionStorage.setItem('botpress_reload_done', 'true');
+                    
+                    console.log('🔄 Sayfa yenileniyor (temizlik sonrası)...');
+                    // Temizlik sonrası sayfayı yenile
+                    setTimeout(function() {
+                        location.reload();
+                    }, 500);
+                    return; // Script'i durdur
+                    
+                } catch (e) {
+                    console.error('❌ Temizleme hatası:', e);
+                }
+            } else if (reloadFlag) {
+                // Reload sonrası, flag'i temizle
+                sessionStorage.removeItem('botpress_reload_done');
+                console.log('ℹ️ Reload tamamlandı, devam ediliyor...');
+                // Reload sonrası artık yeni kullanıcı değil
+                isNewUser = false;
+                isNewLogin = false;
+            } else {
+                console.log('ℹ️ Aynı kullanıcı ve aynı login, normal yükleme');
+            }
+            
+            // Mevcut iframe'i tamamen kaldır ve yenisini oluştur
+            const widgetContainer = document.getElementById('botpress-chat-widget');
+            const oldIframe = document.getElementById('botpress-iframe');
+            
+            if (oldIframe) {
+                console.log('🗑️ Eski iframe kaldırılıyor...');
+                oldIframe.remove();
+            }
+            
+            // Yeni iframe oluştur
+            console.log('🆕 Yeni iframe oluşturuluyor...');
+            const newIframe = document.createElement('iframe');
+            newIframe.id = 'botpress-iframe';
+            newIframe.style.cssText = 'width: 100%; height: calc(100% - 60px); border: none; border-radius: 0 0 15px 15px;';
+            
+            // Sandbox ekle (güvenlik ve izolasyon için)
+            newIframe.setAttribute('sandbox', 'allow-same-origin allow-scripts allow-forms allow-popups allow-popups-to-escape-sandbox allow-storage-access-by-user-activation');
+            
+            // Widget'a ekle
+            if (widgetContainer) {
+                widgetContainer.appendChild(newIframe);
+            }
+            
+            // Botpress URL'sini oluştur
+            const botpressBaseUrl = 'https://cdn.botpress.cloud/webchat/v3.5/shareable.html';
+            const configUrl = 'https://files.bpcontent.cloud/2026/01/02/15/20260102150846-J1X13IAL.json';
+            
+            // URL parametreleri - HER SEFERINDE YENİ userId
+            const currentTimestamp = new Date().getTime();
+            const botpressUrl = botpressBaseUrl + 
+                '?configUrl=' + encodeURIComponent(configUrl) +
+                '&userId=' + encodeURIComponent(botpressUserId) +
+                '&conversationId=' + encodeURIComponent(conversationId) +
+                '&userName=' + encodeURIComponent(fullName) +
+                '&userType=' + encodeURIComponent(userType) +
+                '&_t=' + currentTimestamp +
+                '&_uid=' + userId +
+                '&_new=' + (isNewUser ? '1' : '0') +
+                '&_reset=true';
+            
+            console.log('📡 Botpress URL:', botpressUrl);
+            
+            // iframe'i yükle
+            setTimeout(function() {
+                newIframe.src = botpressUrl;
+                console.log('✅ iframe yüklendi');
+            }, 100);
+            
+            // iframe yüklendiğinde
+            newIframe.onload = function() {
+                console.log('✅ iframe onload tetiklendi');
+                
+                try {
+                    // Botpress'e kullanıcı bilgilerini gönder
+                    setTimeout(function() {
+                        // 1. Conversation'ı sıfırla
+                        newIframe.contentWindow.postMessage({
+                            type: 'event',
+                            event: {
+                                type: 'reset'
+                            }
+                        }, '*');
+                        
+                        // 2. Yeni conversation başlat
+                        newIframe.contentWindow.postMessage({
+                            type: 'event',
+                            event: {
+                                type: 'conversation.new',
+                                conversationId: conversationId
+                            }
+                        }, '*');
+                        
+                        // 3. Kullanıcı bilgilerini ayarla - YENİ userId ile
+                        newIframe.contentWindow.postMessage({
+                            type: 'setUserId',
+                            userId: botpressUserId, // YENİ userId
+                            userData: {
+                                id: userId,
+                                name: fullName,
+                                username: username,
+                                userType: userType
+                            }
+                        }, '*');
+                        
+                        // 4. Yeni kullanıcı ise ek reset komutları
+                        if (isNewUser) {
+                            newIframe.contentWindow.postMessage({
+                                type: 'resetConversation'
+                            }, '*');
+                            
+                            newIframe.contentWindow.postMessage({
+                                type: 'event',
+                                event: {
+                                    type: 'proactive-trigger',
+                                    channel: 'web',
+                                    payload: {
+                                        text: '/reset'
+                                    }
+                                }
+                            }, '*');
+                        }
+                        
+                        console.log('✅ Kullanıcı bilgileri gönderildi');
+                        
+                        // Yeni kullanıcı ise conversation'ı sıfırla
+                        if (isNewUser) {
+                            console.log('✅ Conversation reset komutları gönderildi');
+                        }
+                    }, 1000);
+                } catch (e) {
+                    console.error('❌ postMessage hatası:', e);
+                }
+            };
+            
+            // Widget açma/kapama
+            const btn = document.getElementById('botpress-chat-btn');
+            const widget = document.getElementById('botpress-chat-widget');
+            const closeBtn = document.getElementById('botpress-chat-close');
+            
+            console.log('🔍 Widget elementleri kontrol ediliyor...');
+            console.log('Button:', btn ? 'Bulundu' : 'Bulunamadı');
+            console.log('Widget:', widget ? 'Bulundu' : 'Bulunamadı');
+            console.log('Close Button:', closeBtn ? 'Bulundu' : 'Bulunamadı');
+            
+            if (btn && widget && closeBtn) {
+                console.log('✅ Tüm widget elementleri hazır, click event ekleniyor...');
+                
+                btn.onclick = function() {
+                    console.log('🖱️ Botpress butonuna tıklandı!');
+                    const wasActive = widget.classList.contains('active');
+                    widget.classList.toggle('active');
+                    
+                    // Widget açılıyorsa ve yeni kullanıcıysa, iframe'i yeniden yükle
+                    if (!wasActive && widget.classList.contains('active')) {
+                        console.log('Widget açılıyor...');
+                        
+                        // Yeni kullanıcı veya yeni login ise iframe'i tamamen yeniden yükle
+                        if (isNewUser || isNewLogin) {
+                            console.log('🔄 Yeni kullanıcı/login için iframe yeniden yükleniyor...');
+                            const currentIframe = document.getElementById('botpress-iframe');
+                            if (currentIframe) {
+                                const newUrl = currentIframe.src.split('&_reload=')[0] + '&_reload=' + Date.now();
+                                currentIframe.src = 'about:blank';
+                                setTimeout(function() {
+                                    currentIframe.src = newUrl;
+                                }, 100);
+                            }
+                        }
+                    }
+                    
+                    console.log('Widget durumu:', widget.classList.contains('active') ? 'Açık' : 'Kapalı');
+                };
+                
+                closeBtn.onclick = function() {
+                    console.log('🖱️ Close butonuna tıklandı!');
+                    widget.classList.remove('active');
+                    console.log('Widget kapatıldı');
+                };
+                
+                // ESC tuşu ile kapat
+                document.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape' && widget.classList.contains('active')) {
+                        widget.classList.remove('active');
+                        console.log('Widget ESC ile kapatıldı');
+                    }
+                });
+                
+                console.log('✅ Click event başarıyla eklendi!');
+            } else {
+                console.error('❌ Widget elementleri bulunamadı!');
+                if (!btn) console.error('  - Button bulunamadı: #botpress-chat-btn');
+                if (!widget) console.error('  - Widget bulunamadı: #botpress-chat-widget');
+                if (!closeBtn) console.error('  - Close button bulunamadı: #botpress-chat-close');
+            }
+            
+            // Mevcut kullanıcıyı kaydet
+            try {
+                localStorage.setItem('botpress_current_user_id', userId);
+                localStorage.setItem('botpress_login_timestamp', loginTimestamp);
+                localStorage.setItem('botpress_session_id', sessionId);
+                localStorage.setItem('botpress_user_name', fullName);
+                localStorage.setItem('botpress_user_type', userType);
+                localStorage.setItem('botpress_last_load', new Date().getTime().toString());
+                console.log('✅ Kullanıcı bilgileri kaydedildi');
+            } catch (e) {
+                console.error('❌ LocalStorage kayıt hatası:', e);
+            }
+            
+            console.log('=== BOTPRESS BAŞLATMA TAMAMLANDI ===');
+        })();
+    </script>
+    {% endif %}
 
     {% block extra_css %}{% endblock %}
 
@@ -344,12 +807,6 @@
                 </a>
             </li>
             <li>
-                <a href="{% url 'enrollment:available_courses' %}">
-                    <i class="fas fa-plus-circle"></i>
-                    Ders Kayıt
-                </a>
-            </li>
-            <li>
                 <a href="{% url 'students:courses' %}">
                     <i class="fas fa-book"></i>
                     Derslerim
@@ -387,9 +844,6 @@
                 <a href="{% url 'forum:inbox' %}">
                     <i class="fas fa-envelope"></i>
                     Mesajlarım
-                    {% if unread_messages > 0 %}
-                    <span class="badge">{{ unread_messages }}</span>
-                    {% endif %}
                 </a>
             </li>
             <li>
@@ -549,10 +1003,138 @@
     </div>
     {% endif %}
 
+    <!-- Modern Sidebar (Admin için) -->
+    {% if user.is_authenticated and user_type != 'student' and user_type != 'teacher' %}
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h3>
+                <i class="fas fa-user-shield"></i>
+                Admin Paneli
+            </h3>
+            <div class="user-info">
+                {{ user.first_name }} {{ user.last_name }}
+            </div>
+            <button id="sidebar-hide" class="sidebar-hide-btn" type="button" title="Menüyü gizle">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+        </div>
+
+        <ul class="sidebar-menu">
+            <li class="sidebar-category">Ana Menü</li>
+            <li>
+                <a href="{% url 'admin:index' %}">
+                    <i class="fas fa-tachometer-alt"></i>
+                    Admin Dashboard
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'home' %}">
+                    <i class="fas fa-home"></i>
+                    Ana Sayfa
+                </a>
+            </li>
+
+            <li class="sidebar-category">Ders Yönetimi</li>
+            <li>
+                <a href="{% url 'courses:list' %}">
+                    <i class="fas fa-book"></i>
+                    Dersler
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'courses:teacher_assignment' %}">
+                    <i class="fas fa-link"></i>
+                    Öğretmen-Ders Atama
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'courses:enrollment_list' %}">
+                    <i class="fas fa-clipboard-list"></i>
+                    Ders Kayıtları
+                </a>
+            </li>
+
+            <li class="sidebar-category">Kullanıcılar</li>
+            <li>
+                <a href="{% url 'students:list' %}">
+                    <i class="fas fa-user-graduate"></i>
+                    Öğrenciler
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'teachers:list' %}">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    Öğretmenler
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'users:user_list' %}">
+                    <i class="fas fa-users"></i>
+                    Tüm Kullanıcılar
+                </a>
+            </li>
+
+            <li class="sidebar-category">Eğitim İçerikleri</li>
+            <li>
+                <a href="{% url 'admin:quiz_quiz_changelist' %}">
+                    <i class="fas fa-clipboard-check"></i>
+                    Sınavlar
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'admin:quiz_questionbank_changelist' %}">
+                    <i class="fas fa-database"></i>
+                    Soru Bankaları
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'courses:assignment_list' %}">
+                    <i class="fas fa-tasks"></i>
+                    Ödevler
+                </a>
+            </li>
+
+            <li class="sidebar-category">Sistem</li>
+            <li>
+                <a href="{% url 'admin:academic_academicterm_changelist' %}">
+                    <i class="fas fa-calendar"></i>
+                    Akademik Dönemler
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'admin:utils_systemannouncement_changelist' %}">
+                    <i class="fas fa-bullhorn"></i>
+                    Sistem Duyuruları
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'admin:utils_activitylog_changelist' %}">
+                    <i class="fas fa-chart-line"></i>
+                    Sistem Logları
+                </a>
+            </li>
+
+            <li class="sidebar-category">Hesap</li>
+            <li>
+                <a href="{% url 'users:profile' %}">
+                    <i class="fas fa-user-circle"></i>
+                    Profilim
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'users:logout' %}">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Çıkış Yap
+                </a>
+            </li>
+        </ul>
+    </div>
+    {% endif %}
+
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
         <div class="container-fluid">
-            {% if user.is_authenticated and user_type in 'student,teacher' %}
+            {% if user.is_authenticated %}
             <button id="sidebar-toggle-nav" class="btn btn-outline-light me-2" type="button" title="Menü" style="display: none;">
                 <i class="fas fa-bars"></i>
             </button>
@@ -632,15 +1214,23 @@
 
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}
+                    <!-- Messages Icon -->
+                    <li class="nav-item me-2">
+                        <a class="nav-link notification-bell" href="{% url 'forum:inbox' %}" title="Mesajlar">
+                            <i class="fas fa-envelope"></i>
+                        </a>
+                    </li>
+                    
                     <!-- Notifications -->
                     <li class="nav-item dropdown">
                         <a class="nav-link notification-bell" href="#" id="notificationDropdown" role="button"
                            data-bs-toggle="dropdown" aria-expanded="false">
                             <i class="fas fa-bell"></i>
-                            {# Sadece sayı gösterilecek, template ifadesi ekranda görünmeyecek #}
+                            {% if unread_notifications_count > 0 %}
                             <span class="notification-badge" id="notificationCount">
-                                {{ unread_notifications_count|default:"" }}
+                                {{ unread_notifications_count }}
                             </span>
+                            {% endif %}
                         </a>
                         <div class="dropdown-menu dropdown-menu-end notification-dropdown"
                             aria-labelledby="notificationDropdown">
@@ -649,20 +1239,24 @@
                                 <small class="text-muted">{{ unread_notifications_count|default:0 }} yeni</small>
                             </div>
 
-                            <!-- Real Notifications -->
-                            {% for notification in navbar_notifications %}
-                            <div class="notification-item {% if not notification.is_read %}unread{% endif %}"
-                                data-notification-id="{{ notification.id }}">
-                                <div class="notification-title">{{ notification.title }}</div>
-                                <div class="notification-text">{{ notification.message|truncatewords:12 }}</div>
-                                <div class="notification-time">{{ notification.time }}</div>
-                            </div>
-                            {% empty %}
-                            <div class="notification-item">
-                                <div class="notification-title">Henüz bildirim yok</div>
-                                <div class="notification-text">Yeni bildirimler burada görünecektir</div>
-                            </div>
-                            {% endfor %}
+                            <!-- Real Notifications (Sadece Okunmamışlar) -->
+                            {% if navbar_notifications %}
+                                {% for notification in navbar_notifications %}
+                                <a href="{{ notification.url|default:'#' }}" class="notification-item unread"
+                                    data-notification-id="{{ notification.id }}"
+                                    data-notification-url="{{ notification.url|default:'#' }}"
+                                    style="text-decoration: none; color: inherit; display: block;">
+                                    <div class="notification-title">{{ notification.title }}</div>
+                                    <div class="notification-text">{{ notification.message|truncatewords:12 }}</div>
+                                    <div class="notification-time">{{ notification.time }}</div>
+                                </a>
+                                {% endfor %}
+                            {% else %}
+                                <div class="notification-item">
+                                    <div class="notification-title">Henüz bildirim yok</div>
+                                    <div class="notification-text">Yeni bildirimler burada görünecektir</div>
+                                </div>
+                            {% endif %}
 
                             <div class="text-center py-2 border-top">
                                 <a href="{% url 'users:notifications' %}" class="btn btn-sm btn-outline-primary">Tümünü
@@ -720,17 +1314,13 @@
 
     <!-- Main Content -->
     <main id="main-content"
-        class="{% if user.is_authenticated and user_type == 'student' %}student-main{% elif user.is_authenticated and user_type == 'teacher' %}teacher-main{% endif %}"
+        class="{% if user.is_authenticated and user_type == 'student' %}student-main{% elif user.is_authenticated and user_type == 'teacher' %}teacher-main{% elif user.is_authenticated %}admin-main{% endif %}"
         style="width: 100%; overflow-x: hidden;">
         {% block content %}{% endblock %}
     </main>
 
     <!-- Footer -->
-    <footer class="footer mt-auto">
-        <div class="container text-center">
-            <span>&copy; 2025 Kurs Yönetim Sistemi. Tüm hakları saklıdır.</span>
-        </div>
-    </footer>
+
 
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -746,6 +1336,21 @@
     <!-- Floating Chat Widget (only for authenticated users) -->
     {% if user.is_authenticated %}
     <script src="{% static 'js/floating-chat.js' %}"></script>
+    <script>
+        // Debug: Floating chat yüklendiğini kontrol et
+        console.log('[Floating Chat] Script loaded');
+        setTimeout(() => {
+            const floatingBtn = document.getElementById('floating-chat-btn');
+            const chatWidget = document.getElementById('chat-widget');
+            console.log('[Floating Chat] Button exists:', !!floatingBtn);
+            console.log('[Floating Chat] Widget exists:', !!chatWidget);
+            if (floatingBtn) {
+                console.log('[Floating Chat] Button position:', window.getComputedStyle(floatingBtn).position);
+                console.log('[Floating Chat] Button right:', window.getComputedStyle(floatingBtn).right);
+                console.log('[Floating Chat] Button bottom:', window.getComputedStyle(floatingBtn).bottom);
+            }
+        }, 1000);
+    </script>
     {% endif %}
 
     <!-- Notification System JS -->
@@ -757,24 +1362,94 @@
 
             // Mark notification as read when clicked
             notificationItems.forEach(item => {
-                item.addEventListener('click', function () {
-                    if (this.classList.contains('unread')) {
+                item.addEventListener('click', function (e) {
+                    const notificationId = this.getAttribute('data-notification-id');
+                    const notificationUrl = this.getAttribute('data-notification-url');
+                    
+                    if (this.classList.contains('unread') && notificationId) {
+                        e.preventDefault(); // Önce linki engelle
+                        
+                        // Remove unread class immediately for better UX
                         this.classList.remove('unread');
 
                         // Update notification count
-                        let currentCount = parseInt(notificationBadge.textContent);
-                        if (currentCount > 0) {
-                            currentCount--;
-                            notificationBadge.textContent = currentCount;
+                        if (notificationBadge) {
+                            let currentCount = parseInt(notificationBadge.textContent) || 0;
+                            if (currentCount > 0) {
+                                currentCount--;
+                                notificationBadge.textContent = currentCount;
 
-                            // Hide badge if no unread notifications
-                            if (currentCount === 0) {
-                                notificationBadge.style.display = 'none';
+                                // Hide badge if no unread notifications
+                                if (currentCount === 0) {
+                                    notificationBadge.style.display = 'none';
+                                }
                             }
                         }
+                        
+                        // Bildirimi dropdown'dan kaldır
+                        this.style.display = 'none';
+                        
+                        // Send AJAX request to mark as read in backend
+                        fetch('{% url "users:mark_notification_read" %}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': getCsrfToken()
+                            },
+                            body: JSON.stringify({
+                                notification_id: notificationId
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Update badge count immediately
+                                updateNotificationBadge();
+                                
+                                // Backend'de işaretlendi, şimdi sayfaya yönlendir
+                                if (notificationUrl && notificationUrl !== '#') {
+                                    window.location.href = notificationUrl;
+                                }
+                            } else {
+                                console.error('Bildirim işaretlenirken hata:', data.error);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('AJAX hatası:', error);
+                            // Hata olsa bile yönlendir
+                            if (notificationUrl && notificationUrl !== '#') {
+                                window.location.href = notificationUrl;
+                            }
+                        });
                     }
                 });
             });
+            
+            // Helper function to get CSRF token
+            function getCsrfToken() {
+                const match = document.cookie.match(/csrftoken=([^;]+)/);
+                return match ? match[1] : '';
+            }
+            
+            // Helper function to update notification badge count
+            function updateNotificationBadge() {
+                fetch('/api/notifications/unread-count/')
+                    .then(response => response.json())
+                    .then(data => {
+                        const badge = document.getElementById('notificationCount');
+                        if (badge) {
+                            if (data.count > 0) {
+                                badge.textContent = data.count;
+                                badge.style.display = 'flex';
+                            } else {
+                                badge.style.display = 'none';
+                            }
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Badge update error:', error);
+                    });
+            }
 
             // Add active class to current page nav link
             const currentPath = window.location.pathname;
@@ -907,6 +1582,91 @@
             }
         });
     </script>
+
+    <!-- Floating Chat Widget - Teacher-Student Messaging -->
+    <!-- Position: Bottom-RIGHT corner -->
+    
+    <style>
+        /* ============================================
+           FLOATING CHAT - SAĞ ALT (Öğrenci-Öğretmen)
+           ============================================ */
+        
+        /* Floating chat button - Sağ alt */
+        #floating-chat-btn {
+            position: fixed !important;
+            right: 24px !important;
+            left: auto !important;
+            bottom: 24px !important;
+            z-index: 99999 !important;
+            width: 56px !important;
+            height: 56px !important;
+            border-radius: 50% !important;
+            background: linear-gradient(135deg, #667eea, #764ba2) !important;
+            color: #fff !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            cursor: pointer !important;
+            box-shadow: 0 4px 18px rgba(0,0,0,0.25) !important;
+            visibility: visible !important;
+            opacity: 1 !important;
+        }
+        
+        #floating-chat-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 24px rgba(0,0,0,0.35) !important;
+        }
+        
+        /* Floating chat window - Sağ alt */
+        #chat-widget {
+            position: fixed !important;
+            right: 24px !important;
+            left: auto !important;
+            bottom: 90px !important;
+            z-index: 99998 !important;
+            width: 420px !important;
+            max-width: calc(100vw - 32px) !important;
+            height: 560px !important;
+            visibility: visible !important;
+            display: none !important;
+        }
+        
+        #chat-widget.active {
+            display: flex !important;
+        }
+        
+        /* Mobile responsive */
+        @media (max-width: 768px) {
+            #gemini-chat-btn {
+                left: 16px !important;
+                bottom: 16px !important;
+                width: 52px !important;
+                height: 52px !important;
+            }
+            
+            #gemini-chat-widget {
+                left: 16px !important;
+                bottom: 80px !important;
+                width: calc(100vw - 32px) !important;
+                height: 480px !important;
+            }
+            
+            #floating-chat-btn {
+                right: 16px !important;
+                bottom: 16px !important;
+                width: 52px !important;
+                height: 52px !important;
+            }
+            
+            #chat-widget {
+                right: 16px !important;
+                bottom: 80px !important;
+                width: calc(100vw - 32px) !important;
+                height: 480px !important;
+            }
+        }
+    </style>
+
 </body>
 
 </html>

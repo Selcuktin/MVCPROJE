@@ -11,7 +11,7 @@ from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
-from django.db.models import Count
+from django.db.models import Count, Q
 import json
 import logging
 
@@ -37,8 +37,13 @@ class CourseListView(LoginRequiredMixin, TemplateView):
             'semester': self.request.GET.get('semester')
         }
         
+        # Kullanıcı tipini belirle
+        user_type = None
+        if hasattr(self.request.user, 'userprofile') and self.request.user.userprofile:
+            user_type = self.request.user.userprofile.user_type
+        
         # Öğretmen ise SADECE kendi derslerini göster
-        if hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type == 'teacher':
+        if user_type == 'teacher':
             try:
                 teacher = Teacher.objects.get(user=self.request.user)
                 # Öğretmenin ders gruplarından dersleri al
@@ -64,7 +69,7 @@ class CourseListView(LoginRequiredMixin, TemplateView):
             except Teacher.DoesNotExist:
                 context['courses'] = Course.objects.none()
         else:
-            # Admin veya öğrenci için tüm dersler
+            # Admin, staff veya öğrenci için tüm aktif dersler
             controller = CourseController()
             courses = controller.get_course_list(self.request, filters)
             context['courses'] = courses
@@ -344,14 +349,132 @@ class EnrollmentListView(LoginRequiredMixin, ListView):
     model = Enrollment
     template_name = 'courses/enrollment_list.html'
     context_object_name = 'enrollments'
-    paginate_by = 20
     
     def get_queryset(self):
-        if hasattr(self.request.user, 'userprofile') and self.request.user.userprofile.user_type == 'student':
-            student = Student.objects.get(user=self.request.user)
-            return student.enrollments.select_related('group__course', 'group__teacher')
-        else:
-            return Enrollment.objects.select_related('student', 'group__course', 'group__teacher')
+        return Enrollment.objects.select_related('student', 'group__course', 'group__teacher')
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        
+        # Tüm aktif öğrenciler
+        students = Student.objects.filter(status='active').order_by('first_name', 'last_name')
+        
+        # Tüm aktif ders grupları
+        all_groups = CourseGroup.objects.filter(status='active').select_related('course', 'teacher').order_by('course__code')
+        
+        # Her öğrenci için ders kayıt durumlarını hazırla
+        students_with_courses = []
+        
+        for student in students:
+            # Bu öğrencinin kayıtlı olduğu grupları al
+            enrolled_groups = Enrollment.objects.filter(
+                student=student,
+                status='enrolled'
+            ).values_list('group_id', flat=True)
+            
+            # Enrollment ID'lerini de al
+            enrollment_map = {}
+            for enrollment in Enrollment.objects.filter(student=student, status='enrolled'):
+                enrollment_map[enrollment.group_id] = enrollment.id
+            
+            # Her grup için kayıt durumunu belirle
+            courses = []
+            for group in all_groups:
+                is_enrolled = group.id in enrolled_groups
+                courses.append({
+                    'group': group,
+                    'is_enrolled': is_enrolled,
+                    'enrollment_id': enrollment_map.get(group.id)
+                })
+            
+            students_with_courses.append({
+                'student': student,
+                'courses': courses,
+                'enrolled_count': len(enrolled_groups)
+            })
+        
+        context['students_with_courses'] = students_with_courses
+        
+        # Stats
+        context['student_count'] = students.count()
+        context['course_count'] = all_groups.count()
+        context['total_enrollments'] = Enrollment.objects.count()
+        context['enrolled_count'] = Enrollment.objects.filter(status='enrolled').count()
+        
+        # Current filters
+        context['search_query'] = self.request.GET.get('search', '')
+        context['course_filter'] = self.request.GET.get('course', '')
+        context['status_filter'] = self.request.GET.get('status', '')
+        
+        return context
+
+
+@login_required
+def enrollment_add(request):
+    """Add new enrollment"""
+    if request.method == 'POST':
+        student_id = request.POST.get('student')
+        group_id = request.POST.get('group')
+        status = request.POST.get('status', 'enrolled')
+        
+        try:
+            student = Student.objects.get(id=student_id)
+            group = CourseGroup.objects.get(id=group_id)
+            
+            # Check if already enrolled
+            if Enrollment.objects.filter(student=student, group=group).exists():
+                messages.error(request, 'Bu öğrenci zaten bu derse kayıtlı.')
+            else:
+                Enrollment.objects.create(
+                    student=student,
+                    group=group,
+                    status=status
+                )
+                messages.success(request, f'{student.first_name} {student.last_name} başarıyla {group.course.name} dersine kaydedildi.')
+        except Exception as e:
+            messages.error(request, f'Kayıt eklenirken hata oluştu: {str(e)}')
+    
+    return redirect('courses:enrollment_list')
+
+
+@login_required
+def enrollment_update(request):
+    """Update enrollment status"""
+    if request.method == 'POST':
+        enrollment_id = request.POST.get('enrollment_id')
+        status = request.POST.get('status')
+        
+        try:
+            enrollment = Enrollment.objects.get(id=enrollment_id)
+            enrollment.status = status
+            enrollment.save()
+            messages.success(request, 'Kayıt durumu güncellendi.')
+        except Enrollment.DoesNotExist:
+            messages.error(request, 'Kayıt bulunamadı.')
+        except Exception as e:
+            messages.error(request, f'Güncelleme hatası: {str(e)}')
+    
+    return redirect('courses:enrollment_list')
+
+
+@login_required
+def enrollment_delete(request):
+    """Delete enrollment"""
+    if request.method == 'POST':
+        enrollment_id = request.POST.get('enrollment_id')
+        
+        try:
+            enrollment = Enrollment.objects.get(id=enrollment_id)
+            student_name = f'{enrollment.student.first_name} {enrollment.student.last_name}'
+            enrollment.delete()
+            messages.success(request, f'{student_name} ders kaydı silindi.')
+        except Enrollment.DoesNotExist:
+            messages.error(request, 'Kayıt bulunamadı.')
+        except Exception as e:
+            messages.error(request, f'Silme hatası: {str(e)}')
+    
+    return redirect('courses:enrollment_list')
+
 
 # Assignment Views
 class AssignmentListView(LoginRequiredMixin, ListView):

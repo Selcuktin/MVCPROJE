@@ -268,12 +268,6 @@
                     <a href="{% url 'quiz:question_bank_list' %}" class="btn btn-light">
                         <i class="fas fa-database"></i> Soru Bankası
                     </a>
-                    <a href="{% url 'forum:inbox' %}" class="btn btn-light">
-                        <i class="fas fa-envelope"></i> Mesajlar
-                        {% if unread_messages > 0 %}
-                        <span class="badge bg-danger">{{ unread_messages }}</span>
-                        {% endif %}
-                    </a>
                 </div>
             </div>
         </div>

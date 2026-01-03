@@ -7,22 +7,22 @@
 <style>
     .messaging-container {
         display: flex;
-        height: 500px;
-        max-height: calc(100vh - 200px);
+        height: 600px;
+        max-height: calc(100vh - 180px);
         background: #fff;
         border-radius: 12px;
         overflow: hidden;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         width: 100%;
-        max-width: 1100px;
+        max-width: 1200px;
         margin: 0 auto;
     }
     
     /* Sol Sidebar - Kişi Listesi */
     .contacts-sidebar {
-        width: 300px;
-        min-width: 300px;
-        max-width: 300px;
+        width: 320px;
+        min-width: 320px;
+        max-width: 320px;
         border-right: 1px solid #e5e5e5;
         display: flex;
         flex-direction: column;
@@ -99,10 +99,25 @@
         color: rgba(255,255,255,0.85);
     }
     
+    .contact-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-top: 4px;
+    }
+    
+    .contact-time {
+        font-size: 11px;
+        color: #999;
+    }
+    
+    .contact-item.active .contact-time {
+        color: rgba(255,255,255,0.7);
+    }
+    
     /* Sağ Taraf - Konuşma Alanı */
     .conversation-area {
-        width: 800px;
-        max-width: 800px;
+        flex: 1;
         display: flex;
         flex-direction: column;
         overflow: hidden;
@@ -132,13 +147,11 @@
         overflow-x: hidden;
         padding: 20px;
         background: #f8f9fa;
-        width: 800px;
     }
     
     .message-item {
         margin-bottom: 16px;
         width: 100%;
-        max-width: 800px;
     }
     
     .message-item.me {
@@ -182,6 +195,10 @@
         font-size: 11px;
         color: #999;
         margin-top: 4px;
+    }
+    
+    .message-item.me .message-time {
+        text-align: right;
     }
     
     .message-input-area {
@@ -306,10 +323,10 @@ document.addEventListener('DOMContentLoaded', function() {
     loadInbox();
     loadRecipients();
     
-    // Her 10 saniyede bir güncelle
+    // Her 5 saniyede bir güncelle
     setInterval(() => {
         loadInbox();
-    }, 10000);
+    }, 5000);
 });
 
 // Gelen kutusu verilerini yükle
@@ -354,20 +371,39 @@ function renderContacts() {
     const allContacts = [];
     const seenIds = new Set();
     
-    // Önce mesajlaşılan kişileri ekle
+    // Önce mesajlaşılan kişileri ekle (zaten son mesaja göre sıralı geliyor API'den)
     allThreads.forEach(thread => {
         if (!seenIds.has(thread.other_id)) {
             seenIds.add(thread.other_id);
+            
+            // Son mesajı kimin attığını bul
+            let lastSender = '';
+            let lastTime = thread.last_date || '';
+            let lastTimestamp = 0;
+            if (thread.messages && thread.messages.length > 0) {
+                const lastMsg = thread.messages[thread.messages.length - 1];
+                lastSender = lastMsg.is_me ? 'Sen' : lastMsg.sender_name.split(' ')[0];
+                lastTime = lastMsg.created_at || '';
+                // Timestamp oluştur (sıralama için)
+                lastTimestamp = thread.messages[thread.messages.length - 1].id || 0;
+            }
+            
             allContacts.push({
                 id: thread.other_id,
                 name: thread.other_user,
                 preview: thread.last_message,
+                lastSender: lastSender,
+                lastTime: lastTime,
+                lastTimestamp: lastTimestamp,
                 hasMessages: true
             });
         }
     });
     
-    // Sonra henüz mesajlaşılmamış alıcıları ekle
+    // Mesajlaşılan kişileri son mesaj zamanına göre sırala (en yeni en üstte)
+    allContacts.sort((a, b) => b.lastTimestamp - a.lastTimestamp);
+    
+    // Sonra henüz mesajlaşılmamış alıcıları ekle (en sona)
     allRecipients.forEach(recipient => {
         if (!seenIds.has(recipient.id)) {
             seenIds.add(recipient.id);
@@ -375,6 +411,9 @@ function renderContacts() {
                 id: recipient.id,
                 name: recipient.name,
                 preview: 'Yeni sohbet başlat',
+                lastSender: '',
+                lastTime: '',
+                lastTimestamp: 0,
                 hasMessages: false
             });
         }
@@ -391,9 +430,29 @@ function renderContacts() {
         if (currentUserId && String(currentUserId) === String(contact.id)) {
             div.classList.add('active');
         }
+        
+        // Önizleme metni - kimin attığını göster
+        let previewText = contact.preview || 'Yeni sohbet';
+        if (contact.lastSender && contact.hasMessages) {
+            previewText = `${contact.lastSender}: ${contact.preview}`;
+        }
+        
+        // Sadece saati göster (tarih çok uzun)
+        let timeDisplay = '';
+        if (contact.lastTime) {
+            // "03.01.2026 20:45" formatından sadece saati al
+            const parts = contact.lastTime.split(' ');
+            timeDisplay = parts.length > 1 ? parts[1] : contact.lastTime;
+        }
+        
         div.innerHTML = `
             <div class="contact-name">${contact.name}</div>
-            <div class="contact-preview">${contact.preview || 'Yeni sohbet'}</div>
+            <div class="contact-preview">${escapeHtml(previewText.substring(0, 40))}${previewText.length > 40 ? '...' : ''}</div>
+            ${contact.hasMessages ? `
+            <div class="contact-meta">
+                <span class="contact-time"><i class="fas fa-clock"></i> ${timeDisplay}</span>
+            </div>
+            ` : ''}
         `;
         div.onclick = function(e) {
             // Tüm contact'ları pasif yap
@@ -491,7 +550,19 @@ function renderMessages(messages) {
     if (!messages || !messages.length) {
         container.innerHTML = '<div class="empty-state">Henüz mesaj yok.<br>İlk mesajı gönderin!</div>';
     } else {
-        messages.forEach(msg => {
+        let lastDate = '';
+        
+        messages.forEach((msg, index) => {
+            // Tarih ayracı ekle
+            const msgDate = msg.created_at.split(' ')[0];
+            if (msgDate !== lastDate) {
+                const dateDiv = document.createElement('div');
+                dateDiv.style.cssText = 'text-align:center;margin:15px 0;';
+                dateDiv.innerHTML = `<span style="background:#e9ecef;padding:4px 12px;border-radius:12px;font-size:11px;color:#666;">${msgDate}</span>`;
+                container.appendChild(dateDiv);
+                lastDate = msgDate;
+            }
+            
             const wrapper = document.createElement('div');
             wrapper.className = 'message-item' + (msg.is_me ? ' me' : '');
             
@@ -503,9 +574,11 @@ function renderMessages(messages) {
             bubble.className = 'message-bubble';
             bubble.textContent = msg.message || msg.text;
             
+            // Sadece saat göster
             const time = document.createElement('div');
             time.className = 'message-time';
-            time.textContent = msg.created_at;
+            const timeText = msg.created_at.split(' ')[1] || msg.created_at;
+            time.textContent = timeText;
             
             wrapper.appendChild(sender);
             wrapper.appendChild(bubble);

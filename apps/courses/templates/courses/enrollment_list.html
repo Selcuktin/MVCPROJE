@@ -1,0 +1,537 @@
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block title %}Ders Kayıtları{% endblock %}
+
+{% block extrastyle %}
+<style>
+.page-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem 2rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.page-header h1 { margin: 0; font-size: 1.5rem; font-weight: 700; }
+.page-header p { margin: 0.25rem 0 0 0; opacity: 0.9; font-size: 0.9rem; }
+
+/* Toast Notification */
+.toast-container {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    z-index: 9999;
+}
+.toast {
+    background: white;
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 10px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    animation: slideIn 0.3s ease;
+    min-width: 300px;
+}
+.toast.success { border-left: 4px solid #10b981; }
+.toast.error { border-left: 4px solid #ef4444; }
+.toast.success i { color: #10b981; }
+.toast.error i { color: #ef4444; }
+.toast-message { flex: 1; font-weight: 500; }
+.toast-close { cursor: pointer; color: #9ca3af; }
+@keyframes slideIn {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+
+/* Confirmation Modal */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+.modal-overlay.active { display: flex; }
+.modal-box {
+    background: white;
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 400px;
+    width: 90%;
+    text-align: center;
+    animation: modalIn 0.3s ease;
+}
+@keyframes modalIn {
+    from { transform: scale(0.9); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+.modal-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 1rem;
+    font-size: 1.5rem;
+}
+.modal-icon.warning { background: #fef3c7; color: #f59e0b; }
+.modal-icon.danger { background: #fee2e2; color: #ef4444; }
+.modal-icon.success { background: #d1fae5; color: #10b981; }
+.modal-title { font-size: 1.25rem; font-weight: 700; margin-bottom: 0.5rem; }
+.modal-text { color: #6b7280; margin-bottom: 1.5rem; }
+.modal-buttons { display: flex; gap: 1rem; justify-content: center; }
+.modal-btn {
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+}
+.modal-btn.cancel { background: #f3f4f6; color: #4b5563; }
+.modal-btn.confirm { background: #10b981; color: white; }
+.modal-btn.danger { background: #ef4444; color: white; }
+.modal-btn:hover { transform: scale(1.05); }
+
+.stats-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+.stat-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    border-top: 3px solid #667eea;
+}
+.stat-card.students { border-top-color: #10b981; }
+.stat-card.courses { border-top-color: #f59e0b; }
+.stat-card.enrollments { border-top-color: #3b82f6; }
+.stat-card .value { font-size: 1.5rem; font-weight: 700; color: #1f2937; }
+.stat-card .label { color: #6b7280; font-size: 0.8rem; }
+
+.filter-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1rem 1.5rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+.filter-row {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.filter-row input {
+    flex: 1;
+    min-width: 250px;
+    padding: 10px 14px;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 0.9rem;
+}
+.filter-row input:focus { border-color: #667eea; outline: none; }
+
+.students-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+}
+
+.student-card {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    overflow: hidden;
+    transition: all 0.2s;
+}
+.student-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.student-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+}
+.student-header .avatar {
+    width: 45px;
+    height: 45px;
+    background: rgba(255,255,255,0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+}
+.student-header .info { flex: 1; }
+.student-header .name { font-weight: 600; font-size: 1rem; }
+.student-header .number { opacity: 0.85; font-size: 0.85rem; }
+.student-header .toggle-icon {
+    font-size: 1.2rem;
+    transition: transform 0.3s;
+}
+.student-card.expanded .toggle-icon { transform: rotate(180deg); }
+
+.student-courses {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+    background: #f9fafb;
+}
+.student-card.expanded .student-courses { 
+    max-height: 1000px;
+    padding: 1rem;
+}
+
+.course-item {
+    display: flex;
+    align-items: center;
+    padding: 10px 12px;
+    background: white;
+    border-radius: 8px;
+    margin-bottom: 8px;
+    border: 1px solid #e5e7eb;
+    transition: all 0.2s;
+}
+.course-item:last-child { margin-bottom: 0; }
+.course-item:hover { border-color: #667eea; }
+
+.course-item .checkbox {
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    margin-right: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.course-item .checkbox.enrolled {
+    background: #10b981;
+    color: white;
+}
+.course-item .checkbox.not-enrolled {
+    background: #e5e7eb;
+    color: #9ca3af;
+}
+
+.course-item .course-info { flex: 1; }
+.course-item .course-code {
+    background: #eff6ff;
+    color: #1d4ed8;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-right: 8px;
+}
+.course-item .course-name {
+    font-weight: 500;
+    color: #374151;
+    font-size: 0.9rem;
+}
+.course-item .group-name {
+    font-size: 0.8rem;
+    color: #6b7280;
+    margin-top: 2px;
+}
+
+.course-item .action-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.course-item .action-btn.enroll {
+    background: #10b981;
+    color: white;
+}
+.course-item .action-btn.unenroll {
+    background: #ef4444;
+    color: white;
+}
+.course-item .action-btn:hover { transform: scale(1.05); }
+
+.enrolled-count {
+    background: rgba(255,255,255,0.2);
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
+
+.no-students {
+    text-align: center;
+    padding: 3rem;
+    color: #9ca3af;
+    background: white;
+    border-radius: 12px;
+}
+.no-students i { font-size: 3rem; margin-bottom: 1rem; display: block; }
+
+@media (max-width: 768px) {
+    .stats-row { grid-template-columns: repeat(2, 1fr); }
+    .students-grid { grid-template-columns: 1fr; }
+    .page-header { flex-direction: column; gap: 1rem; text-align: center; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer">
+    {% if messages %}
+        {% for message in messages %}
+        <div class="toast {{ message.tags }}">
+            <i class="fas {% if message.tags == 'success' %}fa-check-circle{% else %}fa-exclamation-circle{% endif %}"></i>
+            <span class="toast-message">{{ message }}</span>
+            <i class="fas fa-times toast-close" onclick="this.parentElement.remove()"></i>
+        </div>
+        {% endfor %}
+    {% endif %}
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal-overlay" id="confirmModal">
+    <div class="modal-box">
+        <div class="modal-icon" id="modalIcon"><i class="fas fa-question"></i></div>
+        <h3 class="modal-title" id="modalTitle">Emin misiniz?</h3>
+        <p class="modal-text" id="modalText">Bu işlemi gerçekleştirmek istediğinize emin misiniz?</p>
+        <div class="modal-buttons">
+            <button class="modal-btn cancel" onclick="closeModal()">İptal</button>
+            <button class="modal-btn confirm" id="modalConfirmBtn" onclick="confirmAction()">Onayla</button>
+        </div>
+    </div>
+</div>
+
+<div class="page-header">
+    <div>
+        <h1><i class="fas fa-clipboard-list me-2"></i>Ders Kayıtları</h1>
+        <p>Öğrencilerin ders kayıtlarını yönetin</p>
+    </div>
+</div>
+
+<div class="stats-row">
+    <div class="stat-card students">
+        <div class="value">{{ student_count|default:0 }}</div>
+        <div class="label">Öğrenci</div>
+    </div>
+    <div class="stat-card courses">
+        <div class="value">{{ course_count|default:0 }}</div>
+        <div class="label">Ders</div>
+    </div>
+    <div class="stat-card enrollments">
+        <div class="value">{{ total_enrollments|default:0 }}</div>
+        <div class="label">Toplam Kayıt</div>
+    </div>
+    <div class="stat-card">
+        <div class="value">{{ enrolled_count|default:0 }}</div>
+        <div class="label">Aktif Kayıt</div>
+    </div>
+</div>
+
+<div class="filter-card">
+    <div class="filter-row">
+        <input type="text" id="searchInput" placeholder="Öğrenci adı veya numara ile ara..." onkeyup="filterStudents()">
+    </div>
+</div>
+
+<div class="students-grid" id="studentsGrid">
+    {% for student_data in students_with_courses %}
+    <div class="student-card" data-student-id="{{ student_data.student.id }}" data-name="{{ student_data.student.first_name }} {{ student_data.student.last_name }}" data-number="{{ student_data.student.school_number }}">
+        <div class="student-header" onclick="toggleCard(this)">
+            <div class="avatar">{{ student_data.student.first_name|slice:":1"|upper }}{{ student_data.student.last_name|slice:":1"|upper }}</div>
+            <div class="info">
+                <div class="name">{{ student_data.student.first_name }} {{ student_data.student.last_name }}</div>
+                <div class="number">{{ student_data.student.school_number }}</div>
+            </div>
+            <span class="enrolled-count" id="count-{{ student_data.student.id }}">{{ student_data.enrolled_count }} ders</span>
+            <i class="fas fa-chevron-down toggle-icon"></i>
+        </div>
+        <div class="student-courses">
+            {% for course_info in student_data.courses %}
+            <div class="course-item" id="course-{{ student_data.student.id }}-{{ course_info.group.id }}">
+                <div class="checkbox {% if course_info.is_enrolled %}enrolled{% else %}not-enrolled{% endif %}">
+                    {% if course_info.is_enrolled %}
+                    <i class="fas fa-check"></i>
+                    {% else %}
+                    <i class="fas fa-minus"></i>
+                    {% endif %}
+                </div>
+                <div class="course-info">
+                    <div>
+                        <span class="course-code">{{ course_info.group.course.code }}</span>
+                        <span class="course-name">{{ course_info.group.course.name }}</span>
+                    </div>
+                    <div class="group-name">Grup: {{ course_info.group.name }}</div>
+                </div>
+                {% if course_info.is_enrolled %}
+                <button type="button" class="action-btn unenroll" 
+                    onclick="showUnenrollConfirm('{{ student_data.student.first_name }} {{ student_data.student.last_name }}', '{{ course_info.group.course.name }}', '{{ course_info.enrollment_id }}')">
+                    <i class="fas fa-times"></i> Çıkar
+                </button>
+                <form id="unenroll-form-{{ course_info.enrollment_id }}" method="post" action="{% url 'courses:enrollment_delete' %}" style="display:none;">
+                    {% csrf_token %}
+                    <input type="hidden" name="enrollment_id" value="{{ course_info.enrollment_id }}">
+                </form>
+                {% else %}
+                <button type="button" class="action-btn enroll"
+                    onclick="showEnrollConfirm('{{ student_data.student.first_name }} {{ student_data.student.last_name }}', '{{ course_info.group.course.name }}', '{{ student_data.student.id }}', '{{ course_info.group.id }}')">
+                    <i class="fas fa-plus"></i> Kaydet
+                </button>
+                <form id="enroll-form-{{ student_data.student.id }}-{{ course_info.group.id }}" method="post" action="{% url 'courses:enrollment_add' %}" style="display:none;">
+                    {% csrf_token %}
+                    <input type="hidden" name="student" value="{{ student_data.student.id }}">
+                    <input type="hidden" name="group" value="{{ course_info.group.id }}">
+                    <input type="hidden" name="status" value="enrolled">
+                </form>
+                {% endif %}
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="no-students">
+        <i class="fas fa-users"></i>
+        <h4>Öğrenci bulunamadı</h4>
+        <p>Sistemde aktif öğrenci bulunmuyor.</p>
+    </div>
+    {% endfor %}
+</div>
+
+<script>
+let pendingFormId = null;
+let pendingAction = null;
+
+function toggleCard(header) {
+    const card = header.closest('.student-card');
+    const studentId = card.dataset.studentId;
+    
+    // Toggle expanded state
+    card.classList.toggle('expanded');
+    
+    // Save state to localStorage
+    const expandedCards = JSON.parse(localStorage.getItem('expandedCards') || '{}');
+    expandedCards[studentId] = card.classList.contains('expanded');
+    localStorage.setItem('expandedCards', JSON.stringify(expandedCards));
+}
+
+function filterStudents() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const cards = document.querySelectorAll('.student-card');
+    
+    cards.forEach(card => {
+        const name = card.dataset.name.toLowerCase();
+        const number = card.dataset.number.toLowerCase();
+        
+        if (name.includes(search) || number.includes(search)) {
+            card.style.display = 'block';
+        } else {
+            card.style.display = 'none';
+        }
+    });
+}
+
+function showEnrollConfirm(studentName, courseName, studentId, groupId) {
+    pendingFormId = `enroll-form-${studentId}-${groupId}`;
+    pendingAction = 'enroll';
+    
+    document.getElementById('modalIcon').className = 'modal-icon success';
+    document.getElementById('modalIcon').innerHTML = '<i class="fas fa-user-plus"></i>';
+    document.getElementById('modalTitle').textContent = 'Derse Kaydet';
+    document.getElementById('modalText').innerHTML = `<strong>${studentName}</strong> öğrencisini <strong>${courseName}</strong> dersine kaydetmek istediğinize emin misiniz?`;
+    document.getElementById('modalConfirmBtn').className = 'modal-btn confirm';
+    document.getElementById('modalConfirmBtn').textContent = 'Kaydet';
+    
+    document.getElementById('confirmModal').classList.add('active');
+}
+
+function showUnenrollConfirm(studentName, courseName, enrollmentId) {
+    pendingFormId = `unenroll-form-${enrollmentId}`;
+    pendingAction = 'unenroll';
+    
+    document.getElementById('modalIcon').className = 'modal-icon danger';
+    document.getElementById('modalIcon').innerHTML = '<i class="fas fa-user-minus"></i>';
+    document.getElementById('modalTitle').textContent = 'Dersten Çıkar';
+    document.getElementById('modalText').innerHTML = `<strong>${studentName}</strong> öğrencisini <strong>${courseName}</strong> dersinden çıkarmak istediğinize emin misiniz?`;
+    document.getElementById('modalConfirmBtn').className = 'modal-btn danger';
+    document.getElementById('modalConfirmBtn').textContent = 'Çıkar';
+    
+    document.getElementById('confirmModal').classList.add('active');
+}
+
+function closeModal() {
+    document.getElementById('confirmModal').classList.remove('active');
+    pendingFormId = null;
+    pendingAction = null;
+}
+
+function confirmAction() {
+    if (pendingFormId) {
+        const form = document.getElementById(pendingFormId);
+        if (form) {
+            form.submit();
+        }
+    }
+    closeModal();
+}
+
+// Close modal on outside click
+document.getElementById('confirmModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        closeModal();
+    }
+});
+
+// Close modal on ESC key
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeModal();
+    }
+});
+
+// Restore expanded cards state on page load
+document.addEventListener('DOMContentLoaded', function() {
+    const expandedCards = JSON.parse(localStorage.getItem('expandedCards') || '{}');
+    
+    document.querySelectorAll('.student-card').forEach(card => {
+        const studentId = card.dataset.studentId;
+        if (expandedCards[studentId]) {
+            card.classList.add('expanded');
+        }
+    });
+    
+    // Auto-hide toasts after 5 seconds
+    setTimeout(function() {
+        document.querySelectorAll('.toast').forEach(toast => {
+            toast.style.animation = 'slideIn 0.3s ease reverse';
+            setTimeout(() => toast.remove(), 300);
+        });
+    }, 5000);
+});
+</script>
+{% endblock %}

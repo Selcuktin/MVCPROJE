@@ -3,147 +3,488 @@
 
 {% block title %}Soruyu Düzenle{% endblock %}
 
-{% block content %}
-<div class="container mt-4">
-    <h2><i class="fas fa-edit"></i> Soruyu Düzenle</h2>
-    <p class="lead">{{ bank.name }}</p>
+{% block extra_css %}
+<style>
+    .question-form-container {
+        max-width: 900px;
+        margin: 0 auto;
+    }
     
-    <div class="card">
-        <div class="card-body">
-            <form method="post" id="questionForm">
-                {% csrf_token %}
-                
-                <div class="mb-3">
-                    <label for="question_text" class="form-label">Soru Metni *</label>
-                    <textarea class="form-control" id="question_text" name="question_text" rows="4" required>{{ question.question_text }}</textarea>
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <label for="question_type" class="form-label">Soru Tipi *</label>
-                        <select class="form-select" id="question_type" name="question_type" required onchange="toggleOptions()">
-                            <option value="multiple_choice" {% if question.question_type == 'multiple_choice' %}selected{% endif %}>Çoktan Seçmeli</option>
-                            <option value="true_false" {% if question.question_type == 'true_false' %}selected{% endif %}>Doğru/Yanlış</option>
-                            <option value="short_answer" {% if question.question_type == 'short_answer' %}selected{% endif %}>Kısa Cevap</option>
-                            <option value="essay" {% if question.question_type == 'essay' %}selected{% endif %}>Essay</option>
-                        </select>
-                    </div>
-                    
-                    <div class="col-md-4 mb-3">
-                        <label for="points" class="form-label">Puan *</label>
-                        <input type="number" class="form-control" id="points" name="points" value="{{ question.points }}" min="0" step="0.5" required>
-                    </div>
-                    
-                    <div class="col-md-4 mb-3">
-                        <label for="difficulty" class="form-label">Zorluk</label>
-                        <select class="form-select" id="difficulty" name="difficulty">
-                            <option value="easy" {% if question.difficulty == 'easy' %}selected{% endif %}>Kolay</option>
-                            <option value="medium" {% if question.difficulty == 'medium' %}selected{% endif %}>Orta</option>
-                            <option value="hard" {% if question.difficulty == 'hard' %}selected{% endif %}>Zor</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <!-- Multiple Choice Options -->
-                <div id="multipleChoiceOptions" style="display: none;">
-                    <h5 class="mb-3">Şıklar</h5>
-                    <div class="mb-3">
-                        <label class="form-label">A)</label>
-                        <input type="text" class="form-control" name="option_a" value="{{ question.option_a }}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">B)</label>
-                        <input type="text" class="form-control" name="option_b" value="{{ question.option_b }}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">C)</label>
-                        <input type="text" class="form-control" name="option_c" value="{{ question.option_c }}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">D)</label>
-                        <input type="text" class="form-control" name="option_d" value="{{ question.option_d }}">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">E)</label>
-                        <input type="text" class="form-control" name="option_e" value="{{ question.option_e }}">
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="correct_answer_mc" class="form-label">Doğru Cevap *</label>
-                        <select class="form-select" id="correct_answer_mc" name="correct_answer">
-                            <option value="A" {% if question.correct_answer == 'A' %}selected{% endif %}>A</option>
-                            <option value="B" {% if question.correct_answer == 'B' %}selected{% endif %}>B</option>
-                            <option value="C" {% if question.correct_answer == 'C' %}selected{% endif %}>C</option>
-                            <option value="D" {% if question.correct_answer == 'D' %}selected{% endif %}>D</option>
-                            <option value="E" {% if question.correct_answer == 'E' %}selected{% endif %}>E</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <!-- True/False Options -->
-                <div id="trueFalseOptions" style="display: none;">
-                    <div class="mb-3">
-                        <label for="correct_answer_tf" class="form-label">Doğru Cevap *</label>
-                        <select class="form-select" id="correct_answer_tf" name="correct_answer">
-                            <option value="T" {% if question.correct_answer == 'T' or question.correct_answer == 'Doğru' %}selected{% endif %}>Doğru</option>
-                            <option value="F" {% if question.correct_answer == 'F' or question.correct_answer == 'Yanlış' %}selected{% endif %}>Yanlış</option>
-                        </select>
-                    </div>
-                </div>
-                
-                <!-- Text Answer -->
-                <div id="textAnswer" style="display: none;">
-                    <div class="mb-3">
-                        <label for="correct_answer_text" class="form-label">Doğru Cevap / Cevap Anahtarı *</label>
-                        <textarea class="form-control" id="correct_answer_text" name="correct_answer" rows="3">{{ question.correct_answer }}</textarea>
-                        <small class="text-muted">Kısa cevap soruları için beklenen cevabı, essay soruları için değerlendirme kriterlerini yazın</small>
-                    </div>
-                </div>
-                
-                <div class="mb-3">
-                    <label for="explanation" class="form-label">Açıklama (Opsiyonel)</label>
-                    <textarea class="form-control" id="explanation" name="explanation" rows="3">{{ question.explanation }}</textarea>
-                    <small class="text-muted">Doğru cevabın açıklaması</small>
-                </div>
-                
-                <hr>
-                
-                <div class="d-flex justify-content-between">
-                    <a href="{% url 'quiz:question_bank_detail' bank.id %}" class="btn btn-secondary">
-                        <i class="fas fa-arrow-left"></i> İptal
-                    </a>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Kaydet
+    .form-card {
+        background: white;
+        border-radius: 12px;
+        padding: 2rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        margin-bottom: 1.5rem;
+    }
+    
+    .choice-item {
+        background: #f8f9fa;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        padding: 1rem;
+        margin-bottom: 1rem;
+        transition: all 0.3s ease;
+    }
+    
+    .choice-item.correct {
+        border-color: #28a745;
+        background: #d4edda;
+    }
+    
+    .choice-number {
+        width: 30px;
+        height: 30px;
+        background: #667eea;
+        color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+    }
+    
+    /* Image Upload Styles */
+    .image-upload-area {
+        border: 2px dashed #dee2e6;
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: #f8f9fa;
+    }
+    
+    .image-upload-area:hover {
+        border-color: #667eea;
+        background: #f0f4ff;
+    }
+    
+    .image-upload-area.has-image {
+        border-color: #28a745;
+        background: #d4edda;
+    }
+    
+    .image-upload-area i {
+        font-size: 3rem;
+        color: #9ca3af;
+        margin-bottom: 1rem;
+    }
+    
+    .image-preview {
+        max-width: 100%;
+        max-height: 300px;
+        border-radius: 8px;
+        margin-top: 1rem;
+        display: none;
+    }
+    
+    .image-preview.show {
+        display: block;
+    }
+    
+    .current-image {
+        max-width: 100%;
+        max-height: 200px;
+        border-radius: 8px;
+        margin-bottom: 1rem;
+    }
+    
+    .image-container {
+        position: relative;
+        display: inline-block;
+    }
+    
+    .remove-image-btn {
+        position: absolute;
+        top: -10px;
+        right: -10px;
+        background: #ef4444;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        cursor: pointer;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4 question-form-container">
+    <!-- Header -->
+    <div class="mb-4">
+        <h2><i class="fas fa-edit"></i> Soruyu Düzenle</h2>
+        <p class="text-muted">Soru Bankası: <strong>{{ bank.name }}</strong></p>
+    </div>
+    
+    <form method="post" id="questionForm" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <!-- Question Details -->
+        <div class="form-card">
+            <h4 class="mb-3"><i class="fas fa-edit"></i> Soru Detayları</h4>
+            
+            <div class="mb-3">
+                <label for="question_type" class="form-label">Soru Tipi <span class="text-danger">*</span></label>
+                <select class="form-select" id="question_type" name="question_type" required>
+                    <option value="multiple_choice" {% if question.question_type == 'multiple_choice' %}selected{% endif %}>Çoktan Seçmeli</option>
+                    <option value="true_false" {% if question.question_type == 'true_false' %}selected{% endif %}>Doğru/Yanlış</option>
+                    <option value="short_answer" {% if question.question_type == 'short_answer' %}selected{% endif %}>Kısa Cevap</option>
+                    <option value="essay" {% if question.question_type == 'essay' %}selected{% endif %}>Essay</option>
+                </select>
+            </div>
+            
+            <div class="mb-3">
+                <label for="question_text" class="form-label">Soru Metni <span class="text-danger">*</span></label>
+                <textarea class="form-control" id="question_text" name="question_text" rows="4" required>{{ question.question_text }}</textarea>
+            </div>
+            
+            <!-- Current Image -->
+            {% if question.question_image %}
+            <div class="mb-3" id="currentImageSection">
+                <label class="form-label">Mevcut Görsel</label>
+                <div class="image-container">
+                    <img src="{{ question.question_image.url }}" class="current-image" alt="Soru görseli">
+                    <button type="button" class="remove-image-btn" onclick="markImageForRemoval()">
+                        <i class="fas fa-times"></i>
                     </button>
                 </div>
-            </form>
+                <input type="hidden" name="remove_image" id="remove_image" value="false">
+            </div>
+            {% endif %}
+            
+            <!-- Image Upload -->
+            <div class="mb-3">
+                <label class="form-label"><i class="fas fa-image"></i> {% if question.question_image %}Yeni Görsel Yükle{% else %}Soru Görseli (Opsiyonel){% endif %}</label>
+                <div class="image-upload-area" onclick="document.getElementById('question_image').click()">
+                    <input type="file" id="question_image" name="question_image" accept="image/*" 
+                           style="display: none;" onchange="previewImage(this)">
+                    <div id="uploadPlaceholder">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p class="mb-0">Görsel yüklemek için tıklayın veya sürükleyin</p>
+                        <small class="text-muted">PNG, JPG, GIF - Maks 5MB</small>
+                    </div>
+                    <div class="image-container" id="imageContainer">
+                        <img id="imagePreview" class="image-preview" src="" alt="Önizleme">
+                        <button type="button" class="remove-image-btn" onclick="removeNewImage(event)" style="display: none;" id="removeNewImageBtn">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
-    </div>
+        
+        <!-- Answer Choices (for multiple_choice) -->
+        <div class="form-card" id="choicesSection" style="display: none;">
+            <h4 class="mb-3"><i class="fas fa-list"></i> Cevap Seçenekleri</h4>
+            <p class="text-muted mb-3">Doğru cevabı işaretleyin</p>
+            
+            <div id="choicesContainer"></div>
+            
+            <button type="button" class="btn btn-outline-primary" id="addChoiceBtn">
+                <i class="fas fa-plus"></i> Seçenek Ekle
+            </button>
+        </div>
+        
+        <!-- True/False Options -->
+        <div class="form-card" id="trueFalseSection" style="display: none;">
+            <h4 class="mb-3"><i class="fas fa-check-double"></i> Doğru/Yanlış</h4>
+            <p class="text-muted mb-3">Doğru cevabı işaretleyin</p>
+            
+            <div id="trueFalseContainer"></div>
+        </div>
+        
+        <!-- Text Answer -->
+        <div class="form-card" id="textAnswerSection" style="display: none;">
+            <h4 class="mb-3"><i class="fas fa-pen"></i> Cevap Anahtarı</h4>
+            <div class="mb-3">
+                <label for="correct_answer_text" class="form-label">Doğru Cevap / Cevap Anahtarı</label>
+                <textarea class="form-control" id="correct_answer_text" name="correct_answer_text" rows="3">{{ question.correct_answer }}</textarea>
+                <small class="text-muted">Kısa cevap soruları için beklenen cevabı yazın</small>
+            </div>
+        </div>
+        
+        <!-- Hidden field for correct answer -->
+        <input type="hidden" name="correct_answer" id="correct_answer" value="{{ question.correct_answer }}">
+        
+        <!-- Explanation -->
+        <div class="form-card">
+            <h4 class="mb-3"><i class="fas fa-lightbulb"></i> Açıklama (Opsiyonel)</h4>
+            <div class="mb-3">
+                <textarea class="form-control" id="explanation" name="explanation" rows="3">{{ question.explanation }}</textarea>
+                <small class="text-muted">Doğru cevabın açıklaması - öğrencilere sınav sonrası gösterilir</small>
+            </div>
+        </div>
+        
+        <!-- Submit Buttons -->
+        <div class="d-flex justify-content-between">
+            <a href="{% url 'quiz:question_bank_detail' bank.id %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> İptal
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="fas fa-save"></i> Kaydet
+            </button>
+        </div>
+    </form>
 </div>
 
 <script>
-function toggleOptions() {
-    const questionType = document.getElementById('question_type').value;
-    const mcOptions = document.getElementById('multipleChoiceOptions');
-    const tfOptions = document.getElementById('trueFalseOptions');
-    const textAnswer = document.getElementById('textAnswer');
+// Existing question data
+const existingData = {
+    questionType: '{{ question.question_type }}',
+    correctAnswer: '{{ question.correct_answer|upper }}',
+    optionA: '{{ question.option_a|escapejs }}',
+    optionB: '{{ question.option_b|escapejs }}',
+    optionC: '{{ question.option_c|escapejs }}',
+    optionD: '{{ question.option_d|escapejs }}',
+    optionE: '{{ question.option_e|escapejs }}'
+};
+
+let choiceCount = 0;
+
+// Image Preview Functions
+function previewImage(input) {
+    const preview = document.getElementById('imagePreview');
+    const placeholder = document.getElementById('uploadPlaceholder');
+    const container = document.getElementById('imageContainer');
+    const uploadArea = document.querySelector('.image-upload-area');
+    const removeBtn = document.getElementById('removeNewImageBtn');
     
-    // Hide all
-    mcOptions.style.display = 'none';
-    tfOptions.style.display = 'none';
-    textAnswer.style.display = 'none';
-    
-    // Show relevant
-    if (questionType === 'multiple_choice') {
-        mcOptions.style.display = 'block';
-    } else if (questionType === 'true_false') {
-        tfOptions.style.display = 'block';
-    } else {
-        textAnswer.style.display = 'block';
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Dosya boyutu 5MB\'dan küçük olmalıdır!');
+            input.value = '';
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.classList.add('show');
+            placeholder.style.display = 'none';
+            container.classList.add('has-image');
+            uploadArea.classList.add('has-image');
+            removeBtn.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
     }
 }
 
+function removeNewImage(event) {
+    event.stopPropagation();
+    const input = document.getElementById('question_image');
+    const preview = document.getElementById('imagePreview');
+    const placeholder = document.getElementById('uploadPlaceholder');
+    const container = document.getElementById('imageContainer');
+    const uploadArea = document.querySelector('.image-upload-area');
+    const removeBtn = document.getElementById('removeNewImageBtn');
+    
+    input.value = '';
+    preview.src = '';
+    preview.classList.remove('show');
+    placeholder.style.display = 'block';
+    container.classList.remove('has-image');
+    uploadArea.classList.remove('has-image');
+    removeBtn.style.display = 'none';
+}
+
+function markImageForRemoval() {
+    document.getElementById('remove_image').value = 'true';
+    document.getElementById('currentImageSection').style.display = 'none';
+}
+
+// Question Type Change Handler
+document.getElementById('question_type').addEventListener('change', function() {
+    handleQuestionTypeChange(this.value, false);
+});
+
+function handleQuestionTypeChange(type, isInitial) {
+    const choicesSection = document.getElementById('choicesSection');
+    const trueFalseSection = document.getElementById('trueFalseSection');
+    const textAnswerSection = document.getElementById('textAnswerSection');
+    const choicesContainer = document.getElementById('choicesContainer');
+    const trueFalseContainer = document.getElementById('trueFalseContainer');
+    const addChoiceBtn = document.getElementById('addChoiceBtn');
+    
+    // Hide all sections
+    choicesSection.style.display = 'none';
+    trueFalseSection.style.display = 'none';
+    textAnswerSection.style.display = 'none';
+    
+    choicesContainer.innerHTML = '';
+    trueFalseContainer.innerHTML = '';
+    choiceCount = 0;
+    
+    if (type === 'multiple_choice') {
+        choicesSection.style.display = 'block';
+        addChoiceBtn.style.display = 'block';
+        
+        if (isInitial) {
+            // Load existing options
+            const options = [
+                { letter: 'A', value: existingData.optionA },
+                { letter: 'B', value: existingData.optionB },
+                { letter: 'C', value: existingData.optionC },
+                { letter: 'D', value: existingData.optionD },
+                { letter: 'E', value: existingData.optionE }
+            ];
+            
+            options.forEach(opt => {
+                if (opt.value) {
+                    addChoice(opt.value, existingData.correctAnswer === opt.letter);
+                }
+            });
+            
+            // If no options, add 4 empty ones
+            if (choiceCount === 0) {
+                for (let i = 0; i < 4; i++) addChoice('', false);
+            }
+        } else {
+            // Add 4 default choices for new selection
+            for (let i = 0; i < 4; i++) addChoice('', false);
+        }
+    } else if (type === 'true_false') {
+        trueFalseSection.style.display = 'block';
+        
+        const isTrue = existingData.correctAnswer === 'T' || existingData.correctAnswer === 'TRUE' || existingData.correctAnswer === 'DOĞRU';
+        const isFalse = existingData.correctAnswer === 'F' || existingData.correctAnswer === 'FALSE' || existingData.correctAnswer === 'YANLIŞ';
+        
+        trueFalseContainer.innerHTML = `
+            <div class="choice-item ${isInitial && isTrue ? 'correct' : ''}" id="tf_true">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="choice-number">D</div>
+                    <span class="flex-grow-1 fw-medium">Doğru</span>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="tf_correct" id="tf_correct_true" 
+                               onclick="markTFCorrect('T')" ${isInitial && isTrue ? 'checked' : ''}>
+                        <label class="form-check-label" for="tf_correct_true">Doğru</label>
+                    </div>
+                </div>
+            </div>
+            <div class="choice-item ${isInitial && isFalse ? 'correct' : ''}" id="tf_false">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="choice-number">Y</div>
+                    <span class="flex-grow-1 fw-medium">Yanlış</span>
+                    <div class="form-check">
+                        <input class="form-check-input" type="radio" name="tf_correct" id="tf_correct_false" 
+                               onclick="markTFCorrect('F')" ${isInitial && isFalse ? 'checked' : ''}>
+                        <label class="form-check-label" for="tf_correct_false">Doğru</label>
+                    </div>
+                </div>
+            </div>
+        `;
+    } else {
+        textAnswerSection.style.display = 'block';
+    }
+}
+
+function addChoice(defaultText = '', isCorrect = false) {
+    const container = document.getElementById('choicesContainer');
+    const letter = String.fromCharCode(65 + choiceCount);
+    const choiceDiv = document.createElement('div');
+    choiceDiv.className = 'choice-item' + (isCorrect ? ' correct' : '');
+    choiceDiv.id = 'choice_' + choiceCount;
+    choiceDiv.innerHTML = `
+        <div class="d-flex align-items-center gap-3">
+            <div class="choice-number">${letter}</div>
+            <input type="text" class="form-control" name="option_${letter.toLowerCase()}" 
+                   placeholder="Seçenek metni" value="${defaultText}" required>
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="correct_radio" 
+                       id="correct_${choiceCount}" onclick="markCorrect(${choiceCount}, '${letter}')" ${isCorrect ? 'checked' : ''}>
+                <label class="form-check-label" for="correct_${choiceCount}">Doğru</label>
+            </div>
+        </div>
+    `;
+    container.appendChild(choiceDiv);
+    choiceCount++;
+}
+
+document.getElementById('addChoiceBtn').addEventListener('click', function() {
+    if (choiceCount < 5) {
+        addChoice('', false);
+    } else {
+        alert('En fazla 5 seçenek ekleyebilirsiniz.');
+    }
+});
+
+function markCorrect(index, letter) {
+    // Remove all correct markings
+    document.querySelectorAll('#choicesContainer .choice-item').forEach(item => {
+        item.classList.remove('correct');
+    });
+    
+    // Mark selected as correct
+    document.getElementById('choice_' + index).classList.add('correct');
+    document.getElementById('correct_answer').value = letter;
+}
+
+function markTFCorrect(value) {
+    document.getElementById('tf_true').classList.remove('correct');
+    document.getElementById('tf_false').classList.remove('correct');
+    
+    if (value === 'T') {
+        document.getElementById('tf_true').classList.add('correct');
+    } else {
+        document.getElementById('tf_false').classList.add('correct');
+    }
+    document.getElementById('correct_answer').value = value;
+}
+
+// Form validation
+document.getElementById('questionForm').addEventListener('submit', function(e) {
+    const questionType = document.getElementById('question_type').value;
+    
+    if (questionType === 'multiple_choice') {
+        const hasCorrect = document.querySelector('#choicesContainer .choice-item.correct');
+        if (!hasCorrect) {
+            e.preventDefault();
+            alert('Lütfen doğru cevabı işaretleyin!');
+            return false;
+        }
+    } else if (questionType === 'true_false') {
+        const hasCorrect = document.querySelector('#trueFalseSection .choice-item.correct');
+        if (!hasCorrect) {
+            e.preventDefault();
+            alert('Lütfen doğru cevabı işaretleyin!');
+            return false;
+        }
+    } else if (questionType === 'short_answer' || questionType === 'essay') {
+        // Copy text answer to hidden field
+        document.getElementById('correct_answer').value = document.getElementById('correct_answer_text').value;
+    }
+});
+
 // Initialize on page load
-document.addEventListener('DOMContentLoaded', toggleOptions);
+document.addEventListener('DOMContentLoaded', function() {
+    handleQuestionTypeChange(existingData.questionType, true);
+});
+
+// Drag and drop support
+const uploadArea = document.querySelector('.image-upload-area');
+
+uploadArea.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    this.style.borderColor = '#667eea';
+    this.style.background = '#f0f4ff';
+});
+
+uploadArea.addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    if (!this.classList.contains('has-image')) {
+        this.style.borderColor = '#dee2e6';
+        this.style.background = '#f8f9fa';
+    }
+});
+
+uploadArea.addEventListener('drop', function(e) {
+    e.preventDefault();
+    const input = document.getElementById('question_image');
+    input.files = e.dataTransfer.files;
+    previewImage(input);
+});
 </script>
 {% endblock %}

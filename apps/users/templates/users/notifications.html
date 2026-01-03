@@ -221,6 +221,7 @@
             <div class="notification-card {% if not notification.is_read %}unread{% endif %}" 
                  data-type="{{ notification.type }}" 
                  data-read="{{ notification.is_read|yesno:'true,false' }}"
+                 data-url="{{ notification.url|default:'#' }}"
                  onclick="handleNotificationClick('{{ notification.id }}', this)">
                 <div class="card-body">
                     <div class="d-flex align-items-start">
@@ -277,26 +278,44 @@
 
 {% block extra_js %}
 <script>
+// Get CSRF token
+function getCsrfToken() {
+    const token = document.querySelector('[name=csrfmiddlewaretoken]');
+    return token ? token.value : '';
+}
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Initialize stats on page load
-    updateStats();
+    console.log('Notifications page loaded');
+    
+    // Initialize stats on page load - wait for DOM to be fully ready
+    setTimeout(updateStats, 100);
     
     // Filter functionality
     const filterBtns = document.querySelectorAll('.filter-btn');
     const notificationCards = document.querySelectorAll('.notification-card');
     
+    console.log('Filter buttons found:', filterBtns.length);
+    console.log('Notification cards found:', notificationCards.length);
+    console.log('Initial stats - Total:', document.querySelectorAll('.notification-card').length, 
+                'Unread:', document.querySelectorAll('.notification-card.unread').length);
+    
     filterBtns.forEach(btn => {
-        btn.addEventListener('click', function() {
+        btn.addEventListener('click', function(e) {
+            e.preventDefault();
+            const filter = this.getAttribute('data-filter');
+            console.log('Filter clicked:', filter);
+            
             // Update active filter
             filterBtns.forEach(b => b.classList.remove('active'));
             this.classList.add('active');
             
-            const filter = this.dataset.filter;
-            
             // Filter notifications
+            let visibleCount = 0;
             notificationCards.forEach(card => {
-                const type = card.dataset.type;
-                const isRead = card.dataset.read === 'true';
+                const type = card.getAttribute('data-type');
+                const isRead = card.getAttribute('data-read') === 'true';
+                
+                console.log('Card type:', type, 'isRead:', isRead);
                 
                 let show = false;
                 
@@ -310,11 +329,29 @@ document.addEventListener('DOMContentLoaded', function() {
                 
                 if (show) {
                     card.style.display = 'block';
-                    card.style.animation = 'fadeIn 0.3s ease';
+                    visibleCount++;
                 } else {
                     card.style.display = 'none';
                 }
             });
+            
+            console.log('Visible notifications:', visibleCount);
+            
+            // Show empty state if no notifications match filter
+            const existingEmpty = document.querySelector('.temp-empty');
+            if (existingEmpty) existingEmpty.remove();
+            
+            if (visibleCount === 0) {
+                const container = document.querySelector('.col-12');
+                const tempEmpty = document.createElement('div');
+                tempEmpty.className = 'empty-state temp-empty';
+                tempEmpty.innerHTML = `
+                    <i class="fas fa-filter"></i>
+                    <h5>Bu filtrede bildirim yok</h5>
+                    <p>Başka bir filtre seçin veya tüm bildirimleri görüntüleyin.</p>
+                `;
+                container.appendChild(tempEmpty);
+            }
         });
     });
 });
@@ -328,7 +365,7 @@ function markAsRead(notificationId, button) {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value
+            'X-CSRFToken': getCsrfToken()
         },
         body: JSON.stringify({
             notification_id: notificationId
@@ -339,15 +376,17 @@ function markAsRead(notificationId, button) {
         if (data.success) {
             // Visual update
             card.classList.remove('unread');
-            card.dataset.read = 'true';
+            card.setAttribute('data-read', 'true');
             
             // Update button
-            button.innerHTML = '<i class="fas fa-check-circle me-1"></i>Okundu';
-            button.classList.add('text-muted', 'small');
-            button.disabled = true;
+            const actionsDiv = button.parentElement;
+            actionsDiv.innerHTML = '<span class="text-muted small"><i class="fas fa-check-circle me-1"></i>Okundu</span>';
             
             // Update stats
             updateStats();
+            
+            // Update navbar badge
+            updateNavbarBadge();
             
             // Show success message
             showToast('Bildirim okundu olarak işaretlendi', 'success');
@@ -361,23 +400,62 @@ function markAsRead(notificationId, button) {
     });
 }
 
+// Update navbar badge count
+function updateNavbarBadge() {
+    fetch('/api/notifications/unread-count/')
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.getElementById('notificationCount');
+            if (badge) {
+                if (data.count > 0) {
+                    badge.textContent = data.count;
+                    badge.style.display = 'flex';
+                } else {
+                    badge.style.display = 'none';
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Badge update error:', error);
+        });
+}
+
 // Mark all notifications as read
 function markAllAsRead() {
     const unreadCards = document.querySelectorAll('.notification-card.unread');
     
+    if (unreadCards.length === 0) {
+        showToast('Tüm bildirimler zaten okunmuş', 'info');
+        return;
+    }
+    
     unreadCards.forEach(card => {
-        card.classList.remove('unread');
-        card.dataset.read = 'true';
+        const notificationId = card.getAttribute('onclick').match(/'([^']+)'/)[1];
         
-        const button = card.querySelector('.mark-read-btn');
-        if (button) {
-            button.innerHTML = '<i class="fas fa-check-circle me-1"></i>Okundu';
-            button.classList.add('text-muted', 'small');
-            button.disabled = true;
+        // Send AJAX request
+        fetch('{% url "users:mark_notification_read" %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify({
+                notification_id: notificationId
+            })
+        });
+        
+        // Visual update
+        card.classList.remove('unread');
+        card.setAttribute('data-read', 'true');
+        
+        const actionsDiv = card.querySelector('.notification-actions');
+        if (actionsDiv) {
+            actionsDiv.innerHTML = '<span class="text-muted small"><i class="fas fa-check-circle me-1"></i>Okundu</span>';
         }
     });
     
     updateStats();
+    updateNavbarBadge();
     showToast('Tüm bildirimler okundu olarak işaretlendi', 'success');
 }
 
@@ -387,12 +465,14 @@ function clearAllNotifications() {
         const cards = document.querySelectorAll('.notification-card');
         
         cards.forEach(card => {
-            card.style.animation = 'fadeOut 0.3s ease';
+            card.style.transition = 'opacity 0.3s ease';
+            card.style.opacity = '0';
             setTimeout(() => card.remove(), 300);
         });
         
         setTimeout(() => {
-            document.querySelector('.col-12').innerHTML = `
+            const container = document.querySelector('.col-12');
+            container.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-bell-slash"></i>
                     <h5>Tüm bildirimler temizlendi</h5>
@@ -413,9 +493,13 @@ function updateStats() {
     const readCards = totalCards - unreadCards;
     
     // Update stats display
-    document.getElementById('total-count').textContent = totalCards;
-    document.getElementById('unread-count').textContent = unreadCards;
-    document.getElementById('read-count').textContent = readCards;
+    const totalEl = document.getElementById('total-count');
+    const unreadEl = document.getElementById('unread-count');
+    const readEl = document.getElementById('read-count');
+    
+    if (totalEl) totalEl.textContent = totalCards;
+    if (unreadEl) unreadEl.textContent = unreadCards;
+    if (readEl) readEl.textContent = readCards;
 }
 
 // Show toast notification
@@ -443,7 +527,7 @@ function showAllNotifications() {
     // Set "Tümü" filter as active
     filterBtns.forEach(btn => {
         btn.classList.remove('active');
-        if (btn.dataset.filter === 'all') {
+        if (btn.getAttribute('data-filter') === 'all') {
             btn.classList.add('active');
         }
     });
@@ -451,8 +535,11 @@ function showAllNotifications() {
     // Show all notifications
     notificationCards.forEach(card => {
         card.style.display = 'block';
-        card.style.animation = 'fadeIn 0.3s ease';
     });
+    
+    // Remove temp empty state
+    const tempEmpty = document.querySelector('.temp-empty');
+    if (tempEmpty) tempEmpty.remove();
     
     showToast('Tüm bildirimler görüntüleniyor', 'info');
 }
@@ -468,43 +555,14 @@ function handleNotificationClick(notificationId, card) {
     }
     
     // Navigate based on notification type
-    const type = card.dataset.type;
+    const type = card.getAttribute('data-type');
+    const url = card.getAttribute('data-url');
     
-    switch(type) {
-        case 'assignment':
-            window.location.href = '/courses/assignments/';
-            break;
-        case 'grade':
-            window.location.href = '/notes/';
-            break;
-        case 'announcement':
-            window.location.href = '/courses/announcements/';
-            break;
-        case 'exam':
-            window.location.href = '/courses/';
-            break;
-        default:
-            showToast('Bildirim detayları görüntüleniyor...', 'info');
+    if (url && url !== '#') {
+        setTimeout(() => {
+            window.location.href = url;
+        }, 300);
     }
 }
-
-// Add CSS animations
-const style = document.createElement('style');
-style.textContent = `
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
-    @keyframes fadeOut {
-        from { opacity: 1; transform: translateY(0); }
-        to { opacity: 0; transform: translateY(-10px); }
-    }
-    
-    .notification-card {
-        cursor: pointer;
-    }
-`;
-document.head.appendChild(style);
 </script>
 {% endblock %}

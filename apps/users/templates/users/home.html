@@ -656,169 +656,307 @@
             window.location.href = "{% url 'teachers:dashboard' %}";
         </script>
     {% else %}
-        <!-- Admin kullanıcılar için dashboard - E-nabız benzeri tasarım -->
+        <!-- Admin kullanıcılar için dashboard -->
+        {% load static %}
+        <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
         <style>
+            /* Admin Dashboard Container */
+            .admin-dashboard-wrapper {
+                display: flex;
+                min-height: 100vh;
+                background: #f8f9fa;
+                margin-top: 0;
+                padding-top: 0;
+            }
+            
+            /* Main Content */
+            .admin-main-content {
+                margin-left: 280px;
+                flex: 1;
+                padding: 2rem;
+                width: calc(100% - 280px);
+                transition: margin-left 0.25s ease, width 0.25s ease;
+            }
+            
+            .admin-main-content.sidebar-hidden {
+                margin-left: 0;
+                width: 100%;
+            }
+            
             .admin-dashboard {
                 max-width: 1400px;
                 margin: 0 auto;
-                padding: 1rem;
             }
-            .admin-header-card {
-                display: none; /* Kaldırıldı - yer kaplamıyor */
-            }
-            .admin-header-card h1 {
-                font-size: 1.5rem;
-                font-weight: 600;
-                margin-bottom: 0.25rem;
-                color: #1a1a1a;
-            }
-            .admin-header-card p {
-                color: #6b7280;
-                margin: 0;
-                font-size: 1rem;
-            }
+            
+            /* Stats Grid */
             .admin-stats-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-                gap: 0.75rem;
-                margin-bottom: 1.5rem;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 20px;
+                margin-bottom: 2rem;
             }
+            
             .admin-stat-card {
                 background: white;
                 border: 1px solid #e5e7eb;
-                border-radius: 8px;
-                padding: 0.75rem;
+                border-radius: 12px;
+                padding: 24px;
                 text-align: center;
-                box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-                transition: all 0.2s ease;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                transition: all 0.3s ease;
+                cursor: pointer;
+                text-decoration: none;
+                color: inherit;
+                display: block;
             }
+            
             .admin-stat-card:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                transform: translateY(-5px);
+                box-shadow: 0 8px 20px rgba(124, 77, 255, 0.2);
+                text-decoration: none;
+                color: inherit;
             }
+            
+            .admin-stat-card .stat-icon {
+                font-size: 2.5rem;
+                color: #667eea;
+                margin-bottom: 12px;
+            }
+            
+            .admin-stat-card .stat-number {
+                font-size: 2.5rem;
+                font-weight: 700;
+                color: #1a1a1a;
+                margin-bottom: 8px;
+            }
+            
+            .admin-stat-card .stat-label {
+                font-size: 0.95rem;
+                color: #6b7280;
+                font-weight: 500;
+            }
+            
+            /* Actions Grid */
             .admin-actions-grid {
                 display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-                gap: 1.5rem;
-                margin-bottom: 2rem;
+                grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+                gap: 20px;
             }
+            
             .admin-action-card {
                 background: white;
                 border: 1px solid #e5e7eb;
                 border-radius: 12px;
-                padding: 1.5rem;
+                padding: 20px;
                 text-decoration: none;
                 color: #1a1a1a;
-                transition: all 0.2s ease;
-                box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+                transition: all 0.3s ease;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+                display: flex;
+                align-items: center;
+                gap: 16px;
             }
+            
             .admin-action-card:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                transform: translateY(-3px);
+                box-shadow: 0 8px 20px rgba(0,0,0,0.12);
                 text-decoration: none;
                 color: #1a1a1a;
+            }
+            
+            .admin-action-card .action-icon {
+                width: 56px;
+                height: 56px;
+                border-radius: 50%;
+                background: linear-gradient(135deg, #667eea, #764ba2);
+                color: white;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1.5rem;
+                flex-shrink: 0;
+            }
+            
+            .admin-action-card .action-content {
+                flex: 1;
+            }
+            
+            .admin-action-card .action-title {
+                font-weight: 600;
+                font-size: 1.05rem;
+                margin-bottom: 4px;
+            }
+            
+            .admin-action-card .action-description {
+                font-size: 0.9rem;
+                color: #6b7280;
+                margin: 0;
+            }
+            
+            .admin-action-card .action-arrow {
+                color: #9ca3af;
+                font-size: 1.2rem;
+            }
+            
+            /* Responsive */
+            @media (max-width: 768px) {
+                .admin-main-content {
+                    margin-left: 0;
+                    width: 100%;
+                }
+                
+                .admin-stats-grid {
+                    grid-template-columns: repeat(2, 1fr);
+                }
+                
+                .admin-actions-grid {
+                    grid-template-columns: 1fr;
+                }
             }
         </style>
-        <div class="container-fluid py-4 admin-dashboard" style="margin-top: 0; padding-top: 0;">
-            <!-- Quick Info Cards -->
-            <div class="admin-stats-grid">
-                <div class="admin-stat-card">
-                    <div style="font-size: 1.25rem; color: #667eea; margin-bottom: 0.25rem;">
-                        <i class="fas fa-book"></i>
+        
+        <div class="admin-dashboard-wrapper">
+            <!-- Main Content -->
+            <main class="admin-main-content" id="main-content">
+                <div class="admin-dashboard">
+                    <!-- Stats Cards -->
+                    <div class="admin-stats-grid">
+                        <a href="/courses/" class="admin-stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-book"></i>
+                            </div>
+                            <div class="stat-number">{{ total_courses|default:0 }}</div>
+                            <div class="stat-label">Toplam Ders</div>
+                        </a>
+                        
+                        <a href="/students/" class="admin-stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="stat-number">{{ total_students|default:0 }}</div>
+                            <div class="stat-label">Toplam Öğrenci</div>
+                        </a>
+                        
+                        <a href="/teachers/" class="admin-stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-chalkboard-teacher"></i>
+                            </div>
+                            <div class="stat-number">{{ total_teachers|default:0 }}</div>
+                            <div class="stat-label">Toplam Öğretmen</div>
+                        </a>
+                        
+                        <a href="/admin/courses/enrollment/" class="admin-stat-card">
+                            <div class="stat-icon">
+                                <i class="fas fa-user-plus"></i>
+                            </div>
+                            <div class="stat-number">{{ total_enrollments|default:0 }}</div>
+                            <div class="stat-label">Toplam Kayıt</div>
+                        </a>
                     </div>
-                    <div style="font-size: 1.25rem; font-weight: 700; color: #1a1a1a; margin-bottom: 0.125rem;">{{ total_courses|default:0 }}</div>
-                    <div style="font-size: 0.75rem; color: #6b7280;">Toplam Ders</div>
+                    
+                    <!-- Action Cards -->
+                    <div class="admin-actions-grid">
+                        <a href="/courses/" class="admin-action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-book"></i>
+                            </div>
+                            <div class="action-content">
+                                <div class="action-title">Dersler</div>
+                                <div class="action-description">Ders programları ve içeriklerini yönetin</div>
+                            </div>
+                            <i class="fas fa-chevron-right action-arrow"></i>
+                        </a>
+                        
+                        <a href="/courses/teacher-assignment/" class="admin-action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-user-plus"></i>
+                            </div>
+                            <div class="action-content">
+                                <div class="action-title">Öğretmen-Ders Atama</div>
+                                <div class="action-description">Öğretmenlere ders atama işlemleri</div>
+                            </div>
+                            <i class="fas fa-chevron-right action-arrow"></i>
+                        </a>
+                        
+                        <a href="/students/" class="admin-action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-users"></i>
+                            </div>
+                            <div class="action-content">
+                                <div class="action-title">Öğrenciler</div>
+                                <div class="action-description">Öğrenci bilgilerini ve ilerlemelerini takip edin</div>
+                            </div>
+                            <i class="fas fa-chevron-right action-arrow"></i>
+                        </a>
+                        
+                        <a href="/teachers/" class="admin-action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-chalkboard-teacher"></i>
+                            </div>
+                            <div class="action-content">
+                                <div class="action-title">Öğretmenler</div>
+                                <div class="action-description">Öğretmen bilgilerini yönetin</div>
+                            </div>
+                            <i class="fas fa-chevron-right action-arrow"></i>
+                        </a>
+                        
+                        <a href="/admin/academic/academicterm/" class="admin-action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <div class="action-content">
+                                <div class="action-title">Akademik Dönemler</div>
+                                <div class="action-description">Dönem ve yarıyıl bilgilerini düzenleyin</div>
+                            </div>
+                            <i class="fas fa-chevron-right action-arrow"></i>
+                        </a>
+                        
+                        <a href="/admin/utils/systemannouncement/" class="admin-action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-bullhorn"></i>
+                            </div>
+                            <div class="action-content">
+                                <div class="action-title">Sistem Duyuruları</div>
+                                <div class="action-description">Tüm kullanıcılara duyuru yayınlayın</div>
+                            </div>
+                            <i class="fas fa-chevron-right action-arrow"></i>
+                        </a>
+                        
+                        <a href="/admin/quiz/systemquizsettings/" class="admin-action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-cog"></i>
+                            </div>
+                            <div class="action-content">
+                                <div class="action-title">Sınav Ayarları</div>
+                                <div class="action-description">Sistem geneli sınav kurallarını belirleyin</div>
+                            </div>
+                            <i class="fas fa-chevron-right action-arrow"></i>
+                        </a>
+                        
+                        <a href="/admin/utils/activitylog/" class="admin-action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-chart-line"></i>
+                            </div>
+                            <div class="action-content">
+                                <div class="action-title">Sistem Logları</div>
+                                <div class="action-description">Kullanıcı aktivitelerini görüntüleyin</div>
+                            </div>
+                            <i class="fas fa-chevron-right action-arrow"></i>
+                        </a>
+                        
+                        <a href="/admin/users/user/" class="admin-action-card">
+                            <div class="action-icon">
+                                <i class="fas fa-user-cog"></i>
+                            </div>
+                            <div class="action-content">
+                                <div class="action-title">Kullanıcı Yönetimi</div>
+                                <div class="action-description">Kullanıcı hesaplarını yönetin</div>
+                            </div>
+                            <i class="fas fa-chevron-right action-arrow"></i>
+                        </a>
+                    </div>
                 </div>
-                <div class="admin-stat-card">
-                    <div style="font-size: 2rem; color: #667eea; margin-bottom: 0.5rem;">
-                        <i class="fas fa-users"></i>
-                    </div>
-                    <div style="font-size: 2rem; font-weight: 700; color: #1a1a1a; margin-bottom: 0.25rem;">{{ total_students|default:0 }}</div>
-                    <div style="font-size: 0.9rem; color: #6b7280;">Toplam Öğrenci</div>
-                </div>
-                <div class="admin-stat-card">
-                    <div style="font-size: 2rem; color: #667eea; margin-bottom: 0.5rem;">
-                        <i class="fas fa-chalkboard-teacher"></i>
-                    </div>
-                    <div style="font-size: 2rem; font-weight: 700; color: #1a1a1a; margin-bottom: 0.25rem;">{{ total_teachers|default:0 }}</div>
-                    <div style="font-size: 0.9rem; color: #6b7280;">Toplam Öğretmen</div>
-                </div>
-                <div class="admin-stat-card">
-                    <div style="font-size: 2rem; color: #667eea; margin-bottom: 0.5rem;">
-                        <i class="fas fa-user-plus"></i>
-                    </div>
-                    <div style="font-size: 2rem; font-weight: 700; color: #1a1a1a; margin-bottom: 0.25rem;">{{ total_enrollments|default:0 }}</div>
-                    <div style="font-size: 0.9rem; color: #6b7280;">Toplam Kayıt</div>
-                </div>
-            </div>
-            
-            <!-- Quick Actions Grid -->
-            <div class="admin-actions-grid">
-                <a href="{% url 'courses:list' %}" class="admin-action-card">
-                    <div style="display: flex; align-items: center; gap: 1rem;">
-                        <div style="width: 50px; height: 50px; border-radius: 50%; background: #667eea; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
-                            <i class="fas fa-book"></i>
-                        </div>
-                        <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.25rem;">Dersler</div>
-                            <div style="font-size: 0.85rem; color: #6b7280;">Ders programları ve içeriklerini yönetin</div>
-                        </div>
-                        <i class="fas fa-chevron-right" style="color: #9ca3af;"></i>
-                    </div>
-                </a>
-                
-                <a href="{% url 'courses:teacher_assignment' %}" class="admin-action-card">
-                    <div style="display: flex; align-items: center; gap: 1rem;">
-                        <div style="width: 50px; height: 50px; border-radius: 50%; background: #667eea; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
-                            <i class="fas fa-user-plus"></i>
-                        </div>
-                        <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.25rem;">Öğretmen-Ders Atama</div>
-                            <div style="font-size: 0.85rem; color: #6b7280;">Öğretmenlere ders atama işlemleri</div>
-                        </div>
-                        <i class="fas fa-chevron-right" style="color: #9ca3af;"></i>
-                    </div>
-                </a>
-                
-                <a href="{% url 'students:list' %}" class="admin-action-card">
-                    <div style="display: flex; align-items: center; gap: 1rem;">
-                        <div style="width: 50px; height: 50px; border-radius: 50%; background: #667eea; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
-                            <i class="fas fa-users"></i>
-                        </div>
-                        <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.25rem;">Öğrenciler</div>
-                            <div style="font-size: 0.85rem; color: #6b7280;">Öğrenci bilgilerini ve ilerlemelerini takip edin</div>
-                        </div>
-                        <i class="fas fa-chevron-right" style="color: #9ca3af;"></i>
-                    </div>
-                </a>
-                
-                <a href="{% url 'teachers:list' %}" class="admin-action-card">
-                    <div style="display: flex; align-items: center; gap: 1rem;">
-                        <div style="width: 50px; height: 50px; border-radius: 50%; background: #667eea; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
-                            <i class="fas fa-chalkboard-teacher"></i>
-                        </div>
-                        <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.25rem;">Öğretmenler</div>
-                            <div style="font-size: 0.85rem; color: #6b7280;">Öğretmen bilgilerini yönetin</div>
-                        </div>
-                        <i class="fas fa-chevron-right" style="color: #9ca3af;"></i>
-                    </div>
-                </a>
-                
-                <a href="{% url 'notes:list' %}" class="admin-action-card">
-                    <div style="display: flex; align-items: center; gap: 1rem;">
-                        <div style="width: 50px; height: 50px; border-radius: 50%; background: #667eea; color: white; display: flex; align-items: center; justify-content: center; font-size: 1.25rem;">
-                            <i class="fas fa-sticky-note"></i>
-                        </div>
-                        <div style="flex: 1;">
-                            <div style="font-weight: 600; font-size: 1rem; margin-bottom: 0.25rem;">Notlar</div>
-                            <div style="font-size: 0.85rem; color: #6b7280;">Öğrenci notlarını yönetin</div>
-                        </div>
-                        <i class="fas fa-chevron-right" style="color: #9ca3af;"></i>
-                    </div>
-                </a>
-            </div>
+            </main>
         </div>
     {% endif %}
 {% endif %}

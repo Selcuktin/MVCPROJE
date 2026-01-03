@@ -115,14 +115,13 @@ class GradebookService:
         Convert numeric score to letter grade
         Based on Selçuk University official grading system
         
-        DOĞRU TABLO:
+        GÜNCEL TABLO (Resmi Yönetmelik):
         88-100: AA (4.00) - Mükemmel
         80-87:  BA (3.50) - Çok İyi
         73-79:  BB (3.00) - İyi
         66-72:  CB (2.50) - Orta
         60-65:  CC (2.00) - Yeterli
-        55-59:  DC (1.50) - Şartlı Geçer
-        50-54:  DD (1.00) - Şartlı Geçer
+        50-59:  DC (1.50) - Şartlı Geçer
         0-49:   FF (0.00) - Başarısız
         """
         if score >= 88:
@@ -135,10 +134,8 @@ class GradebookService:
             return 'CB'  # Orta (2.50)
         elif score >= 60:
             return 'CC'  # Yeterli (2.00)
-        elif score >= 55:
-            return 'DC'  # Şartlı Geçer (1.50)
         elif score >= 50:
-            return 'DD'  # Şartlı Geçer (1.00)
+            return 'DC'  # Şartlı Geçer (1.50)
         else:
             return 'FF'  # Başarısız (0.00)
     
@@ -208,7 +205,7 @@ class GradebookService:
         
         grade_points = {
             'AA': 4.0, 'BA': 3.5, 'BB': 3.0, 'CB': 2.5,
-            'CC': 2.0, 'DC': 1.5, 'DD': 1.0, 'FD': 0.5, 'FF': 0.0
+            'CC': 2.0, 'DC': 1.5, 'FF': 0.0, 'F': 0.0
         }
         
         for enrollment in enrollments:

@@ -43,6 +43,68 @@
         justify-content: center;
         font-weight: 600;
     }
+    
+    /* Image Upload Styles */
+    .image-upload-area {
+        border: 2px dashed #dee2e6;
+        border-radius: 12px;
+        padding: 2rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: #f8f9fa;
+    }
+    
+    .image-upload-area:hover {
+        border-color: #667eea;
+        background: #f0f4ff;
+    }
+    
+    .image-upload-area.has-image {
+        border-color: #28a745;
+        background: #d4edda;
+    }
+    
+    .image-upload-area i {
+        font-size: 3rem;
+        color: #9ca3af;
+        margin-bottom: 1rem;
+    }
+    
+    .image-preview {
+        max-width: 100%;
+        max-height: 300px;
+        border-radius: 8px;
+        margin-top: 1rem;
+        display: none;
+    }
+    
+    .image-preview.show {
+        display: block;
+    }
+    
+    .remove-image-btn {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #ef4444;
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        cursor: pointer;
+        display: none;
+    }
+    
+    .image-container {
+        position: relative;
+        display: inline-block;
+    }
+    
+    .image-container.has-image .remove-image-btn {
+        display: block;
+    }
 </style>
 {% endblock %}
 
@@ -54,7 +116,7 @@
         <p class="text-muted">Soru Bankası: <strong>{{ bank.name }}</strong></p>
     </div>
     
-    <form method="post" id="questionForm">
+    <form method="post" id="questionForm" enctype="multipart/form-data">
         {% csrf_token %}
         
         <!-- Question Details -->
@@ -78,9 +140,24 @@
                           placeholder="Sorunuzu buraya yazın..."></textarea>
             </div>
             
+            <!-- Image Upload -->
             <div class="mb-3">
-                <label for="points" class="form-label">Puan</label>
-                <input type="number" class="form-control" id="points" name="points" value="1" min="1" step="0.5">
+                <label class="form-label"><i class="fas fa-image"></i> Soru Görseli (Opsiyonel)</label>
+                <div class="image-upload-area" onclick="document.getElementById('question_image').click()">
+                    <input type="file" id="question_image" name="question_image" accept="image/*" 
+                           style="display: none;" onchange="previewImage(this)">
+                    <div id="uploadPlaceholder">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        <p class="mb-0">Görsel yüklemek için tıklayın veya sürükleyin</p>
+                        <small class="text-muted">PNG, JPG, GIF - Maks 5MB</small>
+                    </div>
+                    <div class="image-container" id="imageContainer">
+                        <img id="imagePreview" class="image-preview" src="" alt="Önizleme">
+                        <button type="button" class="remove-image-btn" onclick="removeImage(event)">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -94,6 +171,16 @@
             <button type="button" class="btn btn-outline-primary" id="addChoiceBtn" style="display: none;">
                 <i class="fas fa-plus"></i> Seçenek Ekle
             </button>
+        </div>
+        
+        <!-- Explanation -->
+        <div class="form-card">
+            <h4 class="mb-3"><i class="fas fa-lightbulb"></i> Açıklama (Opsiyonel)</h4>
+            <div class="mb-3">
+                <textarea class="form-control" id="explanation" name="explanation" rows="3"
+                          placeholder="Doğru cevabın açıklaması..."></textarea>
+                <small class="text-muted">Öğrencilere sınav sonrası gösterilecek açıklama</small>
+            </div>
         </div>
         
         <!-- Submit Buttons -->
@@ -111,6 +198,52 @@
 <script>
 let choiceCount = 0;
 
+// Image Preview Functions
+function previewImage(input) {
+    const preview = document.getElementById('imagePreview');
+    const placeholder = document.getElementById('uploadPlaceholder');
+    const container = document.getElementById('imageContainer');
+    const uploadArea = document.querySelector('.image-upload-area');
+    
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        
+        // Check file size (5MB max)
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Dosya boyutu 5MB\'dan küçük olmalıdır!');
+            input.value = '';
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            preview.src = e.target.result;
+            preview.classList.add('show');
+            placeholder.style.display = 'none';
+            container.classList.add('has-image');
+            uploadArea.classList.add('has-image');
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+function removeImage(event) {
+    event.stopPropagation();
+    const input = document.getElementById('question_image');
+    const preview = document.getElementById('imagePreview');
+    const placeholder = document.getElementById('uploadPlaceholder');
+    const container = document.getElementById('imageContainer');
+    const uploadArea = document.querySelector('.image-upload-area');
+    
+    input.value = '';
+    preview.src = '';
+    preview.classList.remove('show');
+    placeholder.style.display = 'block';
+    container.classList.remove('has-image');
+    uploadArea.classList.remove('has-image');
+}
+
+// Question Type Change Handler
 document.getElementById('question_type').addEventListener('change', function() {
     const type = this.value;
     const choicesSection = document.getElementById('choicesSection');
@@ -138,7 +271,7 @@ document.getElementById('question_type').addEventListener('change', function() {
     }
 });
 
-document.getElementById('addChoiceBtn').addEventListener('click', addChoice);
+document.getElementById('addChoiceBtn').addEventListener('click', function() { addChoice(); });
 
 function addChoice(defaultText = '') {
     const container = document.getElementById('choicesContainer');
@@ -204,6 +337,30 @@ document.getElementById('questionForm').addEventListener('submit', function(e) {
             return false;
         }
     }
+});
+
+// Drag and drop support
+const uploadArea = document.querySelector('.image-upload-area');
+
+uploadArea.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    this.style.borderColor = '#667eea';
+    this.style.background = '#f0f4ff';
+});
+
+uploadArea.addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    if (!this.classList.contains('has-image')) {
+        this.style.borderColor = '#dee2e6';
+        this.style.background = '#f8f9fa';
+    }
+});
+
+uploadArea.addEventListener('drop', function(e) {
+    e.preventDefault();
+    const input = document.getElementById('question_image');
+    input.files = e.dataTransfer.files;
+    previewImage(input);
 });
 </script>
 {% endblock %}

@@ -12,6 +12,8 @@ urlpatterns = [
     path('question-banks/<int:bank_id>/delete/', views.question_bank_delete, name='question_bank_delete'),
     path('question-banks/<int:bank_id>/add-question/', views.question_create, name='question_create'),
     path('question-banks/<int:bank_id>/bulk-upload/', views.question_bulk_upload, name='question_bulk_upload'),
+    path('question/<int:question_id>/edit/', views.question_edit, name='question_edit'),
+    path('question/<int:question_id>/delete/', views.question_delete, name='question_delete'),
     
     # Teacher views - Quizzes
     path('all/', views.quiz_list, name='quiz_list'),
@@ -22,7 +24,6 @@ urlpatterns = [
     path('<int:quiz_id>/edit/', views.quiz_edit, name='quiz_edit'),
     path('<int:quiz_id>/delete/', views.quiz_delete, name='quiz_delete'),
     path('question/<int:question_id>/preview/', views.question_preview, name='question_preview'),
-    path('question/<int:question_id>/edit/', views.question_edit, name='question_edit'),
     
     # Student views
     path('available/', views.quiz_list_student, name='quiz_list_student'),

@@ -1,0 +1,164 @@
+{% extends 'base.html' %}
+
+{% block title %}Çıkış Yapıldı{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-lg">
+                <div class="card-body text-center p-5">
+                    <div class="mb-4">
+                        <i class="fas fa-sign-out-alt fa-4x text-success"></i>
+                    </div>
+                    <h2 class="card-title mb-3">Başarıyla Çıkış Yaptınız</h2>
+                    <p class="text-muted mb-4">
+                        Güvenli bir şekilde sistemden çıkış yaptınız. Tekrar görüşmek üzere!
+                    </p>
+                    <div class="alert alert-info mb-4" id="cleanup-status">
+                        <i class="fas fa-spinner fa-spin me-2"></i>
+                        Oturum verileri temizleniyor...
+                    </div>
+                    <a href="{% url 'login' %}" class="btn btn-primary btn-lg">
+                        <i class="fas fa-sign-in-alt me-2"></i>
+                        Tekrar Giriş Yap
+                    </a>
+                    <a href="{% url 'home' %}" class="btn btn-outline-secondary btn-lg ms-2">
+                        <i class="fas fa-home me-2"></i>
+                        Ana Sayfa
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Çıkış yapıldığında Botpress chatbot verilerini AGRESİF TEMİZLE
+    (function() {
+        const statusDiv = document.getElementById('cleanup-status');
+        
+        function updateStatus(message, isComplete = false) {
+            if (statusDiv) {
+                if (isComplete) {
+                    statusDiv.className = 'alert alert-success mb-4';
+                    statusDiv.innerHTML = '<i class="fas fa-check-circle me-2"></i>' + message;
+                } else {
+                    statusDiv.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>' + message;
+                }
+            }
+        }
+        
+        try {
+            console.log('🗑️ LOGOUT: Tüm Botpress verileri temizleniyor...');
+            updateStatus('Oturum verileri temizleniyor...');
+            
+            // 1. SessionStorage - Login timestamp'i de dahil TAMAMEN temizle
+            sessionStorage.clear();
+            console.log('✅ SessionStorage tamamen temizlendi (login timestamp dahil)');
+            
+            // 2. LocalStorage - TÜM Botpress anahtarlarını temizle
+            const allKeys = Object.keys(localStorage);
+            let cleanedCount = 0;
+            allKeys.forEach(key => {
+                if (key.includes('botpress') || 
+                    key.includes('bp-') || 
+                    key.includes('bp_') ||
+                    key.startsWith('bp') ||
+                    key.includes('webchat') ||
+                    key.includes('conversation') ||
+                    key.includes('conv-') ||
+                    key.includes('messaging') ||
+                    key.includes('chat')) {
+                    localStorage.removeItem(key);
+                    cleanedCount++;
+                    console.log('🗑️ Temizlendi:', key);
+                }
+            });
+            console.log('✅ LocalStorage temizlendi:', cleanedCount, 'anahtar');
+            updateStatus('LocalStorage temizlendi (' + cleanedCount + ' öğe)');
+            
+            // 3. Cookies - Botpress cookie'lerini agresif temizle (TÜM domain'ler için)
+            updateStatus('Çerezler temizleniyor...');
+            const cookies = document.cookie.split(";");
+            let cookieCount = 0;
+            cookies.forEach(function(c) {
+                const cookieName = c.split("=")[0].trim();
+                if (cookieName.includes('botpress') || 
+                    cookieName.includes('bp-') || 
+                    cookieName.includes('bp_') ||
+                    cookieName.startsWith('bp') ||
+                    cookieName.includes('webchat')) {
+                    
+                    // Cookie'yi tüm path'ler ve domain'ler için sil
+                    const domains = [
+                        '',
+                        window.location.hostname,
+                        '.' + window.location.hostname,
+                        '.botpress.cloud',
+                        '.bpcontent.cloud',
+                        'cdn.botpress.cloud',
+                        'files.bpcontent.cloud'
+                    ];
+                    const paths = ['/', '/webchat', '/chat', '/v3.5', ''];
+                    
+                    domains.forEach(domain => {
+                        paths.forEach(path => {
+                            // Farklı kombinasyonlar dene
+                            if (domain) {
+                                document.cookie = cookieName + "=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=" + path + ";domain=" + domain + ";";
+                            } else {
+                                document.cookie = cookieName + "=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=" + path + ";";
+                            }
+                        });
+                    });
+                    
+                    cookieCount++;
+                    console.log('🗑️ Cookie silindi:', cookieName);
+                }
+            });
+            console.log('✅ Cookies temizlendi:', cookieCount, 'çerez');
+            updateStatus('Çerezler temizlendi (' + cookieCount + ' çerez)');
+            
+            // 4. IndexedDB - Botpress veritabanlarını sil
+            updateStatus('Veritabanları temizleniyor...');
+            if (window.indexedDB && window.indexedDB.databases) {
+                indexedDB.databases().then(databases => {
+                    let dbCount = 0;
+                    databases.forEach(db => {
+                        if (db.name && (db.name.includes('botpress') || 
+                                       db.name.includes('bp-') || 
+                                       db.name.includes('webchat'))) {
+                            indexedDB.deleteDatabase(db.name);
+                            dbCount++;
+                            console.log('🗑️ IndexedDB silindi:', db.name);
+                        }
+                    });
+                    console.log('✅ IndexedDB temizlendi:', dbCount, 'veritabanı');
+                    
+                    // Tamamlandı mesajı
+                    setTimeout(function() {
+                        updateStatus('Tüm oturum verileri başarıyla temizlendi!', true);
+                        console.log('✅ LOGOUT: Botpress chatbot verileri tamamen temizlendi!');
+                        console.log('ℹ️ Bir sonraki login\'de yeni bir Botpress session başlayacak');
+                    }, 500);
+                }).catch(e => {
+                    console.log('IndexedDB temizlenemedi:', e);
+                    updateStatus('Temizleme tamamlandı (bazı veriler temizlenemedi)', true);
+                });
+            } else {
+                // IndexedDB yoksa direkt tamamlandı
+                setTimeout(function() {
+                    updateStatus('Tüm oturum verileri başarıyla temizlendi!', true);
+                    console.log('✅ LOGOUT: Botpress chatbot verileri tamamen temizlendi!');
+                    console.log('ℹ️ Bir sonraki login\'de yeni bir Botpress session başlayacak');
+                }, 500);
+            }
+            
+        } catch (e) {
+            console.log('❌ Chatbot verileri temizlenirken hata:', e);
+            updateStatus('Temizleme sırasında bir hata oluştu', true);
+        }
+    })();
+</script>
+{% endblock %}

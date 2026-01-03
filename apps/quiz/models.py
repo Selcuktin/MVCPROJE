@@ -403,3 +403,130 @@ class QuizAnswer(models.Model):
         
         # Manual grading needed for essay, short answer, etc.
         return None
+
+
+
+class SystemQuizSettings(models.Model):
+    """Sistem Geneli Sınav Ayarları - Singleton Model"""
+    
+    # Varsayılan sınav ayarları
+    default_duration = models.IntegerField(
+        default=60,
+        verbose_name='Varsayılan Sınav Süresi (dakika)',
+        help_text='Yeni oluşturulan sınavlar için varsayılan süre'
+    )
+    default_max_attempts = models.IntegerField(
+        default=1,
+        verbose_name='Varsayılan Deneme Sayısı',
+        help_text='Öğrencilerin sınava kaç kez girebileceği'
+    )
+    default_passing_score = models.DecimalField(
+        max_digits=5,
+        decimal_places=2,
+        default=50.00,
+        verbose_name='Varsayılan Geçme Notu (%)',
+        help_text='Sınavdan geçmek için gereken minimum puan yüzdesi'
+    )
+    
+    # Sınav davranışları
+    auto_submit_enabled = models.BooleanField(
+        default=True,
+        verbose_name='Otomatik Teslim Etkin',
+        help_text='Süre bittiğinde sınavı otomatik olarak teslim et'
+    )
+    show_results_immediately = models.BooleanField(
+        default=False,
+        verbose_name='Sonuçları Hemen Göster',
+        help_text='Sınav bitiminde sonuçları öğrenciye göster'
+    )
+    show_correct_answers = models.BooleanField(
+        default=False,
+        verbose_name='Doğru Cevapları Göster',
+        help_text='Sınav sonunda doğru cevapları göster'
+    )
+    allow_review = models.BooleanField(
+        default=True,
+        verbose_name='İncelemeye İzin Ver',
+        help_text='Öğrencilerin sınav sonrası cevaplarını incelemesine izin ver'
+    )
+    
+    # Güvenlik ayarları
+    require_password = models.BooleanField(
+        default=False,
+        verbose_name='Şifre Gerektir',
+        help_text='Sınavlara giriş için şifre iste'
+    )
+    ip_restriction_enabled = models.BooleanField(
+        default=False,
+        verbose_name='IP Kısıtlaması Etkin',
+        help_text='Sınavlara sadece belirli IP adreslerinden erişime izin ver'
+    )
+    prevent_tab_switch = models.BooleanField(
+        default=True,
+        verbose_name='Sekme Değiştirmeyi Engelle',
+        help_text='Öğrenci sınav sırasında başka sekmeye geçerse uyar'
+    )
+    
+    # Sınav sistemi durumu
+    quiz_system_enabled = models.BooleanField(
+        default=True,
+        verbose_name='Sınav Sistemi Aktif',
+        help_text='Tüm sınav sistemini aktif/pasif yap'
+    )
+    maintenance_mode = models.BooleanField(
+        default=False,
+        verbose_name='Bakım Modu',
+        help_text='Sınav sistemi bakımda (sadece adminler erişebilir)'
+    )
+    maintenance_message = models.TextField(
+        blank=True,
+        verbose_name='Bakım Mesajı',
+        help_text='Bakım modunda gösterilecek mesaj'
+    )
+    
+    # Bildirim ayarları
+    notify_teacher_on_completion = models.BooleanField(
+        default=True,
+        verbose_name='Öğretmene Bildirim Gönder',
+        help_text='Öğrenci sınavı tamamladığında öğretmene email gönder'
+    )
+    notify_student_on_grade = models.BooleanField(
+        default=True,
+        verbose_name='Öğrenciye Not Bildirimi',
+        help_text='Sınav notlandırıldığında öğrenciye bildirim gönder'
+    )
+    
+    # Metadata
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='Son Güncellenme'
+    )
+    updated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        verbose_name='Güncelleyen'
+    )
+    
+    class Meta:
+        verbose_name = 'Sınav Sistem Ayarları'
+        verbose_name_plural = 'Sınav Sistem Ayarları'
+    
+    def __str__(self):
+        return "Sınav Sistem Ayarları"
+    
+    def save(self, *args, **kwargs):
+        """Singleton pattern - sadece 1 kayıt olabilir"""
+        self.pk = 1
+        super().save(*args, **kwargs)
+    
+    def delete(self, *args, **kwargs):
+        """Singleton - silinemez"""
+        pass
+    
+    @classmethod
+    def load(cls):
+        """Ayarları yükle veya oluştur"""
+        obj, created = cls.objects.get_or_create(pk=1)
+        return obj

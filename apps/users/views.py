@@ -40,12 +40,20 @@ if RATELIMIT_AVAILABLE:
         redirect_authenticated_user = True
         
         def get_success_url(self):
+            # Superuser/staff için admin paneline yönlendir
+            if self.request.user.is_superuser or self.request.user.is_staff:
+                return '/admin/'
             controller = UserController()
             return controller.get_login_success_url(self.request.user)
         
         def form_valid(self, form):
+            user = form.get_user()
+            if user.is_superuser or user.is_staff:
+                from django.contrib import messages
+                messages.success(self.request, f'Admin olarak giriş yaptınız, Hoş geldiniz {user.get_full_name() or user.username}!')
+                return super().form_valid(form)
             controller = UserController()
-            controller.handle_login_success(self.request, form.get_user())
+            controller.handle_login_success(self.request, user)
             return super().form_valid(form)
         
         def form_invalid(self, form):
@@ -73,9 +81,9 @@ else:
         redirect_authenticated_user = True
         
         def get_success_url(self):
-            # Superuser/staff için admin panel
+            # Superuser/staff için admin paneline yönlendir
             if self.request.user.is_superuser or self.request.user.is_staff:
-                return '/admin/'
+                return '/admin/'  # Admin paneline yönlendir
             
             controller = UserController()
             return controller.get_login_success_url(self.request.user)
@@ -97,11 +105,38 @@ else:
 
 class CustomLogoutView(LogoutView):
     next_page = 'home'
+    template_name = 'users/logged_out.html'
     
     def dispatch(self, request, *args, **kwargs):
         controller = UserController()
         controller.handle_logout(request)
-        return super().dispatch(request, *args, **kwargs)
+        response = super().dispatch(request, *args, **kwargs)
+        
+        # Botpress çerezlerini sunucu tarafından sil
+        # Tüm olası Botpress cookie isimlerini dene
+        botpress_cookie_patterns = [
+            'bp-', 'bp_', 'botpress', 'webchat', 'conversation', 'conv-'
+        ]
+        
+        # Request'teki tüm cookie'leri kontrol et
+        for cookie_name in request.COOKIES.keys():
+            # Botpress ile ilgili cookie'leri sil
+            for pattern in botpress_cookie_patterns:
+                if pattern in cookie_name.lower():
+                    # Cookie'yi sil - tüm domain ve path kombinasyonları için
+                    response.delete_cookie(cookie_name)
+                    response.delete_cookie(cookie_name, domain=request.get_host())
+                    response.delete_cookie(cookie_name, path='/')
+                    response.delete_cookie(cookie_name, path='/webchat')
+                    response.delete_cookie(cookie_name, path='/chat')
+                    break
+        
+        # Cache-Control header'ları ekle (tarayıcı cache'ini temizle)
+        response['Cache-Control'] = 'no-cache, no-store, must-revalidate, max-age=0'
+        response['Pragma'] = 'no-cache'
+        response['Expires'] = '0'
+        
+        return response
 
 class RegisterView(TemplateView):
     template_name = 'users/register.html'
@@ -350,4 +385,62 @@ class ProfileView(LoginRequiredMixin, TemplateView):
         context['user_profile'] = user_profile
         context['role_info'] = role_info
         
+        return context
+
+
+from django.views.generic import ListView
+from django.contrib.admin.views.decorators import staff_member_required
+from django.db import models as db_models
+from django.contrib.auth.mixins import UserPassesTestMixin
+
+
+class UserListView(LoginRequiredMixin, UserPassesTestMixin, ListView):
+    """Modern Kullanıcı Listesi - Admin için"""
+    model = User
+    template_name = 'users/user_list.html'
+    context_object_name = 'users'
+    paginate_by = 12
+    login_url = 'users:login'
+    
+    def test_func(self):
+        """Sadece staff veya superuser erişebilir"""
+        return self.request.user.is_staff or self.request.user.is_superuser
+    
+    def get_queryset(self):
+        queryset = User.objects.select_related('userprofile').all().order_by('-date_joined')
+        
+        # Search filter
+        search = self.request.GET.get('search', '')
+        if search:
+            queryset = queryset.filter(
+                db_models.Q(username__icontains=search) |
+                db_models.Q(first_name__icontains=search) |
+                db_models.Q(last_name__icontains=search) |
+                db_models.Q(email__icontains=search)
+            )
+        
+        # User type filter
+        user_type = self.request.GET.get('user_type', '')
+        if user_type:
+            queryset = queryset.filter(userprofile__user_type=user_type)
+        
+        # Status filter
+        status = self.request.GET.get('status', '')
+        if status == 'active':
+            queryset = queryset.filter(is_active=True)
+        elif status == 'inactive':
+            queryset = queryset.filter(is_active=False)
+        
+        return queryset
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['search_query'] = self.request.GET.get('search', '')
+        context['user_type_filter'] = self.request.GET.get('user_type', '')
+        context['status_filter'] = self.request.GET.get('status', '')
+        context['total_users'] = User.objects.count()
+        context['active_users'] = User.objects.filter(is_active=True).count()
+        context['student_count'] = UserProfile.objects.filter(user_type='student').count()
+        context['teacher_count'] = UserProfile.objects.filter(user_type='teacher').count()
+        context['admin_count'] = UserProfile.objects.filter(user_type='admin').count()
         return context

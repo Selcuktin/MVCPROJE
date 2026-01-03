@@ -142,3 +142,132 @@ class ChangeHistory(models.Model):
     def __str__(self):
         return f"{self.field_name}: {self.old_value} → {self.new_value}"
 
+
+class SystemAnnouncement(models.Model):
+    """Sistem Geneli Duyurular - Admin tarafından yönetilir"""
+    
+    PRIORITY_CHOICES = [
+        ('low', 'Düşük'),
+        ('normal', 'Normal'),
+        ('high', 'Yüksek'),
+        ('urgent', 'Acil'),
+    ]
+    
+    TARGET_AUDIENCE_CHOICES = [
+        ('all', 'Tüm Kullanıcılar'),
+        ('students', 'Öğrenciler'),
+        ('teachers', 'Öğretmenler'),
+        ('admins', 'Adminler'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('draft', 'Taslak'),
+        ('active', 'Aktif'),
+        ('expired', 'Süresi Dolmuş'),
+        ('archived', 'Arşivlendi'),
+    ]
+    
+    title = models.CharField(
+        max_length=200,
+        verbose_name='Başlık'
+    )
+    content = models.TextField(
+        verbose_name='İçerik'
+    )
+    priority = models.CharField(
+        max_length=20,
+        choices=PRIORITY_CHOICES,
+        default='normal',
+        verbose_name='Öncelik'
+    )
+    target_audience = models.CharField(
+        max_length=20,
+        choices=TARGET_AUDIENCE_CHOICES,
+        default='all',
+        verbose_name='Hedef Kitle'
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='draft',
+        verbose_name='Durum'
+    )
+    start_date = models.DateTimeField(
+        verbose_name='Başlangıç Tarihi',
+        help_text='Duyurunun gösterilmeye başlanacağı tarih'
+    )
+    end_date = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name='Bitiş Tarihi',
+        help_text='Duyurunun gösterilmeyi durduracağı tarih (opsiyonel)'
+    )
+    created_by = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name='created_announcements',
+        verbose_name='Oluşturan'
+    )
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+        verbose_name='Oluşturulma Tarihi'
+    )
+    updated_at = models.DateTimeField(
+        auto_now=True,
+        verbose_name='Güncellenme Tarihi'
+    )
+    
+    class Meta:
+        verbose_name = 'Sistem Duyurusu'
+        verbose_name_plural = 'Sistem Duyuruları'
+        ordering = ['-priority', '-start_date']
+        indexes = [
+            models.Index(fields=['-start_date']),
+            models.Index(fields=['status', '-start_date']),
+            models.Index(fields=['target_audience', 'status']),
+        ]
+    
+    def __str__(self):
+        return f"{self.title} ({self.get_priority_display()})"
+    
+    def save(self, *args, **kwargs):
+        """Auto-update status based on dates"""
+        from django.utils import timezone
+        now = timezone.now()
+        
+        if self.status == 'active':
+            if now < self.start_date:
+                self.status = 'draft'
+            elif self.end_date and now > self.end_date:
+                self.status = 'expired'
+        
+        super().save(*args, **kwargs)
+    
+    def is_visible_for_user(self, user):
+        """Check if announcement is visible for given user"""
+        from django.utils import timezone
+        
+        # Status check
+        if self.status != 'active':
+            return False
+        
+        # Date check
+        now = timezone.now()
+        if now < self.start_date:
+            return False
+        if self.end_date and now > self.end_date:
+            return False
+        
+        # Audience check
+        if self.target_audience == 'all':
+            return True
+        elif self.target_audience == 'students' and hasattr(user, 'student'):
+            return True
+        elif self.target_audience == 'teachers' and hasattr(user, 'teacher'):
+            return True
+        elif self.target_audience == 'admins' and user.is_staff:
+            return True
+        
+        return False
+

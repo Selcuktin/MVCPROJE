@@ -69,7 +69,7 @@ TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
+        'APP_DIRS': False,  # Manuel loader kullanacağız
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
@@ -77,6 +77,13 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'apps.users.context_processors.notifications_context',
+                'apps.users.admin_context.admin_stats',
+            ],
+            'loaders': [
+                # Önce proje templates klasörüne bak
+                'django.template.loaders.filesystem.Loader',
+                # Sonra app templates klasörlerine bak
+                'django.template.loaders.app_directories.Loader',
             ],
         },
     },
@@ -107,6 +114,18 @@ AUTH_PASSWORD_VALIDATORS = [
         'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
     },
 ]
+
+# Cache Configuration (for performance)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'unique-snowflake',
+        'TIMEOUT': 300,  # 5 minutes default
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000
+        }
+    }
+}
 
 # Internationalization
 LANGUAGE_CODE = 'tr-tr'
@@ -183,9 +202,6 @@ SIMPLE_JWT = {
     'TOKEN_TYPE_CLAIM': 'token_type',
 }
 
-# External API Keys (from environment or .env)
-GEMINI_API_KEY = config('GEMINI_API_KEY', default=os.environ.get('GEMINI_API_KEY', ''))
-
 # Email Configuration
 # Production: SMTP backend (Gmail)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
@@ -201,3 +217,10 @@ DEFAULT_FROM_EMAIL = f'Uzaktan Eğitim Sistemi <{EMAIL_HOST_USER}>'
 
 # Password Reset Settings
 PASSWORD_RESET_TIMEOUT = 86400  # 24 hours in seconds
+
+
+
+# Admin Panel Customization
+ADMIN_SITE_HEADER = "Öğretmen Paneli"
+ADMIN_SITE_TITLE = "Yönetim Paneli"
+ADMIN_INDEX_TITLE = "Yönetim"

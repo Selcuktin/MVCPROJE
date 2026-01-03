@@ -16,12 +16,23 @@ from apps.teachers.models import Teacher
 
 @login_required
 def question_bank_list(request):
-    """Teacher: List all question banks"""
+    """Teacher/Admin: List all question banks"""
+    # Admin veya superuser ise tüm bankaları göster
+    if request.user.is_staff or request.user.is_superuser:
+        banks = QuestionBank.objects.prefetch_related('questions').select_related('created_by', 'course_group__course')
+        context = {
+            'banks': banks,
+            'teacher': None,
+            'is_admin': True
+        }
+        return render(request, 'quiz/question_bank_list.html', context)
+    
+    # Öğretmen ise sadece kendi bankalarını göster
     try:
         teacher = Teacher.objects.get(user=request.user)
     except Teacher.DoesNotExist:
         messages.error(request, 'Öğretmen profili bulunamadı')
-        return redirect('users:dashboard')
+        return redirect('home')
     
     # SADECE kendi oluşturduğu bankaları göster (shared olanları gösterme)
     banks = QuestionBank.objects.filter(
@@ -30,7 +41,8 @@ def question_bank_list(request):
     
     context = {
         'banks': banks,
-        'teacher': teacher
+        'teacher': teacher,
+        'is_admin': False
     }
     return render(request, 'quiz/question_bank_list.html', context)
 
@@ -64,11 +76,14 @@ def question_bank_create(request):
 
 @login_required
 def question_bank_detail(request, bank_id):
-    """Teacher: View/manage questions in a bank"""
+    """Teacher/Admin: View/manage questions in a bank"""
     bank = get_object_or_404(QuestionBank, id=bank_id)
     
+    # Admin veya superuser her bankaya erişebilir
+    is_admin = request.user.is_staff or request.user.is_superuser
+    
     # Check permission
-    if bank.created_by != request.user and not bank.is_shared:
+    if not is_admin and bank.created_by != request.user and not bank.is_shared:
         messages.error(request, 'Bu soru bankasına erişim yetkiniz yok')
         return redirect('quiz:question_bank_list')
     
@@ -76,7 +91,8 @@ def question_bank_detail(request, bank_id):
     
     context = {
         'bank': bank,
-        'questions': questions
+        'questions': questions,
+        'is_admin': is_admin
     }
     return render(request, 'quiz/question_bank_detail.html', context)
 
@@ -111,34 +127,48 @@ def question_create(request, bank_id):
     if request.method == 'POST':
         question_text = request.POST.get('question_text')
         question_type = request.POST.get('question_type')
-        points = request.POST.get('points', 1)
+        explanation = request.POST.get('explanation', '')
         
         if not question_text or not question_type:
             messages.error(request, 'Soru metni ve tipi gerekli')
             return redirect('quiz:question_bank_detail', bank_id=bank_id)
         
+        # Find correct answer
+        correct_answer = ''
+        choices_count = int(request.POST.get('choices_count', 0))
+        
+        # Get options and find correct one
+        option_a = request.POST.get('choice_0', '')
+        option_b = request.POST.get('choice_1', '')
+        option_c = request.POST.get('choice_2', '')
+        option_d = request.POST.get('choice_3', '')
+        option_e = request.POST.get('choice_4', '') if choices_count > 4 else ''
+        
+        # Find which one is correct
+        for i in range(choices_count):
+            if request.POST.get(f'is_correct_{i}') == 'on':
+                correct_answer = chr(65 + i)  # A, B, C, D, E
+                break
+        
         question = Question.objects.create(
             bank=bank,
             question_text=question_text,
             question_type=question_type,
-            points=points,
-            created_by=request.user
+            points=1,  # Varsayılan puan, sınava eklendiğinde otomatik hesaplanacak
+            difficulty='medium',  # Varsayılan zorluk
+            explanation=explanation,
+            option_a=option_a,
+            option_b=option_b,
+            option_c=option_c,
+            option_d=option_d,
+            option_e=option_e,
+            correct_answer=correct_answer
         )
         
-        # Handle answer choices for multiple_choice and true_false
-        if question_type in ['multiple_choice', 'true_false']:
-            choices_count = int(request.POST.get('choices_count', 0))
-            for i in range(choices_count):
-                choice_text = request.POST.get(f'choice_{i}')
-                is_correct = request.POST.get(f'is_correct_{i}') == 'on'
-                
-                if choice_text:
-                    from apps.quiz.models import AnswerChoice
-                    AnswerChoice.objects.create(
-                        question=question,
-                        choice_text=choice_text,
-                        is_correct=is_correct
-                    )
+        # Handle image upload
+        if 'question_image' in request.FILES:
+            question.question_image = request.FILES['question_image']
+            question.save()
         
         messages.success(request, 'Soru başarıyla eklendi!')
         return redirect('quiz:question_bank_detail', bank_id=bank_id)
@@ -682,12 +712,23 @@ def quiz_list_student(request):
 
 @login_required
 def quiz_list(request):
-    """Teacher: List all quizzes - SADECE kendi sınavları"""
+    """Teacher/Admin: List all quizzes"""
+    # Admin veya superuser ise tüm sınavları göster
+    if request.user.is_staff or request.user.is_superuser:
+        quizzes = Quiz.objects.select_related('course_group__course', 'course_group__teacher').order_by('-created_at')
+        context = {
+            'quizzes': quizzes,
+            'teacher': None,
+            'is_admin': True
+        }
+        return render(request, 'quiz/quiz_list.html', context)
+    
+    # Öğretmen ise sadece kendi sınavlarını göster
     try:
         teacher = Teacher.objects.get(user=request.user)
     except Teacher.DoesNotExist:
         messages.error(request, 'Öğretmen profili bulunamadı')
-        return redirect('users:dashboard')
+        return redirect('home')
     
     # SADECE bu öğretmenin derslerindeki sınavlar
     quizzes = Quiz.objects.filter(
@@ -696,7 +737,8 @@ def quiz_list(request):
     
     context = {
         'quizzes': quizzes,
-        'teacher': teacher
+        'teacher': teacher,
+        'is_admin': False
     }
     return render(request, 'quiz/quiz_list.html', context)
 
@@ -704,11 +746,14 @@ def quiz_list(request):
 @login_required
 @require_POST
 def quiz_delete(request, quiz_id):
-    """Teacher: Delete a quiz"""
+    """Teacher/Admin: Delete a quiz"""
     quiz = get_object_or_404(Quiz, id=quiz_id)
     
+    # Admin veya superuser her sınavı silebilir
+    is_admin = request.user.is_staff or request.user.is_superuser
+    
     # Check permission
-    if quiz.course_group.teacher.user != request.user:
+    if not is_admin and quiz.course_group.teacher.user != request.user:
         messages.error(request, 'Bu sınavı silme yetkiniz yok')
         return redirect('quiz:quiz_list')
     
@@ -761,18 +806,29 @@ def question_edit(request, question_id):
     if request.method == 'POST':
         question.question_text = request.POST.get('question_text')
         question.question_type = request.POST.get('question_type')
-        question.points = request.POST.get('points', 1)
-        question.difficulty = request.POST.get('difficulty', 'medium')
         question.correct_answer = request.POST.get('correct_answer', '')
         question.explanation = request.POST.get('explanation', '')
         
         # Update options for multiple choice
-        if question.question_type in ['multiple_choice', 'true_false']:
+        if question.question_type == 'multiple_choice':
             question.option_a = request.POST.get('option_a', '')
             question.option_b = request.POST.get('option_b', '')
             question.option_c = request.POST.get('option_c', '')
             question.option_d = request.POST.get('option_d', '')
             question.option_e = request.POST.get('option_e', '')
+        
+        # Handle image removal
+        if request.POST.get('remove_image') == 'true':
+            if question.question_image:
+                question.question_image.delete(save=False)
+                question.question_image = None
+        
+        # Handle new image upload
+        if 'question_image' in request.FILES:
+            # Delete old image if exists
+            if question.question_image:
+                question.question_image.delete(save=False)
+            question.question_image = request.FILES['question_image']
         
         question.save()
         messages.success(request, 'Soru başarıyla güncellendi!')
@@ -783,6 +839,23 @@ def question_edit(request, question_id):
         'bank': question.bank
     }
     return render(request, 'quiz/question_edit.html', context)
+
+
+@login_required
+@require_POST
+def question_delete(request, question_id):
+    """Teacher: Delete a question"""
+    question = get_object_or_404(Question, id=question_id)
+    bank_id = question.bank.id
+    
+    # Check permission
+    if question.bank.created_by != request.user:
+        messages.error(request, 'Bu soruyu silme yetkiniz yok')
+        return redirect('quiz:question_bank_detail', bank_id=bank_id)
+    
+    question.delete()
+    messages.success(request, 'Soru başarıyla silindi!')
+    return redirect('quiz:question_bank_detail', bank_id=bank_id)
 
 
 @login_required

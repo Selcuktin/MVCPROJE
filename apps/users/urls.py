@@ -5,8 +5,9 @@ API: JWT token-based authentication (geçici olarak devre dışı - paket yükle
 """
 from django.urls import path
 from django.contrib.auth import views as auth_views
+from django.views.generic import TemplateView
 # from rest_framework_simplejwt.views import TokenRefreshView  # Geçici olarak devre dışı
-from .views import HomeView, CustomLoginView, CustomLogoutView, RegisterView, NotificationsView, ProfileView, mark_notification_read, get_unread_notification_count
+from .views import HomeView, CustomLoginView, CustomLogoutView, RegisterView, NotificationsView, ProfileView, mark_notification_read, get_unread_notification_count, UserListView
 # from . import api_views  # Geçici olarak devre dışı
 
 app_name = 'users'
@@ -21,6 +22,12 @@ urlpatterns = [
     path('notifications/', NotificationsView.as_view(), name='notifications'),
     path('notifications/mark-read/', mark_notification_read, name='mark_notification_read'),
     path('api/notifications/unread-count/', get_unread_notification_count, name='api_unread_count'),
+    
+    # Admin - Kullanıcı Yönetimi
+    path('users/', UserListView.as_view(), name='user_list'),
+    
+    # Debug
+    path('debug/chatbot/', TemplateView.as_view(template_name='debug_chatbot.html'), name='debug_chatbot'),
     
     # Password Reset
     path('password-reset/', 

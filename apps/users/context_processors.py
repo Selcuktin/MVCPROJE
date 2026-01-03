@@ -13,7 +13,8 @@ def notifications_context(request):
         return {
             'unread_notifications_count': 0, 
             'navbar_notifications': [],
-            'active_quizzes_sidebar': []
+            'active_quizzes_sidebar': [],
+            'unread_messages': 0
         }
     
     try:
@@ -22,10 +23,10 @@ def notifications_context(request):
         if hasattr(request.user, 'userprofile'):
             user_type = request.user.userprofile.user_type
         
-        unread_count = 0
         active_quizzes_sidebar = []
         
-        if user_type == 'student':
+        # Only load active quizzes for student dashboard/quiz pages
+        if user_type == 'student' and (request.path.startswith('/students/') or request.path.startswith('/quiz/')):
             try:
                 from apps.students.models import Student
                 from apps.quiz.models import Quiz
@@ -33,11 +34,11 @@ def notifications_context(request):
                 
                 student = Student.objects.get(user=request.user)
                 
-                # Get active quizzes for sidebar
+                # Get active quizzes - optimized query
                 enrollments = Enrollment.objects.filter(
                     student=student,
                     status='enrolled'
-                ).values_list('group_id', flat=True).distinct()
+                ).values_list('group_id', flat=True)
                 
                 now = timezone.now()
                 active_quizzes_sidebar = Quiz.objects.filter(
@@ -45,86 +46,44 @@ def notifications_context(request):
                     is_active=True,
                     start_time__lte=now,
                     end_time__gte=now
-                ).select_related('course_group__course').order_by('start_time')[:5]
-                
-                # Get assignments for student's enrolled courses
-                assignments = Assignment.objects.filter(
-                    group__enrollments__student=student,
-                    status='active',
-                    create_date__gte=timezone.now() - timedelta(days=30)
-                )
-                
-                # Get announcements
-                announcements = Announcement.objects.filter(
-                    group__enrollments__student=student,
-                    status='active',
-                    create_date__gte=timezone.now() - timedelta(days=30)
-                )
-                
-                # Count unread notifications
-                for assignment in assignments:
-                    notification_id = f'assignment_{assignment.id}'
-                    try:
-                        notification_status = NotificationStatus.objects.get(
-                            user=request.user,
-                            notification_id=notification_id
-                        )
-                        if not notification_status.is_read:
-                            unread_count += 1
-                    except NotificationStatus.DoesNotExist:
-                        unread_count += 1  # New notification, not read yet
-                
-                for announcement in announcements:
-                    notification_id = f'announcement_{announcement.id}'
-                    try:
-                        notification_status = NotificationStatus.objects.get(
-                            user=request.user,
-                            notification_id=notification_id
-                        )
-                        if not notification_status.is_read:
-                            unread_count += 1
-                    except NotificationStatus.DoesNotExist:
-                        unread_count += 1  # New notification, not read yet
+                ).select_related('course_group__course').only(
+                    'id', 'title', 'start_time', 'end_time',
+                    'course_group__course__name', 'course_group__course__code'
+                ).order_by('start_time')[:5]
                         
             except Student.DoesNotExist:
                 pass
-                
-        elif user_type == 'teacher':
-            try:
-                from apps.teachers.models import Teacher
-                teacher = Teacher.objects.get(user=request.user)
-                
-                # Get teacher's recent assignments
-                assignments = Assignment.objects.filter(
-                    group__teacher=teacher,
-                    create_date__gte=timezone.now() - timedelta(days=30)
-                )
-                
-                # Count unread notifications
-                for assignment in assignments:
-                    notification_id = f'assignment_{assignment.id}'
-                    try:
-                        notification_status = NotificationStatus.objects.get(
-                            user=request.user,
-                            notification_id=notification_id
-                        )
-                        if not notification_status.is_read:
-                            unread_count += 1
-                    except NotificationStatus.DoesNotExist:
-                        unread_count += 1  # New notification, not read yet
-                        
-            except Teacher.DoesNotExist:
-                pass
         
-        # Get recent notifications for navbar (last 4)
+        # Get ALL notifications (not just navbar) for accurate count
         from .services import UserService
         service = UserService()
-        navbar_notifications = service.get_navbar_notifications(request.user, limit=4)
+        
+        # Get full notification data
+        notification_data = service.get_notifications_data(request.user)
+        all_notifications = notification_data.get('notifications', [])
+        
+        # Only show unread notifications in navbar dropdown (limit to 10 for performance)
+        navbar_notifications = [n for n in all_notifications if not n.get('is_read', False)][:10]
+        
+        # Count ALL unread notifications (not just first 10)
+        unread_count = notification_data.get('unread_count', 0)
+        
+        # Get unread messages count
+        unread_messages = 0
+        try:
+            from apps.forum.models import DirectMessage
+            unread_messages = DirectMessage.objects.filter(
+                recipient=request.user,
+                is_read=False
+            ).count()
+        except Exception:
+            pass
         
         return {
             'unread_notifications_count': unread_count,
             'navbar_notifications': navbar_notifications,
-            'active_quizzes_sidebar': active_quizzes_sidebar
+            'active_quizzes_sidebar': active_quizzes_sidebar,
+            'unread_messages': unread_messages
         }
         
     except Exception as e:
@@ -132,5 +91,6 @@ def notifications_context(request):
         return {
             'unread_notifications_count': 0, 
             'navbar_notifications': [],
-            'active_quizzes_sidebar': []
+            'active_quizzes_sidebar': [],
+            'unread_messages': 0
         }

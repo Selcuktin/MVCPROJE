@@ -69,12 +69,14 @@
                 </div>
             </div>
             <div>
+                {% if not is_admin %}
                 <a href="{% url 'quiz:question_create' bank.id %}" class="btn btn-light">
                     <i class="fas fa-plus"></i> Soru Ekle
                 </a>
                 <button class="btn btn-light" data-bs-toggle="modal" data-bs-target="#bulkUploadModal">
                     <i class="fas fa-upload"></i> Toplu Soru Ekle
                 </button>
+                {% endif %}
                 <a href="{% url 'quiz:question_bank_list' %}" class="btn btn-outline-light">
                     <i class="fas fa-arrow-left"></i> Geri
                 </a>
@@ -102,11 +104,17 @@
                                     <i class="fas fa-file-alt"></i> Essay
                                 {% endif %}
                             </span>
-                            <span class="badge bg-secondary">
-                                <i class="fas fa-star"></i> {{ question.points }} Puan
-                            </span>
                         </div>
                         <h5 class="mb-3">{{ question.question_text }}</h5>
+                        
+                        <!-- Display question image if exists -->
+                        {% if question.question_image %}
+                        <div class="mb-3">
+                            <img src="{{ question.question_image.url }}" alt="Soru görseli" 
+                                 class="img-fluid rounded" style="max-height: 250px; cursor: pointer;"
+                                 onclick="showImageModal('{{ question.question_image.url }}')">
+                        </div>
+                        {% endif %}
                         
                         <!-- Display answer choices -->
                         {% if question.question_type == 'multiple_choice' %}
@@ -176,14 +184,16 @@
                         </div>
                         {% endif %}
                     </div>
+                    {% if not is_admin %}
                     <div class="d-flex gap-2">
-                        <button class="btn btn-sm btn-outline-primary" onclick="editQuestion({{ question.id }})">
+                        <a href="{% url 'quiz:question_edit' question.id %}" class="btn btn-sm btn-outline-primary">
                             <i class="fas fa-edit"></i>
-                        </button>
-                        <button class="btn btn-sm btn-outline-danger" onclick="deleteQuestion({{ question.id }})">
+                        </a>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteQuestion({{ question.id }}, '{{ question.question_text|truncatechars:50|escapejs }}')">
                             <i class="fas fa-trash"></i>
                         </button>
                     </div>
+                    {% endif %}
                 </div>
                 
                 <div class="text-muted small">
@@ -248,17 +258,59 @@
     </div>
 </div>
 
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title"><i class="fas fa-exclamation-triangle"></i> Soruyu Sil</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bu soruyu silmek istediğinize emin misiniz?</p>
+                <p class="text-muted small" id="deleteQuestionText"></p>
+                <p class="text-danger"><strong>Bu işlem geri alınamaz!</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">İptal</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Sil
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
-function editQuestion(questionId) {
-    alert('Düzenleme özelliği yakında eklenecek!');
-    // TODO: Implement edit functionality
+function deleteQuestion(questionId, questionText) {
+    document.getElementById('deleteQuestionText').textContent = questionText;
+    document.getElementById('deleteForm').action = '/quiz/question/' + questionId + '/delete/';
+    var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
 }
 
-function deleteQuestion(questionId) {
-    if (confirm('Bu soruyu silmek istediğinizden emin misiniz?')) {
-        // TODO: Implement delete functionality
-        alert('Silme özelliği yakında eklenecek!');
-    }
+function showImageModal(imageUrl) {
+    document.getElementById('modalImage').src = imageUrl;
+    var imageModal = new bootstrap.Modal(document.getElementById('imageModal'));
+    imageModal.show();
 }
 </script>
+
+<!-- Image Preview Modal -->
+<div class="modal fade" id="imageModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-image"></i> Soru Görseli</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center">
+                <img id="modalImage" src="" alt="Soru görseli" class="img-fluid">
+            </div>
+        </div>
+    </div>
+</div>
 {% endblock %}

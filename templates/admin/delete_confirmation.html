@@ -1,0 +1,61 @@
+{% extends "admin/base.html" %}
+{% load i18n admin_urls static %}
+
+{% block content %}
+<div class="page-header" style="background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;">
+    <div class="breadcrumbs">
+        <a href="{% url 'admin:index' %}" style="color: white;">Ana Sayfa</a> &rsaquo;
+        <a href="{% url opts|admin_urlname:'changelist' %}" style="color: white;">{{ opts.verbose_name_plural|capfirst }}</a> &rsaquo;
+        <a href="{% url opts|admin_urlname:'change' object.pk|admin_urlquote %}" style="color: white;">{{ object|truncatewords:"18" }}</a> &rsaquo;
+        Sil
+    </div>
+    <h1><i class="fas fa-trash-alt"></i> Silme Onayı</h1>
+</div>
+
+<div class="content-card">
+    <div class="content-card-body">
+        {% if perms_lacking %}
+        <p style="color: #ef4444; font-weight: 600;">
+            <i class="fas fa-exclamation-triangle"></i>
+            Bu {{ opts.verbose_name }} kaydını silmek için yetkiniz yok.
+        </p>
+        {% elif protected %}
+        <p style="color: #ef4444; font-weight: 600;">
+            <i class="fas fa-shield-alt"></i>
+            Bu {{ opts.verbose_name }} kaydı korumalı olduğu için silinemiyor.
+        </p>
+        {% else %}
+        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 1.5rem; margin-bottom: 1.5rem;">
+            <p style="margin: 0; color: #991b1b;">
+                <i class="fas fa-exclamation-circle"></i>
+                <strong>"{{ object }}"</strong> kaydını silmek istediğinizden emin misiniz?
+            </p>
+            {% if deleted_objects %}
+            <p style="margin: 1rem 0 0 0; color: #7f1d1d; font-size: 0.9rem;">
+                Bu işlem aşağıdaki ilişkili kayıtları da silecektir:
+            </p>
+            <ul style="margin: 0.5rem 0 0 1.5rem; color: #7f1d1d; font-size: 0.85rem;">
+                {% for obj in deleted_objects %}
+                <li>{{ obj }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        
+        <form method="post">
+            {% csrf_token %}
+            <div style="display: flex; gap: 1rem;">
+                <a href="{% url opts|admin_urlname:'change' object.pk|admin_urlquote %}" 
+                   style="padding: 12px 24px; background: #e5e7eb; color: #374151; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                    <i class="fas fa-arrow-left"></i> İptal
+                </a>
+                <button type="submit" 
+                        style="padding: 12px 24px; background: linear-gradient(135deg, #ef4444, #dc2626); color: white; border: none; border-radius: 8px; font-weight: 600; cursor: pointer;">
+                    <i class="fas fa-trash"></i> Evet, Sil
+                </button>
+            </div>
+        </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

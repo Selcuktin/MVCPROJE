@@ -1,0 +1,772 @@
+{% load i18n static %}
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %} | Yönetim Paneli</title>
+    
+    <!-- Bootstrap & Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- Sidebar CSS (base.html ile aynı) -->
+    <link rel="stylesheet" href="{% static 'css/sidebar.css' %}">
+    
+    <!-- Django Admin için gerekli (formlar için) -->
+    {% block extrastyle %}{% endblock %}
+    {% block extrahead %}{% endblock %}
+    
+    <style>
+        * { box-sizing: border-box; }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+        }
+        
+        /* ==========================================
+           NAVBAR - Mor Gradient (base.html ile aynı)
+           ========================================== */
+        .admin-navbar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.1);
+            border: none;
+            padding: 1rem 0 !important;
+            min-height: 76px !important;
+            z-index: 1050;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            margin: 0 !important;
+            display: flex;
+            align-items: center;
+        }
+        
+        .admin-navbar .container-fluid {
+            max-width: 100% !important;
+            width: 100% !important;
+            padding-left: 1.5rem !important;
+            padding-right: 1.5rem !important;
+            margin: 0 !important;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .admin-navbar .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white !important;
+            text-decoration: none;
+            font-size: 1.4rem;
+            font-weight: 700;
+            transition: all 0.3s ease;
+        }
+        
+        .admin-navbar .brand:hover { 
+            color: rgba(255,255,255,0.9) !important;
+            transform: scale(1.05);
+        }
+        
+        .admin-navbar .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .admin-navbar .nav-links a,
+        .admin-navbar .nav-links span {
+            color: rgba(255,255,255,0.9) !important;
+            text-decoration: none;
+            font-size: 0.9rem;
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .admin-navbar .nav-links a:hover { 
+            color: white !important;
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateY(-1px);
+        }
+        
+        .admin-navbar .sidebar-toggle-btn {
+            display: none;
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .admin-navbar .sidebar-toggle-btn:hover {
+            background: rgba(255,255,255,0.2);
+        }
+        
+        /* ==========================================
+           MAIN CONTENT (sidebar.css ile uyumlu)
+           ========================================== */
+        .admin-main {
+            margin-left: 280px;
+            margin-top: 76px;
+            padding: 1.5rem;
+            min-height: calc(100vh - 76px);
+            background: #f5f5f5;
+            transition: margin-left 0.25s ease;
+            width: calc(100% - 280px);
+        }
+        
+        .admin-main.sidebar-hidden {
+            margin-left: 0;
+            width: 100%;
+        }
+        
+        /* ==========================================
+           PAGE HEADER - Yeşil Gradient
+           ========================================== */
+        .page-header {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+            padding: 1.5rem 2rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+        }
+        
+        .page-header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .page-header p {
+            margin: 0.5rem 0 0 0;
+            opacity: 0.9;
+            font-size: 0.9rem;
+        }
+        
+        .page-header .breadcrumbs {
+            font-size: 0.85rem;
+            margin-bottom: 0.75rem;
+            opacity: 0.9;
+        }
+        
+        .page-header .breadcrumbs a { color: white; }
+        
+        .page-header .header-actions { margin-top: 1rem; }
+        
+        .btn-add {
+            background: white;
+            color: #059669;
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .btn-add:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            color: #059669;
+        }
+        
+        /* ==========================================
+           CONTENT CARDS
+           ========================================== */
+        .content-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            margin-bottom: 1.5rem;
+            overflow: hidden;
+        }
+        
+        .content-card-header {
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .content-card-header h3 {
+            margin: 0;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        
+        .content-card-body { padding: 1.5rem; }
+        
+        /* ==========================================
+           STATS CARDS
+           ========================================== */
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 12px;
+            padding: 1.25rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+            border-left: 4px solid #10b981;
+        }
+        
+        .stat-card .icon { font-size: 2rem; margin-bottom: 0.5rem; }
+        .stat-card .value { font-size: 1.75rem; font-weight: 700; color: #1f2937; }
+        .stat-card .label { color: #6b7280; font-size: 0.8rem; }
+        
+        /* ==========================================
+           TABLES - Django Admin Override
+           ========================================== */
+        #result_list, .results table, table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        
+        #result_list thead th, .results table thead th, table thead th {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+            color: white !important;
+            padding: 16px 18px !important;
+            text-align: left !important;
+            font-weight: 600 !important;
+            font-size: 0.8rem !important;
+            text-transform: uppercase !important;
+            letter-spacing: 0.5px !important;
+            border: none !important;
+            white-space: nowrap !important;
+        }
+        
+        #result_list thead th a, table thead th a {
+            color: white !important;
+            text-decoration: none !important;
+        }
+        
+        #result_list thead th a:hover, table thead th a:hover {
+            text-decoration: underline !important;
+        }
+        
+        #result_list tbody tr, .results table tbody tr, table tbody tr {
+            border-bottom: 1px solid #f3f4f6 !important;
+            transition: all 0.2s ease !important;
+        }
+        
+        #result_list tbody tr:hover, table tbody tr:hover {
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%) !important;
+            transform: scale(1.001);
+        }
+        
+        #result_list tbody tr:nth-child(even), table tbody tr:nth-child(even) {
+            background: #fafafa !important;
+        }
+        
+        #result_list tbody tr:nth-child(even):hover, table tbody tr:nth-child(even):hover {
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%) !important;
+        }
+        
+        #result_list tbody td, .results table tbody td, table tbody td {
+            padding: 14px 18px !important;
+            color: #374151 !important;
+            font-size: 0.875rem !important;
+            border: none !important;
+            background: transparent !important;
+            vertical-align: middle !important;
+        }
+        
+        #result_list tbody td a, table tbody td a {
+            color: #10b981 !important;
+            text-decoration: none !important;
+            font-weight: 500 !important;
+            transition: color 0.2s !important;
+        }
+        
+        #result_list tbody td a:hover, table tbody td a:hover {
+            color: #059669 !important;
+            text-decoration: underline !important;
+        }
+        
+        /* Checkbox styling */
+        #result_list tbody td input[type="checkbox"],
+        #result_list thead th input[type="checkbox"] {
+            width: 18px !important;
+            height: 18px !important;
+            accent-color: #10b981 !important;
+            cursor: pointer !important;
+        }
+        
+        /* Action checkbox column */
+        #result_list thead th.action-checkbox-column,
+        #result_list tbody td.action-checkbox {
+            width: 40px !important;
+            text-align: center !important;
+        }
+        
+        /* ==========================================
+           FORMS - Django Admin Override
+           ========================================== */
+        fieldset {
+            background: white !important;
+            border: none !important;
+            border-radius: 12px !important;
+            padding: 1.5rem !important;
+            margin: 0 0 1.5rem 0 !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+        }
+        
+        fieldset h2 {
+            background: transparent !important;
+            color: #1f2937 !important;
+            font-size: 1rem !important;
+            font-weight: 600 !important;
+            padding: 0 0 1rem 0 !important;
+            margin: 0 0 1rem 0 !important;
+            border-bottom: 2px solid #10b981 !important;
+        }
+        
+        .form-row {
+            padding: 0 0 1rem 0 !important;
+            margin: 0 !important;
+            border: none !important;
+        }
+        
+        .form-row label {
+            display: block !important;
+            font-weight: 600 !important;
+            color: #374151 !important;
+            font-size: 0.875rem !important;
+            margin-bottom: 0.5rem !important;
+        }
+        
+        input[type="text"], input[type="number"], input[type="email"],
+        input[type="password"], input[type="url"], input[type="date"],
+        input[type="time"], input[type="datetime-local"], textarea, select {
+            width: 100% !important;
+            padding: 10px 14px !important;
+            border: 2px solid #e5e7eb !important;
+            border-radius: 8px !important;
+            font-size: 0.875rem !important;
+            transition: all 0.2s !important;
+            background: white !important;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            border-color: #10b981 !important;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+            outline: none !important;
+        }
+        
+        input[type="checkbox"] {
+            width: 18px !important;
+            height: 18px !important;
+            accent-color: #10b981 !important;
+        }
+        
+        .help, .helptext {
+            color: #6b7280 !important;
+            font-size: 0.8rem !important;
+            margin-top: 0.25rem !important;
+        }
+        
+        /* ==========================================
+           SUBMIT ROW
+           ========================================== */
+        .submit-row {
+            background: white !important;
+            padding: 1.25rem 1.5rem !important;
+            border-radius: 12px !important;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
+            display: flex !important;
+            gap: 1rem !important;
+            align-items: center !important;
+            margin: 0 !important;
+            border: none !important;
+        }
+        
+        .submit-row input[type="submit"] {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+            color: white !important;
+            border: none !important;
+            padding: 12px 28px !important;
+            border-radius: 8px !important;
+            font-weight: 600 !important;
+            font-size: 0.9rem !important;
+            cursor: pointer !important;
+            transition: all 0.2s !important;
+            box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3) !important;
+        }
+        
+        .submit-row input[type="submit"]:hover {
+            transform: translateY(-2px) !important;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4) !important;
+        }
+        
+        .submit-row .deletelink {
+            margin-left: auto !important;
+            color: #6b7280 !important;
+            text-decoration: none !important;
+            padding: 10px 20px !important;
+            border: 2px solid #e5e7eb !important;
+            border-radius: 8px !important;
+            transition: all 0.2s !important;
+            background: transparent !important;
+        }
+        
+        .submit-row .deletelink:hover {
+            background: #ef4444 !important;
+            color: white !important;
+            border-color: #ef4444 !important;
+        }
+        
+        /* Hide secondary buttons */
+        .submit-row input[name="_continue"],
+        .submit-row input[name="_addanother"] { display: none !important; }
+        
+        /* ==========================================
+           SEARCH & FILTERS
+           ========================================== */
+        #searchbar {
+            padding: 10px 16px 10px 40px !important;
+            border: 2px solid #e5e7eb !important;
+            border-radius: 25px !important;
+            font-size: 0.875rem !important;
+            width: 300px !important;
+            background: white url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="%2310b981" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>') no-repeat 14px center !important;
+        }
+        
+        #searchbar:focus {
+            border-color: #10b981 !important;
+            box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1) !important;
+        }
+        
+        #changelist-filter { display: none !important; }
+        
+        /* ==========================================
+           PAGINATION
+           ========================================== */
+        .paginator {
+            display: flex !important;
+            justify-content: center !important;
+            gap: 6px !important;
+            padding: 1rem !important;
+            flex-wrap: wrap !important;
+        }
+        
+        .paginator a, .paginator span {
+            padding: 8px 14px !important;
+            border-radius: 6px !important;
+            border: 2px solid #e5e7eb !important;
+            color: #10b981 !important;
+            text-decoration: none !important;
+            font-weight: 500 !important;
+            font-size: 0.875rem !important;
+            transition: all 0.2s !important;
+            background: white !important;
+        }
+        
+        .paginator a:hover {
+            background: #10b981 !important;
+            color: white !important;
+            border-color: #10b981 !important;
+        }
+        
+        .paginator .this-page {
+            background: #10b981 !important;
+            color: white !important;
+            border-color: #10b981 !important;
+        }
+        
+        /* ==========================================
+           MESSAGES
+           ========================================== */
+        .messagelist {
+            padding: 0 !important;
+            margin: 0 0 1.5rem 0 !important;
+            list-style: none !important;
+        }
+        
+        .messagelist li {
+            padding: 1rem 1.5rem !important;
+            border-radius: 8px !important;
+            margin-bottom: 0.5rem !important;
+            font-weight: 500 !important;
+        }
+        
+        .messagelist .success {
+            background: #d1fae5 !important;
+            color: #065f46 !important;
+            border-left: 4px solid #10b981 !important;
+        }
+        
+        .messagelist .error {
+            background: #fee2e2 !important;
+            color: #991b1b !important;
+            border-left: 4px solid #ef4444 !important;
+        }
+        
+        /* ==========================================
+           HIDE DJANGO DEFAULTS
+           ========================================== */
+        #header, #branding, #user-tools, .breadcrumbs:not(.page-header .breadcrumbs),
+        #nav-sidebar, .sticky, #toggle-nav-sidebar { display: none !important; }
+        
+        #container { padding: 0 !important; margin: 0 !important; }
+        #content { padding: 0 !important; margin: 0 !important; max-width: none !important; }
+        .main { margin: 0 !important; padding: 0 !important; }
+        
+        /* ==========================================
+           RESPONSIVE
+           ========================================== */
+        @media (max-width: 768px) {
+            .admin-main { 
+                margin-left: 0; 
+                padding: 1rem;
+                width: 100%;
+            }
+            #searchbar { width: 100% !important; }
+            
+            .admin-navbar .sidebar-toggle-btn {
+                display: block !important;
+            }
+            
+            .admin-navbar .brand {
+                font-size: 1.1rem;
+            }
+            
+            .admin-navbar .nav-links span {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- NAVBAR -->
+    <nav class="admin-navbar">
+        <div class="container-fluid">
+            <div style="display: flex; align-items: center; gap: 1rem;">
+                <button id="sidebar-toggle-nav" class="sidebar-toggle-btn" type="button" title="Menü">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <a href="{% url 'admin:index' %}" class="brand">
+                    <i class="fas fa-graduation-cap me-2"></i>
+                    Yönetim Paneli
+                </a>
+            </div>
+            <div class="nav-links">
+                {% if user.is_authenticated %}
+                <span>Hoş geldin, <strong>{{ user.get_short_name|default:user.username }}</strong></span>
+                <a href="/"><i class="fas fa-home me-1"></i>Siteye Git</a>
+                <a href="{% url 'admin:logout' %}"><i class="fas fa-sign-out-alt me-1"></i>Çıkış</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+    
+    <!-- SIDEBAR -->
+    <aside id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <a href="{% url 'admin:index' %}" style="text-decoration: none; color: white;">
+                <h3>
+                    <i class="fas fa-user-shield"></i>
+                    Admin Paneli
+                </h3>
+            </a>
+            <div class="user-info">
+                {{ user.get_full_name|default:user.username }}
+            </div>
+            <button id="sidebar-hide" class="sidebar-hide-btn" type="button" title="Menüyü gizle">
+                <i class="fas fa-chevron-left"></i>
+            </button>
+        </div>
+
+        <ul class="sidebar-menu">
+            <li class="sidebar-category">Ders Yönetimi</li>
+            <li>
+                <a href="{% url 'courses:list' %}">
+                    <i class="fas fa-book"></i>
+                    Dersler
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'courses:teacher_assignment' %}">
+                    <i class="fas fa-link"></i>
+                    Öğretmen-Ders Atama
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'courses:enrollment_list' %}">
+                    <i class="fas fa-clipboard-list"></i>
+                    Ders Kayıtları
+                </a>
+            </li>
+
+            <li class="sidebar-category">Kullanıcılar</li>
+            <li>
+                <a href="{% url 'students:list' %}">
+                    <i class="fas fa-user-graduate"></i>
+                    Öğrenciler
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'teachers:list' %}">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    Öğretmenler
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'users:user_list' %}">
+                    <i class="fas fa-users"></i>
+                    Tüm Kullanıcılar
+                </a>
+            </li>
+
+            <li class="sidebar-category">Eğitim İçerikleri</li>
+            <li>
+                <a href="{% url 'quiz:quiz_list' %}">
+                    <i class="fas fa-clipboard-check"></i>
+                    Sınavlar
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'quiz:question_bank_list' %}">
+                    <i class="fas fa-database"></i>
+                    Soru Bankaları
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'courses:assignment_list' %}">
+                    <i class="fas fa-tasks"></i>
+                    Ödevler
+                </a>
+            </li>
+
+            <li class="sidebar-category">Sistem</li>
+            <li>
+                <a href="{% url 'admin:academic_academicterm_changelist' %}">
+                    <i class="fas fa-calendar"></i>
+                    Akademik Dönemler
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'admin:utils_systemannouncement_changelist' %}">
+                    <i class="fas fa-bullhorn"></i>
+                    Sistem Duyuruları
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'admin:utils_activitylog_changelist' %}">
+                    <i class="fas fa-chart-line"></i>
+                    Sistem Logları
+                </a>
+            </li>
+
+            <li class="sidebar-category">Hesap</li>
+            <li>
+                <a href="{% url 'users:profile' %}">
+                    <i class="fas fa-user-circle"></i>
+                    Profilim
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'users:logout' %}">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Çıkış Yap
+                </a>
+            </li>
+        </ul>
+    </aside>
+    
+    <!-- MAIN CONTENT -->
+    <main class="admin-main">
+        {% block messages %}
+        {% if messages %}
+        <ul class="messagelist">
+            {% for message in messages %}
+            <li class="{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+        {% endblock %}
+        
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Sidebar Toggle Script -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const sidebar = document.getElementById('sidebar');
+            const sidebarHideBtn = document.getElementById('sidebar-hide');
+            const sidebarToggleNav = document.getElementById('sidebar-toggle-nav');
+            const mainContent = document.querySelector('.admin-main');
+            
+            // Load saved state
+            const isHidden = localStorage.getItem('adminSidebarHidden') === 'true';
+            if (isHidden) {
+                sidebar.classList.add('hidden');
+                mainContent.classList.add('sidebar-hidden');
+                if (sidebarToggleNav) sidebarToggleNav.style.display = 'block';
+            }
+            
+            // Hide button click
+            if (sidebarHideBtn) {
+                sidebarHideBtn.addEventListener('click', function() {
+                    sidebar.classList.add('hidden');
+                    mainContent.classList.add('sidebar-hidden');
+                    if (sidebarToggleNav) sidebarToggleNav.style.display = 'block';
+                    localStorage.setItem('adminSidebarHidden', 'true');
+                });
+            }
+            
+            // Toggle button click (in navbar)
+            if (sidebarToggleNav) {
+                sidebarToggleNav.addEventListener('click', function() {
+                    sidebar.classList.remove('hidden');
+                    mainContent.classList.remove('sidebar-hidden');
+                    this.style.display = 'none';
+                    localStorage.setItem('adminSidebarHidden', 'false');
+                });
+            }
+            
+            // Highlight active menu item
+            const currentPath = window.location.pathname;
+            const menuLinks = document.querySelectorAll('.sidebar-menu a');
+            menuLinks.forEach(link => {
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('active');
+                }
+            });
+        });
+    </script>
+    
+    {% block extrajs %}{% endblock %}
+</body>
+</html>

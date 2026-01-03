@@ -1,0 +1,18 @@
+{% extends "admin/base.html" %}
+{% load i18n %}
+
+{% block title %}Sayfa Bulunamadı{% endblock %}
+
+{% block content %}
+<div class="content-card" style="text-align: center; padding: 4rem 2rem;">
+    <i class="fas fa-search" style="font-size: 5rem; color: #d1d5db; margin-bottom: 1.5rem;"></i>
+    <h1 style="color: #1f2937; font-size: 2rem; margin-bottom: 0.5rem;">404 - Sayfa Bulunamadı</h1>
+    <p style="color: #6b7280; font-size: 1.1rem; margin-bottom: 2rem;">
+        Aradığınız sayfa mevcut değil veya taşınmış olabilir.
+    </p>
+    <a href="{% url 'admin:index' %}" 
+       style="display: inline-flex; align-items: center; gap: 8px; padding: 12px 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">
+        <i class="fas fa-home"></i> Ana Sayfaya Dön
+    </a>
+</div>
+{% endblock %}

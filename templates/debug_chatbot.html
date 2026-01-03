@@ -1,0 +1,173 @@
+{% extends 'base.html' %}
+
+{% block title %}Chatbot Debug{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h3>🔍 Chatbot Debug Bilgileri</h3>
+                </div>
+                <div class="card-body">
+                    <h4>Mevcut Kullanıcı</h4>
+                    <table class="table table-bordered">
+                        <tr>
+                            <th>User ID</th>
+                            <td>{{ user.id }}</td>
+                        </tr>
+                        <tr>
+                            <th>Username</th>
+                            <td>{{ user.username }}</td>
+                        </tr>
+                        <tr>
+                            <th>Full Name</th>
+                            <td>{{ user.get_full_name }}</td>
+                        </tr>
+                        <tr>
+                            <th>User Type</th>
+                            <td>{{ user.userprofile.user_type|default:"N/A" }}</td>
+                        </tr>
+                    </table>
+                    
+                    <h4 class="mt-4">LocalStorage Bilgileri</h4>
+                    <div id="localStorage-info" class="alert alert-info">
+                        Yükleniyor...
+                    </div>
+                    
+                    <h4 class="mt-4">İşlemler</h4>
+                    <button class="btn btn-danger" onclick="clearAllBotpressData()">
+                        🗑️ Tüm Botpress Verilerini Temizle
+                    </button>
+                    <button class="btn btn-warning" onclick="showAllStorage()">
+                        📊 Tüm Storage'ı Göster
+                    </button>
+                    <button class="btn btn-success" onclick="reloadChatbot()">
+                        🔄 Chatbot'u Yeniden Yükle
+                    </button>
+                    
+                    <h4 class="mt-4">Console Log</h4>
+                    <div id="console-log" class="bg-dark text-white p-3" style="height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px;">
+                        Console log'ları burada görünecek...
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Console log'ları yakala
+    const consoleLog = document.getElementById('console-log');
+    const originalLog = console.log;
+    const originalError = console.error;
+    
+    console.log = function(...args) {
+        originalLog.apply(console, args);
+        const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : arg).join(' ');
+        consoleLog.innerHTML += '<div style="color: #4CAF50;">[LOG] ' + message + '</div>';
+        consoleLog.scrollTop = consoleLog.scrollHeight;
+    };
+    
+    console.error = function(...args) {
+        originalError.apply(console, args);
+        const message = args.map(arg => typeof arg === 'object' ? JSON.stringify(arg, null, 2) : arg).join(' ');
+        consoleLog.innerHTML += '<div style="color: #f44336;">[ERROR] ' + message + '</div>';
+        consoleLog.scrollTop = consoleLog.scrollHeight;
+    };
+    
+    // LocalStorage bilgilerini göster
+    function showLocalStorage() {
+        const info = document.getElementById('localStorage-info');
+        let html = '<table class="table table-sm table-bordered"><thead><tr><th>Key</th><th>Value</th></tr></thead><tbody>';
+        
+        const keys = Object.keys(localStorage).filter(key => 
+            key.includes('botpress') || key.includes('bp-') || key.includes('webchat')
+        );
+        
+        if (keys.length === 0) {
+            html += '<tr><td colspan="2" class="text-center">Botpress ile ilgili veri bulunamadı</td></tr>';
+        } else {
+            keys.forEach(key => {
+                const value = localStorage.getItem(key);
+                html += `<tr><td><code>${key}</code></td><td><code>${value.substring(0, 100)}${value.length > 100 ? '...' : ''}</code></td></tr>`;
+            });
+        }
+        
+        html += '</tbody></table>';
+        info.innerHTML = html;
+    }
+    
+    // Tüm storage'ı göster
+    function showAllStorage() {
+        console.log('=== TÜM LOCALSTORAGE ===');
+        Object.keys(localStorage).forEach(key => {
+            console.log(key + ':', localStorage.getItem(key));
+        });
+        
+        console.log('=== TÜM SESSIONSTORAGE ===');
+        Object.keys(sessionStorage).forEach(key => {
+            console.log(key + ':', sessionStorage.getItem(key));
+        });
+        
+        alert('Console\'da tüm storage bilgileri yazdırıldı (F12)');
+    }
+    
+    // Tüm Botpress verilerini temizle
+    function clearAllBotpressData() {
+        if (!confirm('Tüm Botpress verileri temizlenecek. Emin misiniz?')) {
+            return;
+        }
+        
+        console.log('🗑️ Tüm Botpress verileri temizleniyor...');
+        
+        // LocalStorage
+        const localKeys = Object.keys(localStorage);
+        let cleanedCount = 0;
+        localKeys.forEach(key => {
+            if (key.includes('botpress') || key.includes('bp-') || key.includes('webchat') || key.includes('chat')) {
+                localStorage.removeItem(key);
+                cleanedCount++;
+                console.log('Temizlendi:', key);
+            }
+        });
+        
+        // SessionStorage
+        sessionStorage.clear();
+        
+        // Cookies
+        document.cookie.split(";").forEach(function(c) { 
+            if (c.includes('botpress') || c.includes('bp-') || c.includes('webchat')) {
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/"); 
+            }
+        });
+        
+        console.log('✅ Temizleme tamamlandı:', cleanedCount, 'anahtar');
+        alert('Temizleme tamamlandı! Sayfa yenilenecek...');
+        location.reload();
+    }
+    
+    // Chatbot'u yeniden yükle
+    function reloadChatbot() {
+        console.log('🔄 Chatbot yeniden yükleniyor...');
+        const iframe = document.getElementById('botpress-iframe');
+        if (iframe) {
+            const currentSrc = iframe.src;
+            iframe.src = 'about:blank';
+            setTimeout(() => {
+                iframe.src = currentSrc + '&_reload=' + Date.now();
+                console.log('✅ Chatbot yeniden yüklendi');
+            }, 500);
+        }
+    }
+    
+    // Sayfa yüklendiğinde
+    document.addEventListener('DOMContentLoaded', function() {
+        showLocalStorage();
+        
+        // Her 2 saniyede bir güncelle
+        setInterval(showLocalStorage, 2000);
+    });
+</script>
+{% endblock %}

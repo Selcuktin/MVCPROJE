@@ -122,14 +122,20 @@ class StudentService:
                 status='active'
             ).select_related('group__course').order_by('-create_date')[:5]
             
-            # Get pending submissions count (teslim edilmemiş ödevler)
+            # Get pending submissions count (teslim edilmemiş ve süresi dolmamış ödevler)
+            from django.utils import timezone
+            now = timezone.now()
+            
+            # Öğrencinin teslim ettiği ödevler
             submitted_assignment_ids = Submission.objects.filter(
                 student=student
             ).values_list('assignment_id', flat=True)
             
+            # Aktif, süresi dolmamış ve teslim edilmemiş ödevler
             pending_submissions = Assignment.objects.filter(
                 group__in=enrolled_groups,
-                status='active'
+                status='active',
+                due_date__gte=now  # Sadece süresi dolmamış ödevler
             ).exclude(
                 id__in=submitted_assignment_ids
             ).count()
@@ -167,6 +173,9 @@ class StudentService:
             # Filter by time range
             active_quizzes_count = sum(1 for q in all_quizzes if q.is_available)
             
+            # Get active quizzes for sidebar (son 5 aktif sınav)
+            active_quizzes_sidebar = [q for q in all_quizzes if q.is_available][:5]
+            
             return {
                 'student': student,
                 'enrollments': enrollments,
@@ -177,6 +186,7 @@ class StudentService:
                 'grades_count': grades_count,
                 'gpa': gpa,
                 'active_quizzes_count': active_quizzes_count,
+                'active_quizzes_sidebar': active_quizzes_sidebar,
                 'now': timezone.now()
             }
             
