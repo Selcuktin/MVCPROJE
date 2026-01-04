@@ -1368,9 +1368,9 @@ def course_content_delete(request, pk):
     })
 
 
-# Teacher-Course Assignment Views
+# Teacher-Course Assignment Views (Simplified)
 class TeacherCourseAssignmentView(LoginRequiredMixin, UserPassesTestMixin, TemplateView):
-    """Öğretmen-Ders Atama Paneli"""
+    """Öğretmen-Ders Atama Paneli - Basitleştirilmiş"""
     template_name = 'courses/teacher_course_assignment.html'
     
     def test_func(self):
@@ -1381,51 +1381,164 @@ class TeacherCourseAssignmentView(LoginRequiredMixin, UserPassesTestMixin, Templ
     
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
-        controller = TeacherCourseAssignmentController()
         
-        # Get filters from request
-        filters = {
-            'search': self.request.GET.get('search'),
-            'teacher_id': self.request.GET.get('teacher_id'),
-            'course_id': self.request.GET.get('course_id'),
-            'department': self.request.GET.get('department'),
-            'semester': self.request.GET.get('semester'),
-            'action': self.request.GET.get('action'),
-        }
+        # Tüm dersler
+        courses = Course.objects.all().order_by('code')
         
-        # Remove None values
-        filters = {k: v for k, v in filters.items() if v}
+        # Her ders için mevcut grupları ve öğretmenleri getir
+        courses_with_groups = []
+        for course in courses:
+            groups = CourseGroup.objects.filter(course=course, status='active').select_related('teacher')
+            courses_with_groups.append({
+                'course': course,
+                'groups': groups,
+                'has_teacher': groups.filter(teacher__isnull=False).exists()
+            })
         
-        data = controller.get_assignment_panel_data(self.request, filters)
-
-        # Zenginleştirilmiş atama verisi: öğrenci isimleri ve sayıları
-        current_assignments = []
-        for group in data.get('current_assignments', []):
-            enrollments = list(group.enrollments.select_related('student'))
-            student_names = [e.student.full_name for e in enrollments if hasattr(e, 'student')]
-            student_ids = [e.student.id for e in enrollments if hasattr(e, 'student')]
-            # kısa gösterim
-            display_names = ", ".join(student_names[:3])
-            if len(student_names) > 3:
-                display_names += f" +{len(student_names) - 3}"
-            
-            # mevcut CourseGroup objesini zenginleştir
-            group.student_names = display_names or "Öğrenci atanmamış"
-            group.student_ids = student_ids
-            group.student_count = len(student_names)
-            current_assignments.append(group)
-        
-        data['current_assignments'] = current_assignments
-        context.update(data)
-        
-        # Get departments for filter
-        context['departments'] = Course.objects.values_list('department', flat=True).distinct().order_by('department')
-        
-        # Get all students for student assignment
-        from apps.students.models import Student
+        context['courses_with_groups'] = courses_with_groups
+        context['teachers'] = Teacher.objects.filter(status='active').order_by('first_name', 'last_name')
         context['students'] = Student.objects.filter(status='active').order_by('first_name', 'last_name')
         
+        # Mevcut atamalar (ders grupları)
+        context['current_assignments'] = CourseGroup.objects.filter(
+            status='active'
+        ).select_related('course', 'teacher').prefetch_related('enrollments__student').order_by('course__code')
+        
         return context
+
+
+@login_required
+def assign_teacher_to_course(request):
+    """Derse öğretmen ata - Basit versiyon"""
+    if not (request.user.is_staff or 
+            hasattr(request.user, 'userprofile') and 
+            request.user.userprofile.user_type in ['admin', 'staff']):
+        return JsonResponse({'success': False, 'error': 'Yetkiniz yok'}, status=403)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            course_id = data.get('course_id')
+            teacher_id = data.get('teacher_id')
+            semester = data.get('semester', '2024-2025 Güz')
+            
+            if not course_id or not teacher_id:
+                return JsonResponse({'success': False, 'error': 'Ders ve öğretmen seçilmelidir'})
+            
+            course = Course.objects.get(id=course_id)
+            teacher = Teacher.objects.get(id=teacher_id)
+            
+            # Mevcut grup var mı kontrol et
+            existing_group = CourseGroup.objects.filter(course=course, teacher=teacher, status='active').first()
+            if existing_group:
+                return JsonResponse({'success': False, 'error': 'Bu öğretmen zaten bu derse atanmış'})
+            
+            # Yeni grup oluştur
+            group = CourseGroup.objects.create(
+                course=course,
+                teacher=teacher,
+                name=f"{course.code}-{teacher.first_name[:1]}{teacher.last_name[:1]}",
+                semester=semester,
+                status='active'
+            )
+            
+            return JsonResponse({
+                'success': True, 
+                'message': f'{teacher.full_name} öğretmeni {course.code} dersine atandı',
+                'group_id': group.id
+            })
+            
+        except Course.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Ders bulunamadı'})
+        except Teacher.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Öğretmen bulunamadı'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'POST isteği gerekli'})
+
+
+@login_required
+def remove_teacher_from_course(request):
+    """Dersten öğretmen çıkar"""
+    if not (request.user.is_staff or 
+            hasattr(request.user, 'userprofile') and 
+            request.user.userprofile.user_type in ['admin', 'staff']):
+        return JsonResponse({'success': False, 'error': 'Yetkiniz yok'}, status=403)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            group_id = data.get('group_id')
+            
+            if not group_id:
+                return JsonResponse({'success': False, 'error': 'Grup ID gerekli'})
+            
+            group = CourseGroup.objects.get(id=group_id)
+            course_code = group.course.code
+            teacher_name = group.teacher.full_name if group.teacher else 'Bilinmeyen'
+            
+            # Grubu pasif yap (silmek yerine)
+            group.status = 'inactive'
+            group.save()
+            
+            return JsonResponse({
+                'success': True, 
+                'message': f'{teacher_name} öğretmeni {course_code} dersinden çıkarıldı'
+            })
+            
+        except CourseGroup.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Ders grubu bulunamadı'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'POST isteği gerekli'})
+
+
+@login_required
+def update_course_group(request):
+    """Ders grubunu güncelle"""
+    if not (request.user.is_staff or 
+            hasattr(request.user, 'userprofile') and 
+            request.user.userprofile.user_type in ['admin', 'staff']):
+        return JsonResponse({'success': False, 'error': 'Yetkiniz yok'}, status=403)
+    
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            group_id = data.get('group_id')
+            
+            if not group_id:
+                return JsonResponse({'success': False, 'error': 'Grup ID gerekli'})
+            
+            group = CourseGroup.objects.get(id=group_id)
+            
+            # Güncellenebilir alanlar
+            if 'semester' in data:
+                group.semester = data['semester']
+            if 'classroom' in data:
+                group.classroom = data['classroom']
+            if 'schedule' in data:
+                group.schedule = data['schedule']
+            if 'teacher_id' in data:
+                teacher = Teacher.objects.get(id=data['teacher_id'])
+                group.teacher = teacher
+            
+            group.save()
+            
+            return JsonResponse({
+                'success': True, 
+                'message': f'{group.course.code} ders grubu güncellendi'
+            })
+            
+        except CourseGroup.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Ders grubu bulunamadı'})
+        except Teacher.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Öğretmen bulunamadı'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    
+    return JsonResponse({'success': False, 'error': 'POST isteği gerekli'})
 
 
 @login_required
@@ -1577,11 +1690,42 @@ def teacher_availability_view(request, teacher_id):
 @login_required
 @csrf_exempt
 def bulk_enroll_students_view(request):
-    """Toplu öğrenci ekleme"""
+    """Toplu öğrenci ekleme/yönetimi"""
     if not (request.user.is_staff or 
             hasattr(request.user, 'userprofile') and 
             request.user.userprofile.user_type in ['admin', 'teacher', 'staff']):
         return JsonResponse({'success': False, 'error': 'Yetkiniz yok'}, status=403)
+    
+    # GET isteği - mevcut kayıtlı öğrencileri döndür
+    if request.method == 'GET':
+        group_id = request.GET.get('group_id')
+        if not group_id:
+            return JsonResponse({'success': False, 'error': 'Grup ID gerekli'})
+        
+        try:
+            group = CourseGroup.objects.get(pk=group_id)
+            enrollments = Enrollment.objects.filter(
+                group=group, status='enrolled'
+            ).select_related('student')
+            
+            enrolled_students = []
+            enrolled_student_details = []
+            
+            for enrollment in enrollments:
+                enrolled_students.append(enrollment.student_id)
+                enrolled_student_details.append({
+                    'id': enrollment.student.id,
+                    'name': enrollment.student.full_name,
+                    'school_number': enrollment.student.school_number
+                })
+            
+            return JsonResponse({
+                'success': True, 
+                'enrolled_students': enrolled_students,
+                'enrolled_student_details': enrolled_student_details
+            })
+        except CourseGroup.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Grup bulunamadı'})
     
     if request.method == 'POST':
         try:
@@ -1592,79 +1736,47 @@ def bulk_enroll_students_view(request):
             if not group_id:
                 return JsonResponse({'success': False, 'error': 'Grup seçilmelidir'})
             
-            if not student_ids or len(student_ids) == 0:
-                return JsonResponse({'success': False, 'error': 'En az bir öğrenci seçilmelidir'})
-            
             # Grup kontrolü
             group = get_object_or_404(CourseGroup, pk=group_id)
             
-            # Yetki kontrolü - öğretmen ise sadece kendi gruplarına ekleyebilir
-            if hasattr(request.user, 'userprofile') and request.user.userprofile.user_type == 'teacher':
-                try:
-                    teacher = Teacher.objects.get(user=request.user)
-                    if group.teacher != teacher:
-                        return JsonResponse({'success': False, 'error': 'Bu gruba öğrenci ekleme yetkiniz yok'}, status=403)
-                except Teacher.DoesNotExist:
-                    return JsonResponse({'success': False, 'error': 'Öğretmen bilgisi bulunamadı'}, status=403)
+            # Mevcut kayıtları al
+            current_enrollments = set(Enrollment.objects.filter(
+                group=group, status='enrolled'
+            ).values_list('student_id', flat=True))
+            
+            new_student_ids = set(student_ids)
+            
+            # Çıkarılacak öğrenciler (mevcut ama yeni listede yok)
+            to_remove = current_enrollments - new_student_ids
+            # Eklenecek öğrenciler (yeni listede var ama mevcut değil)
+            to_add = new_student_ids - current_enrollments
+            
+            # Öğrencileri çıkar
+            removed_count = 0
+            for student_id in to_remove:
+                Enrollment.objects.filter(group=group, student_id=student_id).delete()
+                removed_count += 1
             
             # Öğrencileri ekle
             added_count = 0
-            skipped_count = 0
-            errors = []
-            
-            for student_id in student_ids:
+            for student_id in to_add:
                 try:
                     student = Student.objects.get(pk=student_id)
-                    
-                    # Zaten kayıtlı mı kontrol et
-                    existing = Enrollment.objects.filter(
-                        student=student,
-                        group=group,
-                        status='enrolled'
-                    ).exists()
-                    
-                    if existing:
-                        skipped_count += 1
-                        continue
-                    
-                    # Kapasite kontrolü
-                    enrolled_count = Enrollment.objects.filter(
-                        group=group,
-                        status='enrolled'
-                    ).count()
-                    
-                    if enrolled_count >= group.course.capacity:
-                        errors.append(f'{student.full_name}: Ders kapasitesi dolu')
-                        continue
-                    
-                    # Öğrenciyi ekle
                     Enrollment.objects.create(
                         student=student,
                         group=group,
                         status='enrolled'
                     )
                     added_count += 1
-                    
                 except Student.DoesNotExist:
-                    errors.append(f'ID {student_id}: Öğrenci bulunamadı')
-                except Exception as e:
-                    errors.append(f'ID {student_id}: {str(e)}')
+                    pass
             
-            response_data = {
+            return JsonResponse({
                 'success': True,
-                'count': added_count,
+                'message': f'{added_count} öğrenci eklendi, {removed_count} öğrenci çıkarıldı',
                 'added': added_count,
-                'skipped': skipped_count
-            }
-            
-            if errors:
-                response_data['errors'] = errors
-            
-            if added_count == 0:
-                response_data['success'] = False
-                response_data['error'] = 'Hiçbir öğrenci eklenemedi'
-            
-            return JsonResponse(response_data)
+                'removed': removed_count
+            })
             
         except Exception as e:
             logger.error(f"Toplu öğrenci ekleme hatası: {str(e)}", exc_info=True)

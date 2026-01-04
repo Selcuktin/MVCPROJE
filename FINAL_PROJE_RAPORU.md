@@ -165,21 +165,21 @@ LMS: Learning Management System
 
 Eğitim teknolojilerinin hızla geliştiği günümüzde, geleneksel eğitim yöntemlerinin yanında dijital araçların kullanımı giderek artmaktadır. Özellikle uzaktan eğitim ve hibrit eğitim modellerinin yaygınlaşmasıyla birlikte, eğitim kurumlarının dijitalleşme ihtiyacı daha da belirgin hale gelmiştir. Bu süreçte, öğrenci-öğretmen etkileşimini kolaylaştıran, ders yönetimini dijitalleştiren, sınav ve değerlendirme süreçlerini otomatize eden web tabanlı sistemlere olan ihtiyaç artmıştır.
 
-Bu proje kapsamında, Django web framework'ü kullanılarak geliştirilen Kurs Yönetim Sistemi, sadece temel ders yönetimini değil, aynı zamanda kapsamlı bir sınav sistemi, otomatik notlandırma, transkript oluşturma ve anlık iletişim gibi ileri seviye özellikleri de barındırmaktadır.
+Bu proje kapsamında, Django web framework'ü (Django Software Foundation, 2024) kullanılarak geliştirilen Kurs Yönetim Sistemi, sadece temel ders yönetimini değil, aynı zamanda kapsamlı bir sınav sistemi, otomatik notlandırma, transkript oluşturma ve anlık iletişim gibi ileri seviye özellikleri de barındırmaktadır.
 
 **1.1. Proje Tanımı**
-Django Kurs Yönetim Sistemi, 11 farklı modülden oluşan (users, students, teachers, courses, notes, quiz, gradebook, forum, academic, enrollment, utils) bütünleşik bir eğitim platformudur. Sistem, Django 4.2.x ve Bootstrap 5.3 teknolojileri üzerine inşa edilmiştir. REST API desteği sayesinde mobil ve harici sistemlerle entegrasyona açıktır.
+Django Kurs Yönetim Sistemi, 11 farklı modülden oluşan (users, students, teachers, courses, notes, quiz, gradebook, forum, academic, enrollment, utils) bütünleşik bir eğitim platformudur. Sistem, Django 4.2.x (Django Software Foundation, 2024) ve Bootstrap 5.3 (Bootstrap Team, 2024) teknolojileri üzerine inşa edilmiştir. REST API desteği (Django REST Framework, 2024) sayesinde mobil ve harici sistemlerle entegrasyona açıktır.
 
 **1.2. Problem Tanımı**
 Mevcut sistemlerde karşılaşılan temel sorunlar; parçalı yapı (sınav için ayrı, notlar için ayrı sistem kullanımı), kullanıcı deneyimi eksiklikleri, mobil uyumsuzluk ve özelleştirme zorluklarıdır. Ayrıca kağıt tabanlı sınav ve ödev süreçleri hem maliyetli hem de hata riskine açıktır.
 
 **1.3. Proje Hedefleri**
-- **Teknik Hedefler:** Django MTV mimarisine uygun, modüler (11 modül) yapı, REST API altyapısı, güvenli ve performanslı (Redis caching, Celery tasks) bir sistem geliştirmek.
+- **Teknik Hedefler:** Django MTV mimarisine (Django Software Foundation, 2024) uygun, modüler (11 modül) yapı, REST API altyapısı, güvenli ve performanslı bir sistem geliştirmek.
 - **Fonksiyonel Hedefler:** Çoktan seçmeli sınav sistemi, otomatik not hesaplama, transkript üretimi, anlık mesajlaşma sistemi.
 - **Performans Hedefleri:** Hızlı sayfa yükleme, optimize edilmiş veritabanı sorguları.
 
 **1.4. Proje Kapsamı**
-Proje; Kullanıcı Yönetimi, Ders Yönetimi, Sınav Sistemi (Quiz), Not Defteri (Gradebook), Mesajlaşma (Forum), Akademik Dönem Yönetimi modüllerini kapsamaktadır.
+Proje; Kullanıcı Yönetimi, Ders Yönetimi, Sınav Sistemi (Quiz), Not Defteri (Gradebook), Mesajlaşma (Forum), Akademik Dönem Yönetimi modüllerini kapsamaktadır. Sistem, Selçuk Üniversitesi Eğitim-Öğretim Yönetmeliği (Selçuk Üniversitesi, 2024) standartlarına uygun olarak geliştirilmiştir.
 
 ---
 **2. KAYNAK ARAŞTIRMASI**
@@ -188,13 +188,13 @@ Proje; Kullanıcı Yönetimi, Ders Yönetimi, Sınav Sistemi (Quiz), Not Defteri
 Moodle, Blackboard ve Canvas gibi global LMS sistemleri incelenmiştir. Bu sistemlerin karmaşıklığı ve maliyetleri karşısında, Django tabanlı özelleştirilebilir bir çözümün KOBİ ve orta ölçekli eğitim kurumları için daha uygun olduğu değerlendirilmiştir.
 
 **2.2. Django Framework**
-Python tabanlı Django, "batteries included" felsefesi ile kimlik doğrulama, admin paneli, ORM ve güvenlik özelliklerini hazır sunması nedeniyle tercih edilmiştir. Instagram, Pinterest ve Udemy gibi platformların da Django kullanması, teknolojinin ölçeklenebilirliğini kanıtlamaktadır.
+Python (Python Software Foundation, 2024) tabanlı Django, "batteries included" felsefesi ile kimlik doğrulama, admin paneli, ORM ve güvenlik özelliklerini hazır sunması nedeniyle tercih edilmiştir (Django Software Foundation, 2024). Instagram, Pinterest ve Udemy gibi platformların da Django kullanması, teknolojinin ölçeklenebilirliğini kanıtlamaktadır.
 
 **2.3. Teknoloji Seçimi**
-- **Backend:** Django 4.2.x (Güvenlik ve hız)
-- **API:** Django REST Framework (Mobil entegrasyon)
-- **Frontend:** Bootstrap 5.3 (Responsive tasarım)
-- **Veritabanı:** SQLite3 (Dev) / PostgreSQL (Prod)
+- **Backend:** Django 4.2.x (Django Software Foundation, 2024) - Güvenlik ve hız
+- **API:** Django REST Framework (Django REST Framework, 2024) - Mobil entegrasyon
+- **Frontend:** Bootstrap 5.3 (Bootstrap Team, 2024) - Responsive tasarım
+- **Veritabanı:** SQLite3 (Geliştirme) / PostgreSQL (Prodüksiyon)
 - **Yan Bileşenler:** Pillow (Görsel işleme), Openpyxl (Excel raporlama), ReportLab (PDF çıktıları)
 
 ---
@@ -251,12 +251,18 @@ Django Kurs Yönetim Sistemi projesi başarıyla tamamlanmıştır. Elde edilen 
 ---
 **KAYNAKLAR**
 
-1. Django Software Foundation. (2024). *Django Documentation*. https://docs.djangoproject.com/en/4.2/
-2. Bootstrap Team. (2024). *Bootstrap 5 Documentation*. https://getbootstrap.com/docs/5.3/
-3. Django REST Framework. (2024). *DRF Documentation*. https://www.django-rest-framework.org/
-4. Selçuk Üniversitesi. (2024). *Önlisans ve Lisans Eğitim-Öğretim Yönetmeliği*. https://www.selcuk.edu.tr/
-5. Botpress. (2024). *Botpress Documentation*. https://botpress.com/docs
-6. Python Software Foundation. (2024). *Python Documentation*. https://docs.python.org/3/
+Bootstrap Team. (2024). Bootstrap 5.3 Documentation. Retrieved January 2025. https://getbootstrap.com/docs/5.3/
+
+Botpress Inc. (2024). Botpress Documentation - Conversational AI Platform. Retrieved January 2025. https://botpress.com/docs
+
+Django REST Framework. (2024). Django REST Framework Documentation. Retrieved January 2025. https://www.django-rest-framework.org/
+
+Django Software Foundation. (2024). Django 4.2 Documentation. Retrieved January 2025. https://docs.djangoproject.com/en/4.2/
+
+Python Software Foundation. (2024). Python 3.11 Documentation. Retrieved January 2025. https://docs.python.org/3.11/
+
+Selçuk Üniversitesi. (2024). Önlisans ve Lisans Eğitim-Öğretim Yönetmeliği. Retrieved January 2025. https://www.selcuk.edu.tr/mevzuat
+
 
 ---
 **EKLER**

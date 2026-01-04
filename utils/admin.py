@@ -116,10 +116,9 @@ class ActivityLogAdmin(admin.ModelAdmin):
     
     list_display = [
         'timestamp',
-        'user',
-        'action',
-        'model_name',
-        'object_repr',
+        'user_display',
+        'islem_badge',
+        'aciklama_display',
         'ip_address',
     ]
     
@@ -130,6 +129,7 @@ class ActivityLogAdmin(admin.ModelAdmin):
         'user__first_name',
         'user__last_name',
         'object_repr',
+        'description',
         'ip_address',
     ]
     
@@ -140,9 +140,85 @@ class ActivityLogAdmin(admin.ModelAdmin):
         'model_name',
         'object_id',
         'object_repr',
+        'description',
         'ip_address',
         'user_agent',
     ]
+    
+    date_hierarchy = 'timestamp'
+    
+    def user_display(self, obj):
+        """Kullanıcı adı ve rolü"""
+        if not obj.user:
+            return 'Anonim'
+        
+        # Rol belirleme
+        if obj.user.is_superuser:
+            role_icon = '👑'
+            role = 'Admin'
+        elif hasattr(obj.user, 'teacher'):
+            role_icon = '👨‍🏫'
+            role = 'Öğretmen'
+        elif hasattr(obj.user, 'student'):
+            role_icon = '👨‍🎓'
+            role = 'Öğrenci'
+        else:
+            role_icon = '👤'
+            role = 'Kullanıcı'
+        
+        name = obj.user.get_full_name() or obj.user.username
+        return format_html(
+            '<span title="{}">{} {}</span>',
+            role,
+            role_icon,
+            name
+        )
+    user_display.short_description = 'Kullanıcı'
+    user_display.admin_order_field = 'user__username'
+    
+    def islem_badge(self, obj):
+        """İşlem türü badge'i"""
+        colors = {
+            'create': '#51cf66',
+            'update': '#339af0',
+            'delete': '#ff6b6b',
+            'login': '#845ef7',
+            'logout': '#868e96',
+            'view': '#20c997',
+            'export': '#ffa94d',
+            'enroll': '#339af0',
+            'submit': '#51cf66',
+            'grade': '#f06595',
+        }
+        icons = {
+            'create': '➕',
+            'update': '✏️',
+            'delete': '🗑️',
+            'login': '🔑',
+            'logout': '🚪',
+            'view': '👁️',
+            'export': '📤',
+            'enroll': '📝',
+            'submit': '📨',
+            'grade': '📊',
+        }
+        color = colors.get(obj.action, '#868e96')
+        icon = icons.get(obj.action, '•')
+        return format_html(
+            '<span style="background: {}; color: white; padding: 3px 10px; border-radius: 3px; font-size: 0.85em;">{} {}</span>',
+            color,
+            icon,
+            obj.get_action_display()
+        )
+    islem_badge.short_description = 'İşlem'
+    islem_badge.admin_order_field = 'action'
+    
+    def aciklama_display(self, obj):
+        """Açıklama - daha okunabilir"""
+        if obj.description:
+            return obj.description
+        return f"{obj.model_name} işlemi"
+    aciklama_display.short_description = 'Açıklama'
     
     def has_add_permission(self, request):
         """Loglar eklenemez"""

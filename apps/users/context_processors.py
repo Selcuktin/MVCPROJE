@@ -7,6 +7,44 @@ from .models import NotificationStatus
 from apps.courses.models import Assignment, Announcement
 
 
+def user_type_context(request):
+    """Add user_type to all templates for sidebar rendering"""
+    if not request.user.is_authenticated:
+        return {'user_type': None}
+    
+    user_type = None
+    
+    # First check userprofile
+    try:
+        if hasattr(request.user, 'userprofile') and request.user.userprofile:
+            user_type = request.user.userprofile.user_type
+    except:
+        pass
+    
+    # If no userprofile, check Student/Teacher models directly
+    if not user_type:
+        try:
+            from apps.students.models import Student
+            Student.objects.get(user=request.user)
+            user_type = 'student'
+        except:
+            pass
+    
+    if not user_type:
+        try:
+            from apps.teachers.models import Teacher
+            Teacher.objects.get(user=request.user)
+            user_type = 'teacher'
+        except:
+            pass
+    
+    # If still no type and user is staff/superuser, set as admin
+    if not user_type and (request.user.is_staff or request.user.is_superuser):
+        user_type = 'admin'
+    
+    return {'user_type': user_type}
+
+
 def notifications_context(request):
     """Add notification count and recent notifications to all templates"""
     if not request.user.is_authenticated:

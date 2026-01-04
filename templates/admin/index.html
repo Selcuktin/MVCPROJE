@@ -164,7 +164,7 @@
         <div class="value">{{ total_teachers|default:0 }}</div>
         <div class="label">Toplam Öğretmen</div>
     </a>
-    <a href="{% url 'courses:enrollment_list' %}" class="stat-box">
+    <a href="{% url 'courses:teacher_assignment' %}" class="stat-box">
         <div class="icon orange"><i class="fas fa-clipboard-list"></i></div>
         <div class="value">{{ total_enrollments|default:0 }}</div>
         <div class="label">Toplam Kayıt</div>
@@ -313,15 +313,6 @@
         <div class="text">
             <h4>Kullanıcı Yönetimi</h4>
             <p>Kullanıcı hesaplarını yönetin</p>
-        </div>
-        <i class="fas fa-chevron-right arrow"></i>
-    </a>
-    
-    <a href="{% url 'courses:enrollment_list' %}" class="action-card">
-        <div class="icon green"><i class="fas fa-clipboard-list"></i></div>
-        <div class="text">
-            <h4>Ders Kayıtları</h4>
-            <p>Öğrenci ders kayıtlarını yönetin</p>
         </div>
         <i class="fas fa-chevron-right arrow"></i>
     </a>

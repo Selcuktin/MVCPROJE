@@ -18,10 +18,6 @@ urlpatterns = [
     
     # Enrollments
     path('enroll/<int:group_id>/', views.EnrollmentCreateView.as_view(), name='enroll'),
-    path('enrollments/', views.EnrollmentListView.as_view(), name='enrollment_list'),
-    path('enrollments/add/', views.enrollment_add, name='enrollment_add'),
-    path('enrollments/update/', views.enrollment_update, name='enrollment_update'),
-    path('enrollments/delete/', views.enrollment_delete, name='enrollment_delete'),
     path('enrollments/<int:pk>/grade/', views.GradeUpdateView.as_view(), name='grade_update'),
     
     # Assignments
@@ -62,13 +58,11 @@ urlpatterns = [
     path('content/<int:pk>/update/', views.course_content_update, name='content_update'),
     path('content/<int:pk>/delete/', views.course_content_delete, name='content_delete'),
     
-    # Teacher-Course Assignment
+    # Teacher-Course Assignment (Simplified)
     path('teacher-assignment/', views.TeacherCourseAssignmentView.as_view(), name='teacher_assignment'),
-    path('teacher-assignment/bulk-assign/', views.bulk_assign_view, name='bulk_assign'),
-    path('teacher-assignment/bulk-remove/', views.bulk_remove_view, name='bulk_remove'),
-    path('teacher-assignment/check-compatibility/', views.check_compatibility_view, name='check_compatibility'),
-    path('teacher-assignment/check-conflicts/', views.check_conflicts_view, name='check_conflicts'),
-    path('teacher-assignment/availability/<int:teacher_id>/', views.teacher_availability_view, name='teacher_availability'),
+    path('teacher-assignment/assign/', views.assign_teacher_to_course, name='assign_teacher'),
+    path('teacher-assignment/remove/', views.remove_teacher_from_course, name='remove_teacher'),
+    path('teacher-assignment/update/', views.update_course_group, name='update_course_group'),
     
     # Student Enrollment
     path('teacher-assignment/bulk-enroll-students/', views.bulk_enroll_students_view, name='bulk_enroll_students'),
